@@ -8,25 +8,35 @@
   ============================================================
   TORRE D'EN GALMÉS — WebAR (realidad aumentada geolocalizada)
   Construida con proyectos open-source de GitHub:
-    · A-Frame  → https://github.com/aframevr/aframe
-    · AR.js    → https://github.com/AR-js-org/AR.js
+    · A-Frame 1.4.2  → https://github.com/aframevr/aframe
+    · AR.js 3.4.7    → https://github.com/AR-js-org/AR.js
   ------------------------------------------------------------
   CÓMO USARLA:
   1. Sube este archivo a un hosting HTTPS (GitHub Pages,
      voyagermenorca.com, Netlify...). La cámara y el GPS
      SOLO funcionan bajo HTTPS.
   2. Ábrelo en el móvil con Chrome (Android) o Safari (iOS).
-  3. Acepta los permisos de cámara y ubicación.
-  4. En el yacimiento: apunta con la cámara y verás los
-     marcadores flotando sobre cada monumento.
+  3. Acepta los permisos de cámara, ubicación y (en iOS)
+     orientación del dispositivo.
+  4. En el yacimiento: pulsa «Iniciar realidad aumentada».
+     Desde cualquier otro lugar: pulsa «Modo prueba» y el
+     poblado se colocará virtualmente a tu alrededor.
+  5. Dentro del AR, el botón «⧖ Ver 1.000 a.C.» alterna la
+     capa temporal: reconstrucción animada de cada monumento
+     tal y como era cuando estaba en uso (construcción por
+     fases, hogares encendidos, habitantes en movimiento).
   ------------------------------------------------------------
   ⚠️ COORDENADAS: el bloque CONFIG de abajo usa coordenadas
   APROXIMADAS. Ajústalas in situ (Google Maps → mantener
   pulsado sobre el punto → copiar lat, lon).
+  ♦ MODELOS REALISTAS: cada POI admite un campo opcional
+    model:'ruta/modelo.glb' (fotogrametría). Si está presente,
+    la capa «pasado» usará ese modelo en lugar de la
+    reconstrucción procedural.
   ============================================================
 -->
 <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
-<script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
+<script src="https://raw.githack.com/AR-js-org/AR.js/3.4.7/aframe/build/aframe-ar.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Marcellus&family=Karla:ital,wght@0,400;0,500;0,700;1,400&display=swap" rel="stylesheet">
 <style>
@@ -85,26 +95,32 @@
   /* ---------- MODO AR ---------- */
   #arUI{position:fixed;inset:0;z-index:40;display:none;pointer-events:none}
   #arUI.active{display:block}
-  #hud{position:absolute;top:0;left:0;right:0;padding:14px 16px
-    calc(14px) ;display:flex;justify-content:space-between;align-items:flex-start;
+  #hud{position:absolute;top:0;left:0;right:0;padding:14px 16px;
+    display:flex;justify-content:space-between;align-items:flex-start;gap:10px;
     padding-top:calc(14px + env(safe-area-inset-top))}
-  #exitAR{pointer-events:auto;background:rgba(22,20,15,.78);color:var(--calc);
+  .hudbtn{pointer-events:auto;background:rgba(22,20,15,.78);color:var(--calc);
     border:1px solid rgba(201,176,138,.4);border-radius:999px;padding:9px 16px;
     font-family:var(--body);font-size:13.5px;font-weight:700}
+  #eraBtn{color:var(--mares)}
+  #eraBtn.past{background:var(--mares);color:var(--nit)}
   #nearCard{position:absolute;left:14px;right:14px;
     bottom:calc(16px + env(safe-area-inset-bottom));
     background:rgba(22,20,15,.86);backdrop-filter:blur(6px);
     border:1px solid rgba(201,176,138,.35);border-radius:14px;
     padding:14px 16px;pointer-events:auto;max-width:480px;margin:0 auto}
   #nearCard .poi-name{font-size:18px;color:var(--mares)}
-  #nearCard .meta{font-size:12px;color:#a99;letter-spacing:.06em;
+  #nearCard .meta{font-size:12px;letter-spacing:.06em;
     text-transform:uppercase;margin-bottom:3px;color:#b8ad97}
   #nearCard p{font-size:13.5px;line-height:1.55;color:#e7dfcf;margin-top:7px}
-  #demoTag{position:absolute;top:calc(16px + env(safe-area-inset-top));
+  #demoTag{position:absolute;top:calc(64px + env(safe-area-inset-top));
     left:50%;transform:translateX(-50%);background:#D96C4F;color:#fff;
     font-size:11px;font-weight:700;letter-spacing:.1em;padding:4px 12px;
     border-radius:999px;display:none}
   #demoTag.show{display:block}
+  #gpsWait{position:absolute;top:calc(96px + env(safe-area-inset-top));
+    left:50%;transform:translateX(-50%);background:rgba(22,20,15,.85);
+    color:var(--mares);font-size:12px;font-weight:700;letter-spacing:.06em;
+    padding:6px 14px;border-radius:999px;border:1px solid rgba(201,176,138,.4)}
 
   a-scene{position:fixed;inset:0;z-index:10}
   .hidden{display:none !important}
@@ -124,7 +140,7 @@
   </svg>
   <div class="eyebrow">Poblado talayótico · Alaior · Menorca</div>
   <h1>Torre d'en Galmés</h1>
-  <p class="sub">Visita guiada con realidad aumentada. Apunta con la cámara y descubre cada monumento donde realmente está.</p>
+  <p class="sub">Visita guiada con realidad aumentada. Apunta con la cámara, descubre cada monumento donde realmente está y viaja 3.000 años atrás con la capa «1.000 a.C.».</p>
 
   <div class="gpsline"><span class="dot" id="gpsDot"></span><span id="gpsTxt">Buscando señal GPS…</span></div>
 
@@ -144,7 +160,11 @@
 <!-- ============ INTERFAZ AR ============ -->
 <div id="arUI">
   <div id="demoTag">MODO PRUEBA</div>
-  <div id="hud"><button id="exitAR">✕ Salir</button></div>
+  <div id="hud">
+    <button id="exitAR" class="hudbtn">✕ Salir</button>
+    <button id="eraBtn" class="hudbtn">⧖ Ver 1.000 a.C.</button>
+  </div>
+  <div id="gpsWait" class="hidden">Posicionando GPS…</div>
   <div id="nearCard" class="hidden">
     <div class="meta" id="ncMeta"></div>
     <div class="poi-name" id="ncName"></div>
@@ -159,6 +179,9 @@
    Cada POI: offsetN / offsetE en METROS respecto al anchor
    (positivo = norte / este). Si prefieres, sustituye por
    lat/lon absolutas añadiendo {lat:…, lon:…} al POI.
+   Campo opcional model:'ruta/modelo.glb' → la capa «pasado»
+   usará ese modelo 3D (fotogrametría) en vez de la
+   reconstrucción procedural.
    ⚠️ Coordenadas APROXIMADAS — verifícalas in situ.
    ============================================================ */
 const CONFIG = {
@@ -199,7 +222,17 @@ const haversine = (a,b) => {
   return 2*R*Math.asin(Math.sqrt(h));
 };
 
-let userPos = null, demoMode = false, arActive = false, scene = null;
+let userPos = null, demoMode = false, arActive = false, scene = null, eraPast = false;
+
+/* Las etiquetas siempre miran a la cámara (sustituye al componente
+   externo look-at, que no viene incluido con A-Frame ni AR.js) */
+AFRAME.registerComponent('billboard', {
+  init(){ this.v = new AFRAME.THREE.Vector3(); },
+  tick(){
+    const cam = this.el.sceneEl.camera;
+    if(cam){ cam.getWorldPosition(this.v); this.el.object3D.lookAt(this.v); }
+  }
+});
 
 /* ---------- lista de POIs (inicio) ---------- */
 const listEl = $('#poiList');
@@ -248,6 +281,138 @@ startGPS();
 let demoAnchor = null;
 const demoCoord = p => toLatLon(demoAnchor || CONFIG.anchor, p);
 
+/* ============================================================
+   RECONSTRUCCIONES — capa «1.000 a.C.»
+   Modelos procedurales animados de cada monumento en uso:
+   construcción por fases, hogares con fuego y humo, habitantes
+   en movimiento y agua en las cisternas.
+   ============================================================ */
+const mk = (tag, attrs, parent) => {
+  const n = document.createElement(tag);
+  for(const k in attrs) n.setAttribute(k, attrs[k]);
+  if(parent) parent.appendChild(n);
+  return n;
+};
+let buildIdx = 0;
+const stone = c => `color: ${c}; roughness: 1; metalness: 0`;
+/* pieza que «se construye»: crece desde el suelo al activar la capa */
+function part(tag, attrs, parent){
+  const n = mk(tag, attrs, parent);
+  n.dataset.build = '1';
+  n.setAttribute('animation__build',
+    `property: scale; from: 0.001 0.001 0.001; to: 1 1 1; dur: 1100; delay: ${(buildIdx++ % 14)*130}; easing: easeOutCubic; startEvents: build`);
+  return n;
+}
+/* habitante que camina en círculo alrededor del monumento */
+function person(parent, radius, dur, tunic){
+  const orbit = mk('a-entity', {
+    rotation: `0 ${Math.round(Math.random()*360)} 0`,
+    animation: `property: rotation; to: 0 360 0; dur: ${dur}; easing: linear; loop: true`
+  }, parent);
+  const fig = mk('a-entity', {
+    position: `${radius} 0 0`,
+    animation: 'property: object3D.position.y; from: 0; to: 0.12; dir: alternate; dur: 420; loop: true; easing: easeInOutQuad'
+  }, orbit);
+  mk('a-cylinder', { radius:'0.18', height:'0.95', position:'0 0.55 0', material:`color:${tunic}; roughness:1` }, fig);
+  mk('a-sphere',   { radius:'0.14', position:'0 1.17 0', material:'color:#c9a17e; roughness:0.9' }, fig);
+  return orbit;
+}
+/* hogar: llama palpitante, luz cálida y columna de humo */
+function fire(parent, pos){
+  const f = mk('a-entity', { position: pos }, parent);
+  mk('a-sphere', { radius:'0.3', position:'0 0.25 0',
+    material:'color:#ff7a2f; emissive:#ff5a00; emissiveIntensity:1',
+    animation:'property: scale; to: 1.25 1.45 1.25; dir: alternate; dur: 260; loop: true' }, f);
+  mk('a-light', { type:'point', color:'#ffb46b', intensity:'1.1', distance:'22', position:'0 1 0',
+    animation:'property: light.intensity; from: 0.9; to: 1.6; dir: alternate; dur: 300; loop: true' }, f);
+  for(let i=0;i<3;i++){
+    mk('a-sphere', { radius:(0.22+0.08*i).toFixed(2), position:'0 0.8 0',
+      material:'color:#bdb4a4; opacity:0.32; transparent:true',
+      animation:`property: position; from: 0 0.8 0; to: ${((i-1)*0.4).toFixed(1)} ${3.2+i} ${((i-1)*0.3).toFixed(1)}; dur: ${2600+700*i}; loop: true; easing: linear`,
+      animation__o:`property: material.opacity; from: 0.35; to: 0; dur: ${2600+700*i}; loop: true; easing: linear` }, f);
+  }
+  return f;
+}
+/* muro circular de piedra seca por segmentos */
+function ringWall(parent, r, segs, h, th, color){
+  for(let i=0;i<segs;i++){
+    const a = i/segs*2*Math.PI;
+    const len = 2*Math.PI*r/segs*1.05;
+    part('a-box', {
+      position:`${(r*Math.sin(a)).toFixed(2)} ${(h/2).toFixed(2)} ${(r*Math.cos(a)).toFixed(2)}`,
+      rotation:`0 ${(a*180/Math.PI).toFixed(1)} 0`,
+      width:len.toFixed(2), height:h, depth:th,
+      material:stone(i%2 ? color : '#a8967a') }, parent);
+  }
+}
+
+const RECON = {
+  /* I — talaiot: torre troncocónica con plataforma y caseta superior */
+  tal(g){
+    part('a-cone', { 'radius-bottom':'8.5', 'radius-top':'5.2', height:'6.5',
+      position:'0 3.25 0', 'segments-radial':'16', material:stone('#b3a184') }, g);
+    part('a-cylinder', { radius:'5.4', height:'0.5', position:'0 6.75 0', material:stone('#a8967a') }, g);
+    part('a-box', { width:'1.5', height:'1.9', depth:'1.5', position:'0 7.95 0', material:stone('#9c8b70') }, g);
+    person(g, 10.5, 34000, '#6e5034');
+  },
+  /* II — recinto de taula: T central, herradura de pilastras, fuego ritual */
+  taula(g){
+    part('a-box', { width:'0.7', height:'3.6', depth:'2.3', position:'0 1.8 0',  material:stone('#cbb795') }, g);
+    part('a-box', { width:'1.1', height:'0.55', depth:'3.1', position:'0 3.88 0', material:stone('#c2ad8a') }, g);
+    for(let i=0;i<8;i++){
+      const a = Math.PI*0.25 + (i/7)*Math.PI*1.5;
+      part('a-box', { width:'0.55', height:'2.4', depth:'1.0',
+        position:`${(4.6*Math.sin(a)).toFixed(2)} 1.2 ${(4.6*Math.cos(a)).toFixed(2)}`,
+        rotation:`0 ${(a*180/Math.PI).toFixed(1)} 0`,
+        material:stone(i%2 ? '#b9a685' : '#ad9a78') }, g);
+    }
+    fire(g, '1.8 0 1.5');
+    person(g, 6.2, 26000, '#7a5b3a');
+    person(g, 7.5, 38000, '#5d4a36');
+  },
+  /* III — sala hipóstila: columnas mediterráneas (más anchas arriba) y losa */
+  hipo(g){
+    [[-2.2,-1.4],[0,-1.4],[2.2,-1.4],[-1.1,1.4],[1.1,1.4]].forEach(c => {
+      part('a-cone', { 'radius-bottom':'0.28', 'radius-top':'0.55', height:'2.1',
+        position:`${c[0]} 1.05 ${c[1]}`, material:stone('#b6a37f') }, g);
+    });
+    part('a-box', { width:'7.4', height:'0.45', depth:'5', position:'0 2.45 0', material:stone('#a08d6e') }, g);
+    [[0,-2.7,7.4,0],[0,2.7,7.4,0],[-3.8,0,5.4,90],[3.8,0,5.4,90]].forEach(w => {
+      part('a-box', { width:w[2], height:'1.5', depth:'0.6',
+        position:`${w[0]} 0.75 ${w[1]}`, rotation:`0 ${w[3]} 0`, material:stone('#b09d7c') }, g);
+    });
+    person(g, 5.4, 30000, '#806645');
+  },
+  /* IV — Cercle Cartailhac: casa circular con habitaciones radiales y hogar */
+  cart(g){
+    ringWall(g, 6, 14, 1.9, 0.8, '#b4a182');
+    for(let i=0;i<5;i++){
+      const a = i/5*2*Math.PI;
+      part('a-box', { width:'0.5', height:'1.6', depth:'3.4',
+        position:`${(4.1*Math.sin(a)).toFixed(2)} 0.8 ${(4.1*Math.cos(a)).toFixed(2)}`,
+        rotation:`0 ${(a*180/Math.PI).toFixed(1)} 0`, material:stone('#ab9879') }, g);
+    }
+    fire(g, '0 0 0');
+    person(g, 5, 28000, '#6b5138');
+  },
+  /* V — agua: roca tallada, canales, cisterna con agua viva */
+  aigua(g){
+    part('a-box', { width:'9', height:'0.35', depth:'7', position:'0 0.17 0', material:stone('#9c8d75') }, g);
+    [[-2.5,0,30],[1.5,1.2,-25],[0,-1.8,80]].forEach(c => {
+      part('a-box', { width:'5.5', height:'0.18', depth:'0.5',
+        position:`${c[0]} 0.42 ${c[1]}`, rotation:`0 ${c[2]} 0`,
+        material:'color:#6f6452; roughness:1' }, g);
+    });
+    part('a-cylinder', { radius:'1.3', height:'0.25', position:'2.6 0.43 1.8', material:'color:#2b2620; roughness:1' }, g);
+    mk('a-circle', { radius:'1.1', rotation:'-90 0 0', position:'2.6 0.58 1.8',
+      material:'color:#41708c; opacity:0.75; transparent:true; metalness:0.3; roughness:0.2',
+      animation:'property: material.opacity; from: 0.55; to: 0.85; dir: alternate; dur: 1400; loop: true; easing: easeInOutSine' }, g);
+    person(g, 5.6, 32000, '#75603f');
+  },
+  /* VI — centro de interpretación: edificio moderno, sin reconstrucción */
+  centre: null,
+};
+
 /* ---------- escena AR (creada al pulsar el botón) ---------- */
 function buildScene(){
   scene = document.createElement('a-scene');
@@ -256,43 +421,87 @@ function buildScene(){
   scene.setAttribute('renderer','antialias: true; alpha: true');
   scene.setAttribute('arjs','sourceType: webcam; videoTexture: true; debugUIEnabled: false');
 
+  /* luz mediterránea explícita (al añadir luces propias —los fuegos—
+     A-Frame retira las luces por defecto) */
+  mk('a-entity', { light:'type: ambient; color: #d8cfbf; intensity: 0.85' }, scene);
+  mk('a-entity', { light:'type: directional; color: #fff3df; intensity: 0.9', position:'40 80 30' }, scene);
+
   const cam = document.createElement('a-camera');
-  cam.setAttribute('gps-new-camera','gpsMinDistance: 3');
-  cam.setAttribute('rotation-reader','');
+  /* En modo prueba la cámara se posiciona AL INSTANTE con
+     simulateLatitude/Longitude (fakeGps): funciona incluso en
+     interiores con mala señal; el GPS real sigue activo después.
+     positionMinAccuracy alto: el valor por defecto (100 m)
+     descartaba todas las posiciones de baja precisión y la cámara
+     nunca se colocaba — ese era el fallo del modo prueba. */
+  let camAttrs = 'gpsMinDistance: 3; positionMinAccuracy: 5000; initialPositionAsOrigin: true';
+  if(demoMode) camAttrs += `; simulateLatitude: ${demoAnchor.lat}; simulateLongitude: ${demoAnchor.lon}`;
+  cam.setAttribute('gps-new-camera', camAttrs);
   scene.appendChild(cam);
 
-  CONFIG.pois.forEach(p => {
+  const addPois = () => CONFIG.pois.forEach(p => {
     const c = demoMode ? demoCoord(p) : toLatLon(CONFIG.anchor, p);
     const e = document.createElement('a-entity');
     e.setAttribute('gps-new-entity-place', `latitude: ${c.lat}; longitude: ${c.lon}`);
 
-    // pilar + esfera (hito visual)
-    const pillar = document.createElement('a-cylinder');
-    pillar.setAttribute('radius','0.35');
-    pillar.setAttribute('height','5');
-    pillar.setAttribute('position','0 2.5 0');
-    pillar.setAttribute('material','color: #C9B08A; opacity: 0.85');
-    e.appendChild(pillar);
+    const hasPast = !!(RECON[p.id] || p.model);
 
-    const orb = document.createElement('a-sphere');
-    orb.setAttribute('radius','1.1');
-    orb.setAttribute('position','0 6.4 0');
-    orb.setAttribute('material','color: #2F4A3A; emissive: #2F4A3A; emissiveIntensity: 0.45');
-    orb.setAttribute('animation','property: position; to: 0 7.1 0; dir: alternate; dur: 1600; loop: true; easing: easeInOutSine');
-    e.appendChild(orb);
+    // capa HOY: pilar + esfera (hito visual)
+    const now = mk('a-entity', hasPast ? { class:'layer-now' } : {}, e);
+    mk('a-cylinder', { radius:'0.35', height:'5', position:'0 2.5 0',
+      material:'color: #C9B08A; opacity: 0.85' }, now);
+    mk('a-sphere', { radius:'1.1', position:'0 6.4 0',
+      material:'color: #2F4A3A; emissive: #2F4A3A; emissiveIntensity: 0.45',
+      animation:'property: position; to: 0 7.1 0; dir: alternate; dur: 1600; loop: true; easing: easeInOutSine' }, now);
 
-    const label = document.createElement('a-text');
-    label.setAttribute('value', p.n + ' · ' + p.name);
-    label.setAttribute('look-at','[gps-new-camera]');
-    label.setAttribute('position','0 9 0');
-    label.setAttribute('align','center');
-    label.setAttribute('color','#F2EBDD');
-    label.setAttribute('scale','12 12 12');
-    e.appendChild(label);
+    // capa 1.000 a.C.: reconstrucción animada (o modelo GLB si existe)
+    if(hasPast){
+      const past = mk('a-entity', { class:'layer-past', visible:'false' }, e);
+      if(p.model){
+        mk('a-gltf-model', { src: p.model }, past);
+      } else {
+        buildIdx = 0;
+        RECON[p.id](past);
+      }
+    }
+
+    // etiqueta (visible en ambas capas, siempre mirando a la cámara)
+    mk('a-text', { value: p.n + ' · ' + p.name, billboard:'', position:'0 9 0',
+      align:'center', color:'#F2EBDD', scale:'12 12 12' }, e);
 
     scene.appendChild(e);
   });
+
+  if(demoMode){
+    addPois();                       // el origen ya existe (fakeGps)
+  } else {
+    /* en modo real, esperar al primer fix GPS antes de colocar
+       los POIs (con initialPositionAsOrigin el origen no existe
+       hasta entonces) */
+    $('#gpsWait').classList.remove('hidden');
+    const onFix = () => {
+      cam.removeEventListener('gps-camera-update-position', onFix);
+      addPois();
+      $('#gpsWait').classList.add('hidden');
+      setEra(eraPast);
+    };
+    cam.addEventListener('gps-camera-update-position', onFix);
+  }
+
   document.body.appendChild(scene);
+}
+
+/* ---------- capa temporal: hoy ↔ 1.000 a.C. ---------- */
+function setEra(past){
+  eraPast = past;
+  const b = $('#eraBtn');
+  b.textContent = past ? '⧖ Ver hoy' : '⧖ Ver 1.000 a.C.';
+  b.classList.toggle('past', past);
+  document.querySelectorAll('.layer-now').forEach(n => { if(n.object3D) n.object3D.visible = !past; });
+  document.querySelectorAll('.layer-past').forEach(n => {
+    if(!n.object3D) return;
+    n.object3D.visible = past;
+    if(past) n.querySelectorAll('[data-build]').forEach(piece => piece.emit('build'));
+  });
 }
 
 /* ---------- ficha del POI más cercano ---------- */
@@ -319,18 +528,27 @@ function updateNearCard(){
 }
 
 /* ---------- entrar / salir de AR ---------- */
-function enterAR(demo){
+async function enterAR(demo){
   demoMode = demo;
   if(demo){
     if(!userPos){ alert('Esperando señal GPS… inténtalo en unos segundos.'); return; }
     demoAnchor = { ...userPos };   // sitúa el poblado virtualmente a tu alrededor
   }
+  /* iOS 13+: el permiso de orientación del dispositivo debe pedirse
+     desde un gesto del usuario (este click) o la cámara AR no rota */
+  try{
+    if(window.DeviceOrientationEvent && typeof DeviceOrientationEvent.requestPermission === 'function'){
+      await DeviceOrientationEvent.requestPermission();
+    }
+  }catch(e){ /* puede aceptarse más tarde tocando la pantalla */ }
+
   buildScene();
   arActive = true;
   $('#landing').classList.add('hidden');
   $('#startBar').classList.add('hidden');
   $('#arUI').classList.add('active');
   $('#demoTag').classList.toggle('show', demo);
+  setEra(false);
   updateNearCard();
 }
 function exitAR(){
@@ -339,6 +557,7 @@ function exitAR(){
   // AR.js deja el vídeo de la cámara: lo retiramos
   document.querySelectorAll('video').forEach(v => { v.srcObject?.getTracks().forEach(t=>t.stop()); v.remove(); });
   $('#arUI').classList.remove('active');
+  $('#gpsWait').classList.add('hidden');
   $('#landing').classList.remove('hidden');
   $('#startBar').classList.remove('hidden');
   updateDistances();
@@ -346,6 +565,7 @@ function exitAR(){
 $('#btnAR').onclick   = () => enterAR(false);
 $('#btnDemo').onclick = () => enterAR(true);
 $('#exitAR').onclick  = exitAR;
+$('#eraBtn').onclick  = () => setEra(!eraPast);
 </script>
 </body>
 </html>
