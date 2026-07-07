@@ -10,6 +10,9 @@
   Construida con proyectos open-source de GitHub:
     · A-Frame 1.4.2  → https://github.com/aframevr/aframe
     · AR.js 3.4.7    → https://github.com/AR-js-org/AR.js
+  Ambas librerías están incluidas localmente en vendor/ (no
+  dependen de CDNs externos como raw.githack.com, que no está
+  pensado para producción y puede fallar o ir lento).
   ------------------------------------------------------------
   CÓMO USARLA:
   1. Sube este archivo a un hosting HTTPS (GitHub Pages,
@@ -35,8 +38,8 @@
     reconstrucción procedural.
   ============================================================
 -->
-<script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
-<script src="https://raw.githack.com/AR-js-org/AR.js/3.4.7/aframe/build/aframe-ar.js"></script>
+<script src="vendor/aframe/aframe.min.js"></script>
+<script src="vendor/arjs/aframe-ar.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Marcellus&family=Karla:ital,wght@0,400;0,500;0,700;1,400&display=swap" rel="stylesheet">
 <style>
