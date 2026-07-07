@@ -194,7 +194,12 @@
    CONFIG — EDITA AQUÍ
    anchor: centro aproximado del yacimiento.
    offsetN / offsetE en METROS respecto al anchor (o lat/lon
-   absolutas añadiendo {lat, lon}). model:'x.glb' opcional.
+   absolutas añadiendo {lat, lon}).
+   Fotogrametría opcional por POI:
+     model:'models/taula.glb'  → sustituye la reconstrucción
+     modelScale: 2.5           → factor de escala (opcional)
+     modelOffset:'0 0.4 0'     → desplazamiento en metros (opcional)
+     modelRot: 90              → giro en grados (opcional)
    ⚠️ Coordenadas APROXIMADAS — verifícalas in situ.
    ============================================================ */
 const CONFIG = {
@@ -724,7 +729,13 @@ function buildPoiLayers(e, p, labelY){
   if(hasPast){
     const past = mk('a-entity', { class:'layer-past', visible:'false' }, e);
     if(p.model){
-      mk('a-gltf-model', { src: p.model }, past);
+      /* fotogrametría: escala/posición/giro ajustables por POI */
+      mk('a-gltf-model', {
+        src: p.model,
+        scale: p.modelScale ? `${p.modelScale} ${p.modelScale} ${p.modelScale}` : '1 1 1',
+        position: p.modelOffset || '0 0 0',
+        rotation: `0 ${p.modelRot || 0} 0`,
+      }, past);
     } else {
       buildIdx = 0;
       RECON[p.id](past);
