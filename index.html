@@ -6,7 +6,7 @@
 <title>Torre d'en Galmés · Visita en Realidad Aumentada</title>
 <!--
   ============================================================
-  TORRE D'EN GALMÉS — WebAR (realidad aumentada geolocalizada)
+  TORRE D'EN GALMÉS — WebAR + maqueta 3D
   Construida con proyectos open-source de GitHub:
     · A-Frame 1.4.2  → https://github.com/aframevr/aframe
     · AR.js 3.4.7    → https://github.com/AR-js-org/AR.js
@@ -14,28 +14,24 @@
   dependen de CDNs externos como raw.githack.com, que no está
   pensado para producción y puede fallar o ir lento).
   ------------------------------------------------------------
-  CÓMO USARLA:
-  1. Sube este archivo a un hosting HTTPS (GitHub Pages,
-     voyagermenorca.com, Netlify...). La cámara y el GPS
-     SOLO funcionan bajo HTTPS.
-  2. Ábrelo en el móvil con Chrome (Android) o Safari (iOS).
-  3. Acepta los permisos de cámara, ubicación y (en iOS)
-     orientación del dispositivo.
-  4. En el yacimiento: pulsa «Iniciar realidad aumentada».
-     Desde cualquier otro lugar: pulsa «Modo prueba» y el
-     poblado se colocará virtualmente a tu alrededor.
-  5. Dentro del AR, el botón «⧖ Ver 1.000 a.C.» alterna la
-     capa temporal: reconstrucción animada de cada monumento
-     tal y como era cuando estaba en uso (construcción por
-     fases, hogares encendidos, habitantes en movimiento).
+  TRES MODOS:
+  · «Iniciar realidad aumentada» — en el yacimiento (GPS real).
+  · «Modo prueba» — AR desde cualquier lugar (poblado virtual
+    alrededor de tu posición).
+  · «Explorar maqueta 3D» — sin GPS ni cámara: gira con un dedo,
+    zoom con dos (pellizco). Funciona siempre, en cualquier sitio.
+  En AR y maqueta, «⧖» alterna HOY ↔ 1.000 a.C. (reconstrucción
+  animada) y los botones +/− hacen zoom (también pellizco).
   ------------------------------------------------------------
-  ⚠️ COORDENADAS: el bloque CONFIG de abajo usa coordenadas
-  APROXIMADAS. Ajústalas in situ (Google Maps → mantener
-  pulsado sobre el punto → copiar lat, lon).
-  ♦ MODELOS REALISTAS: cada POI admite un campo opcional
-    model:'ruta/modelo.glb' (fotogrametría). Si está presente,
-    la capa «pasado» usará ese modelo en lugar de la
-    reconstrucción procedural.
+  RECONSTRUCCIONES: basadas en datos publicados del yacimiento
+  (taula de 1,95 m con capitel; Cercle Cartailhac de ~145 m² con
+  portal adintelado, muro de ortostatos, habitaciones radiales y
+  patio con hogar y cisterna; columnas polilíticas mediterráneas
+  en la sala hipóstila; talayot troncocónico ciclópeo; cubiertas
+  de vigas y ramaje). Texturas de piedra seca generadas por código.
+  ♦ Cada POI admite model:'ruta/modelo.glb' (fotogrametría):
+    si está presente, la capa «pasado» usa ese modelo.
+  ⚠️ COORDENADAS aproximadas — ajústalas in situ en CONFIG.
   ============================================================
 -->
 <script src="vendor/aframe/aframe.min.js"></script>
@@ -44,13 +40,9 @@
 <link href="https://fonts.googleapis.com/css2?family=Marcellus&family=Karla:ital,wght@0,400;0,500;0,700;1,400&display=swap" rel="stylesheet">
 <style>
   :root{
-    --calc:#F2EBDD;      /* blanco de cal */
-    --mares:#C9B08A;     /* piedra de marés */
-    --pedra:#8A7A63;     /* piedra seca */
-    --alzina:#2F4A3A;    /* verde encinar */
-    --nit:#16140F;       /* noche talayótica */
-    --display:'Marcellus',serif;
-    --body:'Karla',sans-serif;
+    --calc:#F2EBDD; --mares:#C9B08A; --pedra:#8A7A63;
+    --alzina:#2F4A3A; --nit:#16140F;
+    --display:'Marcellus',serif; --body:'Karla',sans-serif;
   }
   *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
   html,body{height:100%}
@@ -59,13 +51,13 @@
   /* ---------- PANTALLA DE INICIO ---------- */
   #landing{position:fixed;inset:0;z-index:50;background:
     radial-gradient(120% 70% at 50% -10%, #4a4434 0%, var(--nit) 60%);
-    display:flex;flex-direction:column;overflow-y:auto;padding:28px 22px 110px}
+    display:flex;flex-direction:column;overflow-y:auto;padding:28px 22px 170px}
   .taula{width:64px;height:64px;margin:18px auto 6px;flex-shrink:0}
   .eyebrow{text-align:center;letter-spacing:.28em;text-transform:uppercase;
     font-size:11px;color:var(--mares);margin-top:8px}
   h1{font-family:var(--display);font-weight:400;text-align:center;
     font-size:clamp(30px,8vw,40px);line-height:1.12;margin:8px 0 4px;color:var(--calc)}
-  .sub{text-align:center;color:#bdb29c;font-size:14px;max-width:300px;margin:0 auto 22px;line-height:1.5}
+  .sub{text-align:center;color:#bdb29c;font-size:14px;max-width:310px;margin:0 auto 22px;line-height:1.5}
   .gpsline{display:flex;align-items:center;justify-content:center;gap:8px;
     font-size:12.5px;color:var(--mares);margin-bottom:18px;min-height:18px}
   .dot{width:8px;height:8px;border-radius:50%;background:#777;flex-shrink:0}
@@ -85,27 +77,40 @@
   .poi-desc{font-size:13.5px;color:#cfc6b2;line-height:1.55;margin-top:8px;display:none}
   .poi.open .poi-desc{display:block}
 
-  #startBar{position:fixed;left:0;right:0;bottom:0;padding:14px 22px
-    calc(14px + env(safe-area-inset-bottom));z-index:60;
-    background:linear-gradient(to top, var(--nit) 65%, transparent)}
+  #startBar{position:fixed;left:0;right:0;bottom:0;padding:10px 22px
+    calc(12px + env(safe-area-inset-bottom));z-index:60;
+    background:linear-gradient(to top, var(--nit) 75%, transparent)}
   .btn{display:block;width:100%;max-width:480px;margin:0 auto;border:none;
-    border-radius:12px;padding:16px;font-family:var(--body);font-weight:700;
-    font-size:16px;letter-spacing:.02em;cursor:pointer}
+    border-radius:12px;padding:15px;font-family:var(--body);font-weight:700;
+    font-size:15.5px;letter-spacing:.02em;cursor:pointer}
   .btn-ar{background:var(--mares);color:var(--nit)}
+  .btn-maqueta{background:var(--alzina);color:var(--calc);margin-top:8px}
   .btn-demo{background:transparent;color:var(--mares);border:1px solid rgba(201,176,138,.4);
-    margin-top:8px;font-weight:500;font-size:14px;padding:12px}
+    margin-top:8px;font-weight:500;font-size:13.5px;padding:11px}
 
-  /* ---------- MODO AR ---------- */
+  /* ---------- HUD AR / MAQUETA ---------- */
   #arUI{position:fixed;inset:0;z-index:40;display:none;pointer-events:none}
   #arUI.active{display:block}
   #hud{position:absolute;top:0;left:0;right:0;padding:14px 16px;
     display:flex;justify-content:space-between;align-items:flex-start;gap:10px;
     padding-top:calc(14px + env(safe-area-inset-top))}
   .hudbtn{pointer-events:auto;background:rgba(22,20,15,.78);color:var(--calc);
-    border:1px solid rgba(201,176,138,.4);border-radius:999px;padding:9px 16px;
+    border:1px solid rgba(201,176,138,.4);border-radius:999px;padding:9px 15px;
     font-family:var(--body);font-size:13.5px;font-weight:700}
   #eraBtn{color:var(--mares)}
   #eraBtn.past{background:var(--mares);color:var(--nit)}
+  #zoomCol{position:absolute;right:12px;top:50%;transform:translateY(-50%);
+    display:flex;flex-direction:column;gap:10px}
+  .zbtn{pointer-events:auto;width:44px;height:44px;border-radius:50%;
+    background:rgba(22,20,15,.78);color:var(--calc);font-size:22px;font-weight:700;
+    border:1px solid rgba(201,176,138,.4);line-height:1}
+  #chipRow{position:absolute;left:0;right:0;top:calc(66px + env(safe-area-inset-top));
+    display:none;justify-content:center;gap:7px;flex-wrap:wrap;padding:0 12px}
+  #arUI.maqueta #chipRow{display:flex}
+  .chip{pointer-events:auto;background:rgba(22,20,15,.78);color:var(--mares);
+    border:1px solid rgba(201,176,138,.4);border-radius:999px;width:38px;height:38px;
+    font-family:var(--display);font-size:14px}
+  .chip.sel{background:var(--mares);color:var(--nit)}
   #nearCard{position:absolute;left:14px;right:14px;
     bottom:calc(16px + env(safe-area-inset-bottom));
     background:rgba(22,20,15,.86);backdrop-filter:blur(6px);
@@ -120,13 +125,15 @@
     font-size:11px;font-weight:700;letter-spacing:.1em;padding:4px 12px;
     border-radius:999px;display:none}
   #demoTag.show{display:block}
-  #gpsWait{position:absolute;top:calc(96px + env(safe-area-inset-top));
-    left:50%;transform:translateX(-50%);background:rgba(22,20,15,.85);
-    color:var(--mares);font-size:12px;font-weight:700;letter-spacing:.06em;
-    padding:6px 14px;border-radius:999px;border:1px solid rgba(201,176,138,.4)}
+  #hint{position:absolute;top:calc(116px + env(safe-area-inset-top));
+    left:50%;transform:translateX(-50%);background:rgba(22,20,15,.88);
+    color:var(--mares);font-size:12px;font-weight:700;letter-spacing:.04em;
+    padding:7px 16px;border-radius:999px;border:1px solid rgba(201,176,138,.4);
+    max-width:88vw;text-align:center}
 
   a-scene{position:fixed;inset:0;z-index:10}
   .hidden{display:none !important}
+  #texHolder{display:none}
   footer{margin-top:26px;text-align:center;font-size:11.5px;color:#6e6452;line-height:1.6}
   footer b{color:var(--pedra)}
 </style>
@@ -135,7 +142,6 @@
 
 <!-- ============ PANTALLA DE INICIO ============ -->
 <div id="landing">
-  <!-- Signatura: silueta de taula -->
   <svg class="taula" viewBox="0 0 64 64" fill="none">
     <rect x="10" y="12" width="44" height="10" rx="2" fill="#C9B08A"/>
     <rect x="26" y="22" width="12" height="30" rx="2" fill="#8A7A63"/>
@@ -143,7 +149,7 @@
   </svg>
   <div class="eyebrow">Poblado talayótico · Alaior · Menorca</div>
   <h1>Torre d'en Galmés</h1>
-  <p class="sub">Visita guiada con realidad aumentada. Apunta con la cámara, descubre cada monumento donde realmente está y viaja 3.000 años atrás con la capa «1.000 a.C.».</p>
+  <p class="sub">Realidad aumentada en el yacimiento, o maqueta 3D desde cualquier lugar. Viaja 3.000 años atrás con la capa «1.000 a.C.».</p>
 
   <div class="gpsline"><span class="dot" id="gpsDot"></span><span id="gpsTxt">Buscando señal GPS…</span></div>
 
@@ -157,17 +163,23 @@
 
 <div id="startBar">
   <button class="btn btn-ar" id="btnAR">Iniciar realidad aumentada</button>
-  <button class="btn btn-demo" id="btnDemo">Modo prueba (desde cualquier lugar)</button>
+  <button class="btn btn-maqueta" id="btnMaqueta">Explorar maqueta 3D (sin GPS)</button>
+  <button class="btn btn-demo" id="btnDemo">Modo prueba AR (desde cualquier lugar)</button>
 </div>
 
-<!-- ============ INTERFAZ AR ============ -->
+<!-- ============ HUD AR / MAQUETA ============ -->
 <div id="arUI">
   <div id="demoTag">MODO PRUEBA</div>
   <div id="hud">
     <button id="exitAR" class="hudbtn">✕ Salir</button>
     <button id="eraBtn" class="hudbtn">⧖ Ver 1.000 a.C.</button>
   </div>
-  <div id="gpsWait" class="hidden">Posicionando GPS…</div>
+  <div id="hint" class="hidden"></div>
+  <div id="zoomCol">
+    <button class="zbtn" id="zoomIn">+</button>
+    <button class="zbtn" id="zoomOut">−</button>
+  </div>
+  <div id="chipRow"></div>
   <div id="nearCard" class="hidden">
     <div class="meta" id="ncMeta"></div>
     <div class="poi-name" id="ncName"></div>
@@ -175,21 +187,19 @@
   </div>
 </div>
 
+<div id="texHolder"></div>
+
 <script>
 /* ============================================================
    CONFIG — EDITA AQUÍ
    anchor: centro aproximado del yacimiento.
-   Cada POI: offsetN / offsetE en METROS respecto al anchor
-   (positivo = norte / este). Si prefieres, sustituye por
-   lat/lon absolutas añadiendo {lat:…, lon:…} al POI.
-   Campo opcional model:'ruta/modelo.glb' → la capa «pasado»
-   usará ese modelo 3D (fotogrametría) en vez de la
-   reconstrucción procedural.
+   offsetN / offsetE en METROS respecto al anchor (o lat/lon
+   absolutas añadiendo {lat, lon}). model:'x.glb' opcional.
    ⚠️ Coordenadas APROXIMADAS — verifícalas in situ.
    ============================================================ */
 const CONFIG = {
-  anchor: { lat: 39.94330, lon: 4.11170 },   // Torre d'en Galmés (aprox.)
-  triggerDist: 28,        // metros para mostrar la ficha del POI cercano
+  anchor: { lat: 39.94330, lon: 4.11170 },
+  triggerDist: 28,
   pois: [
     { id:'tal',  n:'I',   name:'Talaiot central',
       offsetN: 55, offsetE: 5,
@@ -199,10 +209,10 @@ const CONFIG = {
       desc:'Santuario con la taula, el monumento más enigmático de Menorca: una T ciclópea única en el mundo. Aquí apareció la estatuilla egipcia de Imhotep, prueba de contactos mediterráneos.' },
     { id:'hipo', n:'III', name:'Sala hipòstila',
       offsetN: -25, offsetE: 35,
-      desc:'Cubierta original de hace 3.000 años intacta: losas sostenidas por columnas mediterráneas (más estrechas en la base). Probablemente un almacén adosado a una vivienda.' },
+      desc:'Cubierta original de hace 3.000 años intacta: losas sostenidas por columnas polilíticas de tipo mediterráneo (más estrechas en la base). Probablemente un almacén adosado a una vivienda.' },
     { id:'cart', n:'IV',  name:'Cercle Cartailhac',
       offsetN: -65, offsetE: -10,
-      desc:'La casa talayótica mejor conservada de la isla, excavada íntegramente. Patio central, hogar y habitaciones radiales: la vida doméstica del s. III aC explicada en piedra.' },
+      desc:'La casa talayótica mejor conservada de la isla (~145 m²): portal adintelado, patio central con hogar y cisterna, y habitaciones radiales cubiertas. La vida doméstica del s. III aC explicada en piedra.' },
     { id:'aigua', n:'V',  name:'Sistema de recogida de agua',
       offsetN: -45, offsetE: -45,
       desc:'Ingeniería hidráulica prehistórica: la roca madre tallada en canales y decantadores que conducían la lluvia hacia cisternas excavadas. La obsesión menorquina por el agua viene de lejos.' },
@@ -224,11 +234,93 @@ const haversine = (a,b) => {
   const h=Math.sin(dLa/2)**2+Math.cos(a.lat*Math.PI/180)*Math.cos(b.lat*Math.PI/180)*Math.sin(dLo/2)**2;
   return 2*R*Math.asin(Math.sqrt(h));
 };
+const rnd = (a,b) => a + Math.random()*(b-a);
 
-let userPos = null, demoMode = false, arActive = false, scene = null, eraPast = false;
+let userPos = null, mode = null, demoMode = false, scene = null, eraPast = false;
+let arCamEl = null, orbitEl = null;
 
-/* Las etiquetas siempre miran a la cámara (sustituye al componente
-   externo look-at, que no viene incluido con A-Frame ni AR.js) */
+/* ============================================================
+   TEXTURAS PROCEDURALES (canvas) — piedra seca, tierra, ramaje
+   ============================================================ */
+function shade(hex, amt){
+  const n = parseInt(hex.slice(1), 16);
+  const r = Math.min(255, Math.max(0, (n>>16) + amt));
+  const g = Math.min(255, Math.max(0, ((n>>8)&255) + amt));
+  const b = Math.min(255, Math.max(0, (n&255) + amt));
+  return `rgb(${r},${g},${b})`;
+}
+function makeStoneTex(id, base, rows, joint){
+  const cv = document.createElement('canvas');
+  cv.id = id; cv.width = 512; cv.height = 512;
+  const cx = cv.getContext('2d');
+  cx.fillStyle = joint; cx.fillRect(0,0,512,512);
+  const rh = 512/rows;
+  for(let r=0; r<rows; r++){
+    let x = -rnd(0, rh);
+    while(x < 512){
+      const w = rh*rnd(1.1, 2.4);
+      cx.fillStyle = shade(base, Math.round(rnd(-18,16)));
+      if(cx.roundRect){
+        cx.beginPath();
+        cx.roundRect(x+3, r*rh+3, w-6, rh-6, rh*0.18);
+        cx.fill();
+      } else {
+        cx.fillRect(x+3, r*rh+3, w-6, rh-6);
+      }
+      /* vetas y desconchones sutiles */
+      cx.fillStyle = 'rgba(0,0,0,0.07)';
+      for(let s=0; s<3; s++) cx.fillRect(x+rnd(6,w-12), r*rh+rnd(6,rh-10), rnd(2,7), rnd(1,3));
+      cx.fillStyle = 'rgba(255,255,255,0.06)';
+      cx.fillRect(x+4, r*rh+4, w-8, 3);
+      x += w;
+    }
+  }
+  $('#texHolder').appendChild(cv);
+}
+function makeGroundTex(id, base){
+  const cv = document.createElement('canvas');
+  cv.id = id; cv.width = 512; cv.height = 512;
+  const cx = cv.getContext('2d');
+  cx.fillStyle = base; cx.fillRect(0,0,512,512);
+  for(let i=0;i<2600;i++){
+    cx.fillStyle = `rgba(${Math.round(rnd(60,140))},${Math.round(rnd(52,110))},${Math.round(rnd(35,70))},${rnd(.08,.28)})`;
+    const s = rnd(2,14);
+    cx.fillRect(rnd(0,512), rnd(0,512), s, s*rnd(.4,1));
+  }
+  /* matas de vegetación baja */
+  for(let i=0;i<130;i++){
+    cx.fillStyle = `rgba(${Math.round(rnd(60,90))},${Math.round(rnd(88,120))},${Math.round(rnd(45,65))},${rnd(.18,.4)})`;
+    cx.beginPath(); cx.arc(rnd(0,512), rnd(0,512), rnd(4,13), 0, 7); cx.fill();
+  }
+  $('#texHolder').appendChild(cv);
+}
+function makeThatchTex(id){
+  const cv = document.createElement('canvas');
+  cv.id = id; cv.width = 512; cv.height = 512;
+  const cx = cv.getContext('2d');
+  cx.fillStyle = '#6b5330'; cx.fillRect(0,0,512,512);
+  for(let i=0;i<1500;i++){
+    cx.strokeStyle = `rgba(${Math.round(rnd(70,130))},${Math.round(rnd(52,95))},${Math.round(rnd(25,50))},${rnd(.25,.6)})`;
+    cx.lineWidth = rnd(1,3);
+    const x = rnd(0,512), y = rnd(0,512), l = rnd(20,70);
+    cx.beginPath(); cx.moveTo(x,y); cx.lineTo(x+l, y+rnd(-6,6)); cx.stroke();
+  }
+  $('#texHolder').appendChild(cv);
+}
+makeStoneTex('texStone', '#b7a687', 7, '#5e5140');   // mampostería ciclópea
+makeStoneTex('texSlab',  '#c4b294', 3, '#6a5c48');   // grandes ortostatos
+makeGroundTex('texGround', '#a3906c');               // tierra y roca con matas
+makeThatchTex('texThatch');                          // cubierta de ramaje
+
+const stoneMat  = (rx,ry) => `src:#texStone; repeat:${rx} ${ry}; roughness:1; metalness:0; side:double`;
+const slabMat   = (rx,ry) => `src:#texSlab; repeat:${rx} ${ry}; roughness:1; metalness:0; side:double`;
+const thatchMat = (rx,ry) => `src:#texThatch; repeat:${rx} ${ry}; roughness:1; metalness:0; side:double`;
+const woodMat   = 'color:#7a5c38; roughness:1; side:double';
+
+/* ============================================================
+   COMPONENTES A-FRAME
+   ============================================================ */
+/* etiquetas siempre de cara a la cámara */
 AFRAME.registerComponent('billboard', {
   init(){ this.v = new AFRAME.THREE.Vector3(); },
   tick(){
@@ -236,6 +328,105 @@ AFRAME.registerComponent('billboard', {
     if(cam){ cam.getWorldPosition(this.v); this.el.object3D.lookAt(this.v); }
   }
 });
+/* zoom óptico por pellizco en AR (campo de visión) */
+AFRAME.registerComponent('pinch-fov', {
+  init(){
+    this.d0 = 0;
+    const dist = t => Math.hypot(t[0].clientX-t[1].clientX, t[0].clientY-t[1].clientY);
+    this.onStart = e => { if(e.touches.length===2) this.d0 = dist(e.touches); };
+    this.onMove = e => {
+      if(e.touches.length!==2 || !this.d0) return;
+      e.preventDefault();
+      const d = dist(e.touches);
+      zoomBy(this.d0/d); this.d0 = d;
+    };
+    this.onEnd = () => { this.d0 = 0; };
+    window.addEventListener('touchstart', this.onStart, {passive:false});
+    window.addEventListener('touchmove', this.onMove, {passive:false});
+    window.addEventListener('touchend', this.onEnd);
+  },
+  remove(){
+    window.removeEventListener('touchstart', this.onStart);
+    window.removeEventListener('touchmove', this.onMove);
+    window.removeEventListener('touchend', this.onEnd);
+  }
+});
+/* cámara orbital de la maqueta: 1 dedo gira, pellizco = zoom */
+AFRAME.registerComponent('orbit-cam', {
+  schema:{ radius:{default:90}, theta:{default:35}, phi:{default:24},
+           tx:{default:0}, ty:{default:0}, tz:{default:0} },
+  init(){
+    this.r = this.data.radius; this.th = this.data.theta; this.ph = this.data.phi;
+    this.t = new AFRAME.THREE.Vector3(this.data.tx, this.data.ty, this.data.tz);
+    this.goal = this.t.clone(); this.goalR = this.r;
+    this.d0 = 0; this.px = 0; this.py = 0; this.drag = false;
+    const dist = t => Math.hypot(t[0].clientX-t[1].clientX, t[0].clientY-t[1].clientY);
+    this.onDown = e => {
+      if(e.touches && e.touches.length===2){ this.d0 = dist(e.touches); this.drag=false; return; }
+      const p = e.touches ? e.touches[0] : e;
+      this.drag = true; this.px = p.clientX; this.py = p.clientY;
+    };
+    this.onMove = e => {
+      if(e.touches && e.touches.length===2 && this.d0){
+        e.preventDefault();
+        const d = dist(e.touches);
+        this.goalR = Math.min(220, Math.max(7, this.goalR * this.d0/d));
+        this.d0 = d; return;
+      }
+      if(!this.drag) return;
+      if(e.cancelable) e.preventDefault();
+      const p = e.touches ? e.touches[0] : e;
+      this.th -= (p.clientX-this.px)*0.35;
+      this.ph = Math.min(85, Math.max(4, this.ph + (p.clientY-this.py)*0.22));
+      this.px = p.clientX; this.py = p.clientY;
+    };
+    this.onUp = () => { this.drag = false; this.d0 = 0; };
+    this.onWheel = e => { this.goalR = Math.min(220, Math.max(7, this.goalR*(1+e.deltaY*0.0012))); };
+    window.addEventListener('mousedown', this.onDown);
+    window.addEventListener('mousemove', this.onMove);
+    window.addEventListener('mouseup', this.onUp);
+    window.addEventListener('touchstart', this.onDown, {passive:false});
+    window.addEventListener('touchmove', this.onMove, {passive:false});
+    window.addEventListener('touchend', this.onUp);
+    window.addEventListener('wheel', this.onWheel);
+  },
+  focus(x,y,z,r){ this.goal.set(x,y,z); if(r) this.goalR = r; },
+  zoom(f){ this.goalR = Math.min(220, Math.max(7, this.goalR*f)); },
+  tick(){
+    this.t.lerp(this.goal, 0.12);
+    this.r += (this.goalR - this.r)*0.12;
+    const th = this.th*Math.PI/180, ph = this.ph*Math.PI/180;
+    const o = this.el.object3D;
+    o.position.set(
+      this.t.x + this.r*Math.cos(ph)*Math.sin(th),
+      this.t.y + this.r*Math.sin(ph),
+      this.t.z + this.r*Math.cos(ph)*Math.cos(th));
+    /* orientación con convención de cámara: −Z hacia el objetivo */
+    this.m = this.m || new AFRAME.THREE.Matrix4();
+    this.up = this.up || new AFRAME.THREE.Vector3(0,1,0);
+    this.m.lookAt(o.position, this.t, this.up);
+    o.quaternion.setFromRotationMatrix(this.m);
+  },
+  remove(){
+    window.removeEventListener('mousedown', this.onDown);
+    window.removeEventListener('mousemove', this.onMove);
+    window.removeEventListener('mouseup', this.onUp);
+    window.removeEventListener('touchstart', this.onDown);
+    window.removeEventListener('touchmove', this.onMove);
+    window.removeEventListener('touchend', this.onUp);
+    window.removeEventListener('wheel', this.onWheel);
+  }
+});
+
+/* zoom compartido (botones +/− y pellizco) */
+function zoomBy(f){
+  if(mode === 'maqueta' && orbitEl){
+    orbitEl.components['orbit-cam'].zoom(f);
+  } else if(mode === 'ar' && arCamEl){
+    const c = arCamEl.getObject3D('camera');
+    if(c){ c.fov = Math.min(80, Math.max(22, c.fov*f)); c.updateProjectionMatrix(); }
+  }
+}
 
 /* ---------- lista de POIs (inicio) ---------- */
 const listEl = $('#poiList');
@@ -260,7 +451,7 @@ function startGPS(){
     gpsState('on', `GPS activo · precisión ±${Math.round(pos.coords.accuracy)} m`);
     updateDistances();
   }, err => {
-    gpsState('err', 'Activa la ubicación y recarga la página');
+    gpsState('err', 'Sin ubicación — la maqueta 3D funciona igualmente');
   }, { enableHighAccuracy:true, maximumAge:2000, timeout:15000 });
 }
 function gpsState(cls, txt){
@@ -276,19 +467,16 @@ function updateDistances(){
       ? 'a ' + (d/1000).toFixed(1) + ' km'
       : 'a ' + Math.round(d) + ' m';
   });
-  if(arActive) updateNearCard();
+  if(mode === 'ar') updateNearCard();
 }
 startGPS();
 
-/* ---------- demo: POIs alrededor de tu posición ---------- */
 let demoAnchor = null;
 const demoCoord = p => toLatLon(demoAnchor || CONFIG.anchor, p);
 
 /* ============================================================
-   RECONSTRUCCIONES — capa «1.000 a.C.»
-   Modelos procedurales animados de cada monumento en uso:
-   construcción por fases, hogares con fuego y humo, habitantes
-   en movimiento y agua en las cisternas.
+   RECONSTRUCCIONES «1.000 a.C.» — proporciones según los datos
+   arqueológicos publicados del yacimiento
    ============================================================ */
 const mk = (tag, attrs, parent) => {
   const n = document.createElement(tag);
@@ -297,16 +485,20 @@ const mk = (tag, attrs, parent) => {
   return n;
 };
 let buildIdx = 0;
-const stone = c => `color: ${c}; roughness: 1; metalness: 0`;
-/* pieza que «se construye»: crece desde el suelo al activar la capa */
+/* pieza que «se construye» al activar la capa */
 function part(tag, attrs, parent){
   const n = mk(tag, attrs, parent);
   n.dataset.build = '1';
   n.setAttribute('animation__build',
-    `property: scale; from: 0.001 0.001 0.001; to: 1 1 1; dur: 1100; delay: ${(buildIdx++ % 14)*130}; easing: easeOutCubic; startEvents: build`);
+    `property: scale; from: 0.001 0.001 0.001; to: 1 1 1; dur: 1100; delay: ${(buildIdx++ % 16)*120}; easing: easeOutCubic; startEvents: build`);
   return n;
 }
-/* habitante que camina en círculo alrededor del monumento */
+/* suelo de tierra y roca alrededor del monumento */
+function ground(g, r){
+  mk('a-circle', { radius:r, rotation:'-90 0 0', position:'0 0.03 0',
+    material:`src:#texGround; repeat:${(r/6).toFixed(1)} ${(r/6).toFixed(1)}; roughness:1` }, g);
+}
+/* habitante que camina alrededor */
 function person(parent, radius, dur, tunic){
   const orbit = mk('a-entity', {
     rotation: `0 ${Math.round(Math.random()*360)} 0`,
@@ -314,128 +506,260 @@ function person(parent, radius, dur, tunic){
   }, parent);
   const fig = mk('a-entity', {
     position: `${radius} 0 0`,
-    animation: 'property: object3D.position.y; from: 0; to: 0.12; dir: alternate; dur: 420; loop: true; easing: easeInOutQuad'
+    animation: 'property: object3D.position.y; from: 0; to: 0.1; dir: alternate; dur: 420; loop: true; easing: easeInOutQuad'
   }, orbit);
-  mk('a-cylinder', { radius:'0.18', height:'0.95', position:'0 0.55 0', material:`color:${tunic}; roughness:1` }, fig);
-  mk('a-sphere',   { radius:'0.14', position:'0 1.17 0', material:'color:#c9a17e; roughness:0.9' }, fig);
+  mk('a-cylinder', { radius:'0.19', height:'0.95', position:'0 0.55 0', material:`color:${tunic}; roughness:1` }, fig);
+  mk('a-sphere',   { radius:'0.13', position:'0 1.16 0', material:'color:#c9a17e; roughness:0.9' }, fig);
   return orbit;
 }
-/* hogar: llama palpitante, luz cálida y columna de humo */
+/* hogar: llama, luz cálida parpadeante y humo */
 function fire(parent, pos){
   const f = mk('a-entity', { position: pos }, parent);
-  mk('a-sphere', { radius:'0.3', position:'0 0.25 0',
+  mk('a-cylinder', { radius:'0.55', height:'0.22', position:'0 0.11 0', material:stoneMat(2,0.5) }, f);
+  mk('a-sphere', { radius:'0.26', position:'0 0.42 0',
     material:'color:#ff7a2f; emissive:#ff5a00; emissiveIntensity:1',
-    animation:'property: scale; to: 1.25 1.45 1.25; dir: alternate; dur: 260; loop: true' }, f);
-  mk('a-light', { type:'point', color:'#ffb46b', intensity:'1.1', distance:'22', position:'0 1 0',
-    animation:'property: light.intensity; from: 0.9; to: 1.6; dir: alternate; dur: 300; loop: true' }, f);
+    animation:'property: scale; to: 1.25 1.5 1.25; dir: alternate; dur: 260; loop: true' }, f);
+  mk('a-light', { type:'point', color:'#ffb46b', intensity:'1.0', distance:'20', position:'0 1 0',
+    animation:'property: light.intensity; from: 0.8; to: 1.5; dir: alternate; dur: 300; loop: true' }, f);
   for(let i=0;i<3;i++){
-    mk('a-sphere', { radius:(0.22+0.08*i).toFixed(2), position:'0 0.8 0',
-      material:'color:#bdb4a4; opacity:0.32; transparent:true',
+    mk('a-sphere', { radius:(0.2+0.08*i).toFixed(2), position:'0 0.8 0',
+      material:'color:#bdb4a4; opacity:0.3; transparent:true',
       animation:`property: position; from: 0 0.8 0; to: ${((i-1)*0.4).toFixed(1)} ${3.2+i} ${((i-1)*0.3).toFixed(1)}; dur: ${2600+700*i}; loop: true; easing: linear`,
-      animation__o:`property: material.opacity; from: 0.35; to: 0; dur: ${2600+700*i}; loop: true; easing: linear` }, f);
+      animation__o:`property: material.opacity; from: 0.32; to: 0; dur: ${2600+700*i}; loop: true; easing: linear` }, f);
   }
   return f;
 }
-/* muro circular de piedra seca por segmentos */
-function ringWall(parent, r, segs, h, th, color){
+/* portal adintelado: dos jambas + dintel + hueco oscuro */
+function portal(g, x, z, yaw, w, h){
+  const p = mk('a-entity', { position:`${x} 0 ${z}`, rotation:`0 ${yaw} 0` }, g);
+  part('a-box', { width:'0.5', height:h, depth:'0.75', position:`${-(w/2+0.25)} ${h/2} 0`, material:slabMat(0.5,1.5) }, p);
+  part('a-box', { width:'0.5', height:h, depth:'0.75', position:`${ (w/2+0.25)} ${h/2} 0`, material:slabMat(0.5,1.5) }, p);
+  part('a-box', { width:w+1.3, height:'0.45', depth:'0.85', position:`0 ${h+0.22} 0`, material:slabMat(1.5,0.5) }, p);
+  mk('a-box', { width:w, height:h, depth:'0.3', position:`0 ${h/2} 0`, material:'color:#181410; roughness:1' }, p);
+  return p;
+}
+/* muro curvo de mampostería por segmentos (y0 = altura de la base) */
+function curveWall(g, r, aDeg0, aDeg1, segs, h, th, mat, y0=0){
   for(let i=0;i<segs;i++){
-    const a = i/segs*2*Math.PI;
-    const len = 2*Math.PI*r/segs*1.05;
+    const a = (aDeg0 + (i+0.5)*(aDeg1-aDeg0)/segs) * Math.PI/180;
+    const len = 2*Math.PI*r*((aDeg1-aDeg0)/360)/segs * 1.06;
     part('a-box', {
-      position:`${(r*Math.sin(a)).toFixed(2)} ${(h/2).toFixed(2)} ${(r*Math.cos(a)).toFixed(2)}`,
+      position:`${(r*Math.sin(a)).toFixed(2)} ${(y0+h/2).toFixed(2)} ${(r*Math.cos(a)).toFixed(2)}`,
       rotation:`0 ${(a*180/Math.PI).toFixed(1)} 0`,
       width:len.toFixed(2), height:h, depth:th,
-      material:stone(i%2 ? color : '#a8967a') }, parent);
+      material: mat(+(len/1.6).toFixed(2), +(h/1.1).toFixed(2)) }, g);
   }
+}
+/* anillo de ortostatos (grandes losas verticales) */
+function orthostats(g, r, n, h, w, aDeg0=0, aDeg1=360){
+  for(let i=0;i<n;i++){
+    const a = (aDeg0 + (i+0.5)*(aDeg1-aDeg0)/n) * Math.PI/180;
+    part('a-box', { width:w, height:(h*rnd(0.92,1.08)).toFixed(2), depth:'0.45',
+      position:`${(r*Math.sin(a)).toFixed(2)} ${(h/2).toFixed(2)} ${(r*Math.cos(a)).toFixed(2)}`,
+      rotation:`0 ${(a*180/Math.PI+rnd(-3,3)).toFixed(1)} 0`,
+      material:slabMat(+(w/1.6).toFixed(2), +(h/1.6).toFixed(2)) }, g);
+  }
+}
+/* columna polilítica mediterránea: tambores más anchos arriba */
+function medColumn(g, x, z, h){
+  const drums = 3, dh = h/drums;
+  for(let d=0; d<drums; d++){
+    part('a-cylinder', { radius:(0.2+0.09*d).toFixed(2), height:(dh+0.02).toFixed(2),
+      position:`${x} ${(dh*d+dh/2).toFixed(2)} ${z}`,
+      material:slabMat(1.2,0.6) }, g);
+  }
+  part('a-cylinder', { radius:(0.24+0.09*drums).toFixed(2), height:'0.16',
+    position:`${x} ${(h+0.08).toFixed(2)} ${z}`, material:slabMat(1.4,0.3) }, g);
+}
+/* cubierta de vigas de madera + ramaje (sector anular) */
+function roofSector(g, r0, r1, aDeg, yawDeg, hIn, hOut){
+  const rm = (r0+r1)/2, a = yawDeg*Math.PI/180;
+  const w = 2*Math.PI*rm*(aDeg/360)*1.08, d = r1-r0;
+  const tilt = Math.atan2(hOut-hIn, d)*180/Math.PI;
+  const y = (hIn+hOut)/2;
+  const e = mk('a-entity', {
+    position:`${(rm*Math.sin(a)).toFixed(2)} ${y.toFixed(2)} ${(rm*Math.cos(a)).toFixed(2)}`,
+    rotation:`${tilt.toFixed(1)} ${yawDeg} 0` }, g);
+  part('a-box', { width:w.toFixed(2), height:'0.16', depth:(d*1.02).toFixed(2),
+    material:thatchMat(+(w/2.4).toFixed(2), +(d/2.4).toFixed(2)) }, e);
+  /* vigas que asoman bajo el alero */
+  for(let b=0;b<Math.max(2,Math.round(w/1.5));b++){
+    mk('a-cylinder', { radius:'0.06', height:(d*1.15).toFixed(2), rotation:'90 0 0',
+      position:`${(-w/2 + (b+0.5)*w/Math.max(2,Math.round(w/1.5))).toFixed(2)} -0.12 0`,
+      material:woodMat }, e);
+  }
+  return e;
 }
 
 const RECON = {
-  /* I — talaiot: torre troncocónica con plataforma y caseta superior */
+  /* I — TALAIOT: torre troncocónica ciclópea escalonada con
+     acceso adintelado y plataforma de vigía */
   tal(g){
-    part('a-cone', { 'radius-bottom':'8.5', 'radius-top':'5.2', height:'6.5',
-      position:'0 3.25 0', 'segments-radial':'16', material:stone('#b3a184') }, g);
-    part('a-cylinder', { radius:'5.4', height:'0.5', position:'0 6.75 0', material:stone('#a8967a') }, g);
-    part('a-box', { width:'1.5', height:'1.9', depth:'1.5', position:'0 7.95 0', material:stone('#9c8b70') }, g);
+    ground(g, 14);
+    part('a-cone', { 'radius-bottom':'7.4', 'radius-top':'6.0', height:'3.2',
+      position:'0 1.6 0', 'segments-radial':'20', material:stoneMat(13,2.4) }, g);
+    part('a-cone', { 'radius-bottom':'6.0', 'radius-top':'4.9', height:'2.6',
+      position:'0 4.5 0', 'segments-radial':'20', material:stoneMat(11,2) }, g);
+    part('a-cylinder', { radius:'5.05', height:'0.55', position:'0 6.05 0', material:stoneMat(10,0.5) }, g);
+    /* pretil sobre la plataforma de vigía */
+    curveWall(g, 4.75, 0, 360, 10, 0.7, 0.5, stoneMat, 6.3);
+    portal(g, 0, 7.0, 0, 1.0, 1.7);
     person(g, 10.5, 34000, '#6e5034');
+    person(g, 12.5, 46000, '#8a6a42');
   },
-  /* II — recinto de taula: T central, herradura de pilastras, fuego ritual */
+  /* II — RECINTE DE TAULA: fachada cóncava de ortostatos,
+     herradura de pilastras y taula de 1,95 m con capitel */
   taula(g){
-    part('a-box', { width:'0.7', height:'3.6', depth:'2.3', position:'0 1.8 0',  material:stone('#cbb795') }, g);
-    part('a-box', { width:'1.1', height:'0.55', depth:'3.1', position:'0 3.88 0', material:stone('#c2ad8a') }, g);
-    for(let i=0;i<8;i++){
-      const a = Math.PI*0.25 + (i/7)*Math.PI*1.5;
-      part('a-box', { width:'0.55', height:'2.4', depth:'1.0',
-        position:`${(4.6*Math.sin(a)).toFixed(2)} 1.2 ${(4.6*Math.cos(a)).toFixed(2)}`,
-        rotation:`0 ${(a*180/Math.PI).toFixed(1)} 0`,
-        material:stone(i%2 ? '#b9a685' : '#ad9a78') }, g);
-    }
-    fire(g, '1.8 0 1.5');
-    person(g, 6.2, 26000, '#7a5b3a');
-    person(g, 7.5, 38000, '#5d4a36');
+    ground(g, 11);
+    /* muro de cierre en herradura (abierto al sur) */
+    curveWall(g, 5.6, 38, 322, 12, 1.7, 0.9, stoneMat);
+    /* fachada de grandes ortostatos flanqueando el portal */
+    orthostats(g, 5.6, 2, 2.3, 1.5, 12, 36);
+    orthostats(g, 5.6, 2, 2.3, 1.5, 324, 348);
+    portal(g, 0, 5.6, 0, 1.1, 1.9);
+    /* pilastras interiores adosadas al muro */
+    orthostats(g, 4.7, 6, 2.0, 1.1, 60, 300);
+    /* LA TAULA (medidas reales: soporte 1,95 m × 1,5 m × 0,4 m) */
+    part('a-box', { width:'1.55', height:'1.95', depth:'0.42', position:'0 0.98 -0.6',
+      material:slabMat(1,1.3) }, g);
+    part('a-box', { width:'1.9', height:'0.4', depth:'0.95', position:'0 2.15 -0.6',
+      material:slabMat(1.3,0.4) }, g);
+    fire(g, '2.1 0 1.6');
+    person(g, 6.8, 26000, '#7a5b3a');
+    person(g, 8.2, 38000, '#5d4a36');
   },
-  /* III — sala hipóstila: columnas mediterráneas (más anchas arriba) y losa */
+  /* III — SALA HIPÓSTILA: semienterrada, columnas polilíticas
+     y cubierta de losas con tierra encima */
   hipo(g){
-    [[-2.2,-1.4],[0,-1.4],[2.2,-1.4],[-1.1,1.4],[1.1,1.4]].forEach(c => {
-      part('a-cone', { 'radius-bottom':'0.28', 'radius-top':'0.55', height:'2.1',
-        position:`${c[0]} 1.05 ${c[1]}`, material:stone('#b6a37f') }, g);
+    ground(g, 10);
+    /* muros perimetrales */
+    [[0,-3.1,7.8,0],[0,3.1,7.8,0],[-4,0,5.8,90],[4,0,5.8,90]].forEach(w => {
+      part('a-box', { width:w[2], height:'1.9', depth:'0.85',
+        position:`${w[0]} 0.95 ${w[1]}`, rotation:`0 ${w[3]} 0`,
+        material:stoneMat(+(w[2]/1.6).toFixed(1), 1.6) }, g);
     });
-    part('a-box', { width:'7.4', height:'0.45', depth:'5', position:'0 2.45 0', material:stone('#a08d6e') }, g);
-    [[0,-2.7,7.4,0],[0,2.7,7.4,0],[-3.8,0,5.4,90],[3.8,0,5.4,90]].forEach(w => {
-      part('a-box', { width:w[2], height:'1.5', depth:'0.6',
-        position:`${w[0]} 0.75 ${w[1]}`, rotation:`0 ${w[3]} 0`, material:stone('#b09d7c') }, g);
-    });
-    person(g, 5.4, 30000, '#806645');
-  },
-  /* IV — Cercle Cartailhac: casa circular con habitaciones radiales y hogar */
-  cart(g){
-    ringWall(g, 6, 14, 1.9, 0.8, '#b4a182');
+    medColumn(g, -2.2, -1.1, 1.85);
+    medColumn(g,  0,   -1.1, 1.85);
+    medColumn(g,  2.2, -1.1, 1.85);
+    medColumn(g, -1.1,  1.2, 1.85);
+    medColumn(g,  1.1,  1.2, 1.85);
+    /* losas de cubierta ligeramente irregulares */
     for(let i=0;i<5;i++){
-      const a = i/5*2*Math.PI;
-      part('a-box', { width:'0.5', height:'1.6', depth:'3.4',
-        position:`${(4.1*Math.sin(a)).toFixed(2)} 0.8 ${(4.1*Math.cos(a)).toFixed(2)}`,
-        rotation:`0 ${(a*180/Math.PI).toFixed(1)} 0`, material:stone('#ab9879') }, g);
+      part('a-box', { width:'1.75', height:'0.22', depth:'6.2',
+        position:`${(-3.3+i*1.65).toFixed(2)} ${ (2.32+rnd(-0.03,0.03)).toFixed(2)} 0`,
+        rotation:`0 ${rnd(-1.5,1.5).toFixed(1)} 0`, material:slabMat(1.1,4) }, g);
     }
-    fire(g, '0 0 0');
-    person(g, 5, 28000, '#6b5138');
+    /* capa de tierra vegetal sobre la cubierta */
+    part('a-box', { width:'8.6', height:'0.3', depth:'6.9', position:'0 2.6 0',
+      material:'src:#texGround; repeat:3 2.4; roughness:1; side:double' }, g);
+    portal(g, 0, 3.1, 0, 0.95, 1.6);
+    person(g, 5.8, 30000, '#806645');
   },
-  /* V — agua: roca tallada, canales, cisterna con agua viva */
+  /* IV — CERCLE CARTAILHAC (~145 m², Ø ~13,5 m): muro de
+     ortostatos, portal adintelado, habitaciones radiales
+     cubiertas y patio central con hogar y cisterna */
+  cart(g){
+    ground(g, 12);
+    orthostats(g, 6.7, 16, 2.3, 2.2, 18, 342);
+    portal(g, 0, 6.7, 0, 1.3, 2.0);
+    /* muros radiales que forman las habitaciones */
+    for(let i=0;i<5;i++){
+      const a = (36 + i*61)*Math.PI/180;
+      part('a-box', { width:'0.55', height:'1.95', depth:'4.0',
+        position:`${(4.55*Math.sin(a)).toFixed(2)} 0.98 ${(4.55*Math.cos(a)).toFixed(2)}`,
+        rotation:`0 ${(a*180/Math.PI).toFixed(1)} 0`, material:stoneMat(3,1.7) }, g);
+    }
+    /* cubierta anular de vigas y ramaje — el patio queda abierto */
+    for(let i=0;i<7;i++){
+      roofSector(g, 2.6, 6.9, 40, 45+i*44, 2.0, 2.45);
+    }
+    /* horno adosado al muro */
+    part('a-sphere', { radius:'1.0', position:'-4.6 0.55 -3.9',
+      material:stoneMat(3,2), 'theta-length':'90' }, g);
+    /* patio: hogar y cisterna con agua */
+    fire(g, '1.3 0 0.6');
+    part('a-cylinder', { radius:'1.0', height:'0.3', position:'-1.4 0.15 1.1', material:slabMat(2,0.4) }, g);
+    mk('a-circle', { radius:'0.82', rotation:'-90 0 0', position:'-1.4 0.32 1.1',
+      material:'color:#41708c; opacity:0.78; transparent:true; metalness:0.3; roughness:0.15',
+      animation:'property: material.opacity; from: 0.6; to: 0.88; dir: alternate; dur: 1400; loop: true; easing: easeInOutSine' }, g);
+    person(g, 5.2, 28000, '#6b5138');
+    person(g, 8.6, 40000, '#7d5f3c');
+  },
+  /* V — AGUA: roca madre tallada, canales, decantador y
+     cisternas con agua */
   aigua(g){
-    part('a-box', { width:'9', height:'0.35', depth:'7', position:'0 0.17 0', material:stone('#9c8d75') }, g);
-    [[-2.5,0,30],[1.5,1.2,-25],[0,-1.8,80]].forEach(c => {
-      part('a-box', { width:'5.5', height:'0.18', depth:'0.5',
-        position:`${c[0]} 0.42 ${c[1]}`, rotation:`0 ${c[2]} 0`,
-        material:'color:#6f6452; roughness:1' }, g);
+    ground(g, 11);
+    part('a-box', { width:'10', height:'0.5', depth:'8', position:'0 0.25 0', material:stoneMat(7,5.5) }, g);
+    /* canales excavados */
+    [[-2.6,0.2,28],[1.4,1.5,-22],[-0.4,-2.0,78]].forEach(c => {
+      part('a-box', { width:'6', height:'0.2', depth:'0.55',
+        position:`${c[0]} 0.52 ${c[1]}`, rotation:`0 ${c[2]} 0`,
+        material:'color:#5e5342; roughness:1' }, g);
     });
-    part('a-cylinder', { radius:'1.3', height:'0.25', position:'2.6 0.43 1.8', material:'color:#2b2620; roughness:1' }, g);
-    mk('a-circle', { radius:'1.1', rotation:'-90 0 0', position:'2.6 0.58 1.8',
-      material:'color:#41708c; opacity:0.75; transparent:true; metalness:0.3; roughness:0.2',
-      animation:'property: material.opacity; from: 0.55; to: 0.85; dir: alternate; dur: 1400; loop: true; easing: easeInOutSine' }, g);
-    person(g, 5.6, 32000, '#75603f');
+    /* decantador cuadrado */
+    part('a-box', { width:'1.9', height:'0.35', depth:'1.9', position:'-3.2 0.55 2.2', material:slabMat(1.3,0.4) }, g);
+    mk('a-circle', { radius:'0.7', rotation:'-90 0 0', position:'-3.2 0.74 2.2',
+      material:'color:#4a7a90; opacity:0.75; transparent:true; metalness:0.3; roughness:0.15' }, g);
+    /* cisternas circulares con agua viva */
+    [[2.7,1.9],[0.4,-2.5]].forEach((c,i) => {
+      part('a-cylinder', { radius:'1.35', height:'0.35', position:`${c[0]} 0.6 ${c[1]}`, material:slabMat(2.4,0.4) }, g);
+      mk('a-circle', { radius:'1.12', rotation:'-90 0 0', position:`${c[0]} 0.79 ${c[1]}`,
+        material:'color:#41708c; opacity:0.78; transparent:true; metalness:0.3; roughness:0.15',
+        animation:`property: material.opacity; from: 0.58; to: 0.88; dir: alternate; dur: ${1300+300*i}; loop: true; easing: easeInOutSine` }, g);
+    });
+    person(g, 6, 32000, '#75603f');
   },
-  /* VI — centro de interpretación: edificio moderno, sin reconstrucción */
   centre: null,
 };
 
-/* ---------- escena AR (creada al pulsar el botón) ---------- */
-function buildScene(){
+/* capas de un POI: HOY (pilar) + 1.000 a.C. (reconstrucción) */
+function buildPoiLayers(e, p, labelY){
+  const hasPast = !!(RECON[p.id] || p.model);
+  const now = mk('a-entity', hasPast ? { class:'layer-now' } : {}, e);
+  mk('a-cylinder', { radius:'0.35', height:'5', position:'0 2.5 0',
+    material:'color: #C9B08A; opacity: 0.85; side: double' }, now);
+  mk('a-sphere', { radius:'1.1', position:'0 6.4 0',
+    material:'color: #2F4A3A; emissive: #2F4A3A; emissiveIntensity: 0.45',
+    animation:'property: position; to: 0 7.1 0; dir: alternate; dur: 1600; loop: true; easing: easeInOutSine' }, now);
+  if(hasPast){
+    const past = mk('a-entity', { class:'layer-past', visible:'false' }, e);
+    if(p.model){
+      mk('a-gltf-model', { src: p.model }, past);
+    } else {
+      buildIdx = 0;
+      RECON[p.id](past);
+    }
+  }
+  mk('a-text', { value: p.n + ' · ' + p.name, billboard:'', position:`0 ${labelY} 0`,
+    align:'center', color:'#F2EBDD', scale:'11 11 11' }, e);
+}
+
+/* luces comunes */
+function addLights(sc){
+  mk('a-entity', { light:'type: ambient; color: #d8cfbf; intensity: 0.85' }, sc);
+  mk('a-entity', { light:'type: directional; color: #fff3df; intensity: 0.9', position:'40 80 30' }, sc);
+}
+
+/* ============================================================
+   MODO AR (real y prueba)
+   ============================================================ */
+function buildARScene(){
   scene = document.createElement('a-scene');
   scene.setAttribute('embedded','');
   scene.setAttribute('vr-mode-ui','enabled: false');
   scene.setAttribute('renderer','antialias: true; alpha: true');
-  scene.setAttribute('arjs','sourceType: webcam; videoTexture: true; debugUIEnabled: false');
-
-  /* luz mediterránea explícita (al añadir luces propias —los fuegos—
-     A-Frame retira las luces por defecto) */
-  mk('a-entity', { light:'type: ambient; color: #d8cfbf; intensity: 0.85' }, scene);
-  mk('a-entity', { light:'type: directional; color: #fff3df; intensity: 0.9', position:'40 80 30' }, scene);
+  /* vídeo de cámara como elemento DOM (sin videoTexture):
+     el método clásico, el más fiable en Safari/iOS */
+  scene.setAttribute('arjs','sourceType: webcam; debugUIEnabled: false');
+  scene.setAttribute('pinch-fov','');
+  addLights(scene);
 
   const cam = document.createElement('a-camera');
-  /* En modo prueba la cámara se posiciona AL INSTANTE con
-     simulateLatitude/Longitude (fakeGps): funciona incluso en
-     interiores con mala señal; el GPS real sigue activo después.
-     positionMinAccuracy alto: el valor por defecto (100 m)
-     descartaba todas las posiciones de baja precisión y la cámara
-     nunca se colocaba — ese era el fallo del modo prueba. */
+  arCamEl = cam;
+  /* modo prueba: cámara posicionada AL INSTANTE con fakeGps
+     (funciona en interiores); positionMinAccuracy alto para no
+     descartar posiciones de baja precisión (causa del fallo
+     original del modo prueba) */
   let camAttrs = 'gpsMinDistance: 3; positionMinAccuracy: 5000; initialPositionAsOrigin: true';
   if(demoMode) camAttrs += `; simulateLatitude: ${demoAnchor.lat}; simulateLongitude: ${demoAnchor.lon}`;
   cam.setAttribute('gps-new-camera', camAttrs);
@@ -445,53 +769,90 @@ function buildScene(){
     const c = demoMode ? demoCoord(p) : toLatLon(CONFIG.anchor, p);
     const e = document.createElement('a-entity');
     e.setAttribute('gps-new-entity-place', `latitude: ${c.lat}; longitude: ${c.lon}`);
-
-    const hasPast = !!(RECON[p.id] || p.model);
-
-    // capa HOY: pilar + esfera (hito visual)
-    const now = mk('a-entity', hasPast ? { class:'layer-now' } : {}, e);
-    mk('a-cylinder', { radius:'0.35', height:'5', position:'0 2.5 0',
-      material:'color: #C9B08A; opacity: 0.85' }, now);
-    mk('a-sphere', { radius:'1.1', position:'0 6.4 0',
-      material:'color: #2F4A3A; emissive: #2F4A3A; emissiveIntensity: 0.45',
-      animation:'property: position; to: 0 7.1 0; dir: alternate; dur: 1600; loop: true; easing: easeInOutSine' }, now);
-
-    // capa 1.000 a.C.: reconstrucción animada (o modelo GLB si existe)
-    if(hasPast){
-      const past = mk('a-entity', { class:'layer-past', visible:'false' }, e);
-      if(p.model){
-        mk('a-gltf-model', { src: p.model }, past);
-      } else {
-        buildIdx = 0;
-        RECON[p.id](past);
-      }
-    }
-
-    // etiqueta (visible en ambas capas, siempre mirando a la cámara)
-    mk('a-text', { value: p.n + ' · ' + p.name, billboard:'', position:'0 9 0',
-      align:'center', color:'#F2EBDD', scale:'12 12 12' }, e);
-
+    buildPoiLayers(e, p, 9);
     scene.appendChild(e);
   });
 
   if(demoMode){
-    addPois();                       // el origen ya existe (fakeGps)
+    addPois();
   } else {
-    /* en modo real, esperar al primer fix GPS antes de colocar
-       los POIs (con initialPositionAsOrigin el origen no existe
-       hasta entonces) */
-    $('#gpsWait').classList.remove('hidden');
+    /* en modo real, esperar el primer fix GPS (el origen del
+       mundo no existe hasta entonces) */
+    showHint('Posicionando GPS…', 0);
     const onFix = () => {
       cam.removeEventListener('gps-camera-update-position', onFix);
       addPois();
-      $('#gpsWait').classList.add('hidden');
+      hideHint();
       setEra(eraPast);
     };
     cam.addEventListener('gps-camera-update-position', onFix);
   }
 
   document.body.appendChild(scene);
+
+  /* iOS: si el giroscopio no responde (permiso denegado),
+     activar control táctil y avisar */
+  let oriEvents = 0;
+  const oriCount = () => { oriEvents++; };
+  window.addEventListener('deviceorientation', oriCount);
+  setTimeout(() => {
+    window.removeEventListener('deviceorientation', oriCount);
+    if(oriEvents === 0 && mode === 'ar'){
+      cam.setAttribute('look-controls-enabled', 'true');
+      showHint('Arrastra el dedo para mirar alrededor · activa «Movimiento y orientación» en Ajustes → Safari para control por giro', 9000);
+    }
+  }, 3000);
 }
+
+/* ============================================================
+   MODO MAQUETA 3D — sin GPS ni cámara, con órbita y zoom
+   ============================================================ */
+let selPoi = null;
+function buildMaquetaScene(){
+  scene = document.createElement('a-scene');
+  scene.setAttribute('vr-mode-ui','enabled: false');
+  scene.setAttribute('renderer','antialias: true');
+  scene.setAttribute('fog','type: linear; color: #cfdce6; near: 90; far: 260');
+  addLights(scene);
+  mk('a-sky', { color:'#cfdce6' }, scene);
+  mk('a-circle', { radius:'240', rotation:'-90 0 0', position:'0 -0.05 0',
+    material:'src:#texGround; repeat:55 55; roughness:1' }, scene);
+
+  CONFIG.pois.forEach(p => {
+    /* offsets reales del yacimiento: x = Este, z = -Norte */
+    const e = mk('a-entity', { position:`${p.offsetE} 0 ${-p.offsetN}` }, scene);
+    e.dataset.poi = p.id;
+    buildPoiLayers(e, p, 10);
+  });
+
+  orbitEl = mk('a-entity', {}, scene);
+  const camInner = mk('a-entity', { camera:'far: 1200; fov: 55' }, orbitEl);
+  orbitEl.setAttribute('orbit-cam','radius: 110; theta: 25; phi: 26; ty: 0');
+
+  document.body.appendChild(scene);
+  showHint('Un dedo: girar · pellizco o +/−: zoom · toca un número para volar a cada monumento', 6000);
+}
+function focusPoi(id){
+  selPoi = id;
+  document.querySelectorAll('.chip').forEach(c => c.classList.toggle('sel', c.dataset.poi === id));
+  const p = CONFIG.pois.find(q => q.id === id);
+  if(!p || !orbitEl) return;
+  const oc = orbitEl.components['orbit-cam'];
+  if(!oc || !oc.goal){ setTimeout(() => { if(mode==='maqueta') focusPoi(id); }, 250); return; }
+  oc.focus(p.offsetE, 1.5, -p.offsetN, 26);
+  $('#ncMeta').textContent = 'Maqueta 3D · monumento ' + p.n;
+  $('#ncName').textContent = p.n + ' · ' + p.name;
+  $('#ncDesc').textContent = p.desc;
+  $('#nearCard').classList.remove('hidden');
+}
+/* chips I…VI para volar entre monumentos */
+const chipRow = $('#chipRow');
+CONFIG.pois.forEach(p => {
+  const b = mk('button', { class:'chip' }, chipRow);
+  b.dataset.poi = p.id;
+  b.textContent = p.n;
+  b.onclick = () => focusPoi(p.id);
+});
 
 /* ---------- capa temporal: hoy ↔ 1.000 a.C. ---------- */
 function setEra(past){
@@ -499,17 +860,16 @@ function setEra(past){
   const b = $('#eraBtn');
   b.textContent = past ? '⧖ Ver hoy' : '⧖ Ver 1.000 a.C.';
   b.classList.toggle('past', past);
-  document.querySelectorAll('.layer-now').forEach(n => { if(n.object3D) n.object3D.visible = !past; });
+  document.querySelectorAll('.layer-now').forEach(n => n.setAttribute('visible', String(!past)));
   document.querySelectorAll('.layer-past').forEach(n => {
-    if(!n.object3D) return;
-    n.object3D.visible = past;
+    n.setAttribute('visible', String(past));
     if(past) n.querySelectorAll('[data-build]').forEach(piece => piece.emit('build'));
   });
 }
 
-/* ---------- ficha del POI más cercano ---------- */
+/* ---------- ficha del POI más cercano (solo AR) ---------- */
 function updateNearCard(){
-  if(!userPos) return;
+  if(!userPos || mode !== 'ar') return;
   let best = null, bestD = Infinity;
   CONFIG.pois.forEach(p => {
     const c = demoMode ? demoCoord(p) : toLatLon(CONFIG.anchor, p);
@@ -530,45 +890,71 @@ function updateNearCard(){
   }
 }
 
-/* ---------- entrar / salir de AR ---------- */
+/* ---------- avisos ---------- */
+let hintTimer = null;
+function showHint(txt, ms){
+  const h = $('#hint');
+  h.textContent = txt;
+  h.classList.remove('hidden');
+  clearTimeout(hintTimer);
+  if(ms) hintTimer = setTimeout(hideHint, ms);
+}
+function hideHint(){ $('#hint').classList.add('hidden'); }
+
+/* ---------- entrar / salir ---------- */
 async function enterAR(demo){
   demoMode = demo;
   if(demo){
-    if(!userPos){ alert('Esperando señal GPS… inténtalo en unos segundos.'); return; }
-    demoAnchor = { ...userPos };   // sitúa el poblado virtualmente a tu alrededor
+    if(!userPos){ alert('Esperando señal GPS… inténtalo en unos segundos, o usa la maqueta 3D.'); return; }
+    demoAnchor = { ...userPos };
   }
-  /* iOS 13+: el permiso de orientación del dispositivo debe pedirse
-     desde un gesto del usuario (este click) o la cámara AR no rota */
+  /* iOS 13+: pedir permiso de orientación desde el gesto del click */
   try{
     if(window.DeviceOrientationEvent && typeof DeviceOrientationEvent.requestPermission === 'function'){
       await DeviceOrientationEvent.requestPermission();
     }
-  }catch(e){ /* puede aceptarse más tarde tocando la pantalla */ }
-
-  buildScene();
-  arActive = true;
-  $('#landing').classList.add('hidden');
-  $('#startBar').classList.add('hidden');
-  $('#arUI').classList.add('active');
-  $('#demoTag').classList.toggle('show', demo);
+  }catch(e){}
+  mode = 'ar';
+  buildARScene();
+  openUI(demo, false);
   setEra(false);
   updateNearCard();
 }
-function exitAR(){
-  arActive = false;
+function enterMaqueta(){
+  mode = 'maqueta';
+  demoMode = false;
+  buildMaquetaScene();
+  openUI(false, true);
+  setEra(true);          // la maqueta abre directamente en 1.000 a.C.
+  focusPoi('taula');
+}
+function openUI(demoTag, maqueta){
+  $('#landing').classList.add('hidden');
+  $('#startBar').classList.add('hidden');
+  const ui = $('#arUI');
+  ui.classList.add('active');
+  ui.classList.toggle('maqueta', maqueta);
+  $('#demoTag').classList.toggle('show', demoTag);
+}
+function exitScene(){
+  mode = null; selPoi = null;
   if(scene){ scene.parentNode.removeChild(scene); scene = null; }
-  // AR.js deja el vídeo de la cámara: lo retiramos
+  arCamEl = null; orbitEl = null;
   document.querySelectorAll('video').forEach(v => { v.srcObject?.getTracks().forEach(t=>t.stop()); v.remove(); });
-  $('#arUI').classList.remove('active');
-  $('#gpsWait').classList.add('hidden');
+  hideHint();
+  $('#arUI').classList.remove('active','maqueta');
+  $('#nearCard').classList.add('hidden');
   $('#landing').classList.remove('hidden');
   $('#startBar').classList.remove('hidden');
   updateDistances();
 }
-$('#btnAR').onclick   = () => enterAR(false);
-$('#btnDemo').onclick = () => enterAR(true);
-$('#exitAR').onclick  = exitAR;
-$('#eraBtn').onclick  = () => setEra(!eraPast);
+$('#btnAR').onclick      = () => enterAR(false);
+$('#btnDemo').onclick    = () => enterAR(true);
+$('#btnMaqueta').onclick = enterMaqueta;
+$('#exitAR').onclick     = exitScene;
+$('#eraBtn').onclick     = () => setEra(!eraPast);
+$('#zoomIn').onclick     = () => zoomBy(0.82);
+$('#zoomOut').onclick    = () => zoomBy(1.22);
 </script>
 </body>
 </html>
