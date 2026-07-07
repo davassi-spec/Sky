@@ -647,20 +647,22 @@ const RECON = {
      herradura de pilastras y taula de 1,95 m con capitel */
   taula(g){
     ground(g, 11);
-    /* muro de cierre en herradura (abierto al sur) */
-    curveWall(g, 5.6, 38, 322, 12, 1.7, 0.9, stoneMat);
+    /* muro de cierre en herradura, más bajo que las pilastras
+       para que la taula se vea desde fuera */
+    curveWall(g, 5.6, 38, 322, 12, 1.35, 0.9, stoneMat);
     /* fachada de grandes ortostatos flanqueando el portal */
-    orthostats(g, 5.6, 2, 2.3, 1.5, 12, 36);
-    orthostats(g, 5.6, 2, 2.3, 1.5, 324, 348);
+    orthostats(g, 5.6, 2, 2.2, 1.5, 12, 36);
+    orthostats(g, 5.6, 2, 2.2, 1.5, 324, 348);
     portal(g, 0, 5.6, 0, 1.1, 1.9);
     /* pilastras interiores adosadas al muro */
-    orthostats(g, 4.7, 6, 2.0, 1.1, 60, 300);
-    /* LA TAULA (medidas reales: soporte 1,95 m × 1,5 m × 0,4 m) */
-    part('a-box', { width:'1.55', height:'1.95', depth:'0.42', position:'0 0.98 -0.6',
-      material:slabMat(1,1.3) }, g);
-    part('a-box', { width:'1.9', height:'0.4', depth:'0.95', position:'0 2.15 -0.6',
-      material:slabMat(1.3,0.4) }, g);
-    fire(g, '2.1 0 1.6');
+    orthostats(g, 4.7, 6, 1.8, 1.1, 60, 300);
+    /* LA TAULA (medidas reales: soporte 1,95 m × 1,5 m × 0,4 m),
+       en marés claro para que destaque del muro */
+    part('a-box', { width:'1.55', height:'1.95', depth:'0.42', position:'0 0.98 0',
+      material:'src:#texSlab; repeat:1 1.3; roughness:1; side:double; color:#f4ead2' }, g);
+    part('a-box', { width:'2.05', height:'0.42', depth:'1.0', position:'0 2.16 0',
+      material:'src:#texSlab; repeat:1.4 0.4; roughness:1; side:double; color:#f4ead2' }, g);
+    fire(g, '2.3 0 1.8');
     person(g, 6.8, 26000, '#7a5b3a');
     person(g, 8.2, 38000, '#5d4a36');
   },
@@ -668,11 +670,17 @@ const RECON = {
      y cubierta de losas con tierra encima */
   hipo(g){
     ground(g, 10);
-    /* muros perimetrales */
-    [[0,-3.1,7.8,0],[0,3.1,7.8,0],[-4,0,5.8,90],[4,0,5.8,90]].forEach(w => {
-      part('a-box', { width:w[2], height:'1.9', depth:'0.85',
-        position:`${w[0]} 0.95 ${w[1]}`, rotation:`0 ${w[3]} 0`,
-        material:stoneMat(+(w[2]/1.6).toFixed(1), 1.6) }, g);
+    /* semienterrada: muro trasero y laterales altos; el frente,
+       bajo y con portal, deja ver las columnas del interior */
+    part('a-box', { width:'7.8', height:'1.9', depth:'0.85', position:'0 0.95 -3.1',
+      material:stoneMat(4.9, 1.6) }, g);
+    part('a-box', { width:'5.8', height:'1.9', depth:'0.85', position:'-4 0.95 0',
+      rotation:'0 90 0', material:stoneMat(3.6, 1.6) }, g);
+    part('a-box', { width:'5.8', height:'1.9', depth:'0.85', position:'4 0.95 0',
+      rotation:'0 90 0', material:stoneMat(3.6, 1.6) }, g);
+    [[-3.15,1.1],[2.2,2.5],[3.35,0.8]].forEach(w => {
+      part('a-box', { width:w[1], height:'0.85', depth:'0.7', position:`${w[0]} 0.43 3.1`,
+        material:stoneMat(+(w[1]/1.6).toFixed(1), 0.8) }, g);
     });
     medColumn(g, -2.2, -1.1, 1.85);
     medColumn(g,  0,   -1.1, 1.85);
@@ -685,10 +693,10 @@ const RECON = {
         position:`${(-3.3+i*1.65).toFixed(2)} ${ (2.32+rnd(-0.03,0.03)).toFixed(2)} 0`,
         rotation:`0 ${rnd(-1.5,1.5).toFixed(1)} 0`, material:slabMat(1.1,4) }, g);
     }
-    /* capa de tierra vegetal sobre la cubierta */
-    part('a-box', { width:'8.6', height:'0.3', depth:'6.9', position:'0 2.6 0',
+    /* capa de tierra vegetal sobre la cubierta, sin desbordar */
+    part('a-box', { width:'7.7', height:'0.28', depth:'5.7', position:'0 2.57 0',
       material:'src:#texGround; repeat:3 2.4; roughness:1; side:double' }, g);
-    portal(g, 0, 3.1, 0, 0.95, 1.6);
+    portal(g, -0.6, 3.1, 0, 1.0, 1.55);
     person(g, 5.8, 30000, '#806645');
   },
   /* IV — CERCLE CARTAILHAC (~145 m², Ø ~13,5 m): muro de
