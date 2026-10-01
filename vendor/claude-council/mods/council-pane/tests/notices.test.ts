@@ -1,0 +1,93 @@
+// ABOUTME: Tests for the status-line text, the finish toast and the wake prompt of a council run
+// ABOUTME: Expected strings are literals; none is rebuilt from the functions under test
+import { test, expect } from 'bun:test'
+import { finishNotice, wakePrompt, reopenReply, noticeIsLive, jobOutcome, abandonedNotice, runPid, progressBand } from '../hooks/notices'
+
+const providers = [
+  { name: 'gemini', state: 'complete', ms: 4210 },
+  { name: 'codex', state: 'cached' },
+  { name: 'grok', state: 'error' },
+  { name: 'kimi', state: 'querying' },
+]
+
+test('finishNotice reports answers and errors, and names a background job', () => {
+  expect(finishNotice({ providers, isDone: true })).toBe('finished: 2 of 4 answered, 1 error')
+  expect(finishNotice({ providers: providers.slice(0, 2), isDone: true }, 'job-abc')).toBe(
+    'job job-abc finished: 2 of 2 answered',
+  )
+})
+
+test('a seat answered by its API sibling counts as answered everywhere, not as an error', () => {
+  const withFallback = [...providers, { name: 'grok-cli', state: 'fallback', ms: 1200 }]
+  expect(finishNotice({ providers: withFallback, isDone: true })).toBe('finished: 3 of 5 answered, 1 error')
+  expect(abandonedNotice({ providers: withFallback, isDone: false })).toBe('stopped before it finished: 3 of 5 answered')
+  expect(progressBand({ providers: withFallback, isDone: false }, undefined, 0)?.count).toBe('4 of 5')
+})
+
+test('wakePrompt asks for the result of a background job only', () => {
+  expect(wakePrompt('job-abc')).toBe('The background council job job-abc has finished. Fetch it with /claude-council:result job-abc and summarise it.')
+  expect(wakePrompt('')).toBeUndefined()
+})
+
+test('reopenReply says whether there is a run to show', () => {
+  expect(reopenReply(true)).toBe('Council pane reopened with the last run.')
+  expect(reopenReply(false)).toBe('No council run in this session yet. Start one with /claude-council:ask.')
+})
+
+test('noticeIsLive keeps a finish notice up for its window only', () => {
+  expect(noticeIsLive({ text: 'x', untilMs: 5000 }, 4999)).toBe(true)
+  expect(noticeIsLive({ text: 'x', untilMs: 5000 }, 5000)).toBe(false)
+  expect(noticeIsLive(undefined, 0)).toBe(false)
+})
+
+test('jobOutcome reads a job record the way run-council --result does', () => {
+  expect(jobOutcome('{"id":"job-abc","status":"completed","outfile":".claude/council-cache/job-abc.md"}')).toBe('completed')
+  expect(jobOutcome('{"id":"job-abc","status":"running","pid":"4242"}')).toBe('running')
+  expect(jobOutcome('{"id":"job-abc","status":"queued"}')).toBe('running')
+  expect(jobOutcome('{"id":"job-abc","status":"failed"}')).toBe('failed')
+  expect(jobOutcome('{"id":"job-abc","status":"cancelled"}')).toBe('failed')
+})
+
+test('jobOutcome waits on a record caught mid-write and gives up on one that is gone', () => {
+  expect(jobOutcome('{"id":"job-abc","sta')).toBe('running')
+  expect(jobOutcome('[]')).toBe('failed')
+  expect(jobOutcome('')).toBe('failed')
+})
+
+test('abandonedNotice says the run stopped short and how far it got', () => {
+  expect(abandonedNotice({ providers, isDone: false })).toBe('stopped before it finished: 2 of 4 answered')
+  expect(abandonedNotice({ providers, isDone: false }, 'job-abc')).toBe('job job-abc stopped before it finished: 2 of 4 answered')
+})
+
+test('runPid accepts a process id and nothing else', () => {
+  expect(runPid('4242')).toBe('4242')
+  expect(runPid(' 4242\n')).toBe('4242')
+  expect(runPid('')).toBeUndefined()
+  expect(runPid('0')).toBeUndefined()
+  expect(runPid('-1')).toBeUndefined()
+  expect(runPid('42; rm -rf /')).toBeUndefined()
+})
+
+test('progressBand counts providers finished, an error included, with a thin line, a clock and the latest event', () => {
+  // gemini + codex answered, grok errored, kimi querying: 3 of 4 finished, 6 of 8 cells.
+  expect(progressBand({ providers, isDone: false, latest: 'grok failed' }, 10_000, 34_900)).toEqual({
+    count: '3 of 4', bar: '\u2501\u2501\u2501\u2501\u2501\u2501\u2500\u2500', clock: '0:24', event: 'grok failed',
+  })
+})
+
+test('progressBand rounds down, so the line is never full while a provider is out', () => {
+  const nine = Array.from({ length: 9 }, (_, i) => ({ name: `p${i}`, state: i < 3 ? 'complete' : 'querying' }))
+  expect(progressBand({ providers: nine, isDone: false }, 0, 79_000)).toEqual({ count: '3 of 9', bar: '\u2501\u2501\u2500\u2500\u2500\u2500\u2500\u2500', clock: '1:19' })
+  const oneOut = nine.map((p, i) => ({ ...p, state: i < 8 ? 'complete' : 'querying' }))
+  expect(progressBand({ providers: oneOut, isDone: false }, 0, 0)?.bar).toBe('\u2501'.repeat(7) + '\u2500')
+})
+
+test('progressBand starts empty and leaves the clock out until a run is picked up', () => {
+  const waiting = [{ name: 'gemini', state: 'pending' }, { name: 'openai', state: 'querying' }]
+  expect(progressBand({ providers: waiting, isDone: false }, undefined, 5_000)).toEqual({ count: '0 of 2', bar: '\u2500'.repeat(8) })
+})
+
+test('progressBand shows nothing once the run is done or before any provider is listed', () => {
+  expect(progressBand({ providers, isDone: true }, 0, 1_000)).toBeUndefined()
+  expect(progressBand({ providers: [], isDone: false }, 0, 1_000)).toBeUndefined()
+})

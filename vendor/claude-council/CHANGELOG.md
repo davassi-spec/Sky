@@ -1,0 +1,1829 @@
+# Changelog
+
+All notable changes to claude-council are documented here. The format follows
+[Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres
+to a `YYYY.M.BUILD` versioning scheme where `BUILD` resets each month.
+
+## 2026.10.1
+
+### Fixes
+- A CLI provider that fails after writing a lot to stderr now reports why. The error excerpt was the first 500 bytes of the stream, which for codex is its banner and the prompt echoed back, and with a large `--file` prompt the script itself died of SIGPIPE under `pipefail` and left `Error:` blank. The excerpt is now the last 500 bytes, where the cause is, with terminal control codes removed, and a byte that is not valid UTF-8 in that stderr no longer hides the cause; the same line was in antigravity, grok-cli, kimi-cli and cursor-cli. (#45)
+- `codex exec` reads stdin whenever it is not a terminal, so a seat launched from a shell whose stdin stayed open waited on it until the deadline. The codex provider now gives it no stdin. (#45)
+- A seat whose API sibling answered in its place now says so everywhere. The pane row reads `fallback` with `<model> via <sibling> API` and shows the reason (it used to read `complete` under the CLI's name with the API's model swapped in), the result carries `fallback_reason`, the formatted output prints the reason under the "fell back to … API" header in both rounds, and the pane's summary counts the seat as answered and says how many fell back. grok-cli had been failing on every run on a Mac with Docker Desktop (grok refuses its sandbox when `/var/run/docker.sock` is a symlink) and nothing said the grok API, at `GROK_MODEL`, was answering instead.
+- grok-cli works again beside Docker Desktop. grok now runs with `--deny '*' --no-subagents` as well as `--sandbox read-only`: every tool call is refused at grok's permission layer, so when grok refuses to start because it cannot apply the sandbox profile, the provider runs once more on the deny rules alone instead of failing over to the paid API. Any other failure still falls back as before.
+- The council pane no longer loses its layout on a large run. Claude Code refuses to draw a pane carrying more than 100,000 characters (`ui.render (Pane) refused: more than 100000 characters of text; the engine drew its own`), which ten long answers plus rebuttals reached. The pane now keeps itself under 80,000, counted after wide tables are rewritten for its width: the answers are cut to an even share, each ending with how many characters were left out and where the whole answer is; the synthesis is never cut.
+- The grok-cli seat no longer runs your Claude Code or Cursor configuration. grok imports another vendor's hooks, rules, skills, agents, MCP servers and sessions by default, so a seat ran your SessionStart and Stop hooks (a cs session had its session id rebound to grok's) and answered under your CLAUDE.md. The provider now exports `GROK_{CLAUDE,CURSOR}_{SKILLS,RULES,AGENTS,MCPS,HOOKS,SESSIONS}_ENABLED=0`; grok's own `~/.grok` configuration still applies.
+- The stop gate blocks on a long BLOCK reply too. Past about 130 KB the `echo | head` that trimmed the reason died of SIGPIPE and the hook exited without its verdict, letting the stop through.
+
+### Docs
+- README lists every field of the JSON result, names `cursor-agent` beside the other CLIs, and gives the reasoning-token pattern that covers `gpt-6` and later. ARCHITECTURE says how a fallback is reported and how a CLI provider reports a failure. The test counts and the fake-CLI behaviours in TESTING.md are current.
+
+### Other
+- OpenAI's fallback model is `gpt-6.1-sol` (was `gpt-6-sol`), verified with a live completion.
+- CI's plugin scanner action goes from 1.2.689 to 1.2.704 (#42).
+
+## 2026.9.17
+
+### Security
+- Providers no longer get your whole environment. Each one runs with the basics, proxy and CA settings, `COUNCIL_*` and its own vendor's variables. Another vendor's key, or any other secret your shell exports, stays out. This covers the stop-gate reviewer too, which called its provider directly and skipped the scrub. If a CLI provider needs something else, name it in `COUNCIL_PASS_ENV` (comma-separated).
+- Specialist rounds run Codex with `shell_environment_policy.inherit="core"`, so the commands it runs get only core variables.
+
+### Features
+- Specialist rounds have a time limit: `specialist_round_limit` in `/config`, in minutes (fractions count to the second), default 60, 0 for none. A round still running at the limit is stopped, nothing it did is committed, and the result says it hit the limit.
+- You can ask Claude to stop a running round (`{run, stop: true}`, confirmed in a dialog).
+- While a round runs, the band shows `no output for m:ss` once Codex has written nothing for two minutes.
+
+### Fixes
+- Specialist commits and merges run on your machine, outside Codex's sandbox, and git runs the repository's hooks there. With `core.hooksPath` inside the repository (`.githooks`, husky's `.husky/_`), a round could write a hook that then ran on the host. The commit now refuses a round that changed anything in that directory, ignored files included, and a merge refuses a branch that changes it. Hooks that run other repository files (husky's `.husky/pre-commit`, lint-staged, a `scripts/` file) still run the round's version of them.
+- A specialist merge no longer deletes changes no round committed. A failed round, or one whose commit was refused, leaves its edits in the worktree, and the merge used to remove the worktree with them. It now refuses and names the files.
+- A round whose Codex was killed by hand is no longer reported as finished and committed. Codex exits 0 on SIGTERM, so a zero exit now counts only when Codex completed its turn.
+- A stop that lands just after Codex finished no longer reports "stopped, nothing committed" for a round that was committed.
+- Specialists start and finish on Windows. Git Bash's `ps` can't print a start time, so every start failed there. The start time now comes from procfs, and finishing accepts the `C:/` worktree path git reports.
+- On Windows, a CLI provider past the council deadline has its child processes ended too. Git Bash has no `pgrep`, so children are found through procfs.
+- `/claude-council:advise` digests no longer show cs's rotation launch line as something you typed. Only that exact line is dropped.
+- The `provider-integration` skill template names `claude-sonnet-5` instead of a retired model, and checks for an empty answer with the same regex the providers use.
+- The `council-execution` skill describes provider headers as the formatter prints them (a colour dot, name, role and model), and `/claude-council:ask` takes its synthesis sections from `prompts/synthesis.md` only.
+
+### Other
+- Windows CI runs the specialist tests, and a test-audit pass removed four tests that another test already proves or that never ran the script.
+- Bumped `hashgraph-online/ai-plugin-scanner-action` (#39), and test placeholder keys no longer trip its secret check.
+
+## 2026.9.16
+
+### Fixes
+- The `pane_host` setting no longer declares a fixed list of values, which the plugin directory's manifest check rejects and Claude Code before 2.1.271 cannot load. In `/config` it is now a text field: `ask`, `claude-code` or `tmux`, and anything else counts as `ask`, as before.
+
+### Other
+- The plugin has an icon (`assets/icon.png`, named by `icon` in `plugin.json`) for its directory listing.
+- The manifest description names specialists, and the keywords gain `specialists`.
+
+## 2026.9.15
+
+### Features
+- Specialists: Codex agents, as many as you like, each on its own model, following skills you name (each `SKILL.md` opens every new task), set up on the `/specialists` screen or by describing one to Claude. Disable switches one off without removing it, and Claude then neither offers nor starts it. The screen picks the model and its efforts from Codex's own catalog and keeps the list in one settings field that `/config` does not show. Claude offers one when a task fits and starts it only once you agree; a start or follow-up then runs at once, and a dialog confirms every finish. The specialist writes code in its own git worktree and branch, follow-ups continue its Codex session, rounds run in the background and a prompt wakes Claude when one ends, and a confirmed merge or discard removes the worktree and branch. A specialist can set any reasoning effort Codex offers for its model, including `max` and `ultra`. A list set by hand goes through the same checks as the screen. Each round ends with a structured report: a summary, the tests Codex ran and how they went, and its open questions. While a round runs, the band shows its latest step and opens a pane that follows the round. Network access is on inside its sandbox. The mod ships no specialists. While you have none, the screen offers six templates (`bug-fixer`, `ci-fixer`, `refactorer`, `test-writer`, `test-pruner`, `docs-updater`), each backed by a full skill the mod bundles, that fill a new form for you to pick a model and save. The first session where specialists can run shows a one-line note about them, once. Needs `CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1` and a logged-in `codex`.
+- The mod has one design identity (`mods/council-pane/DESIGN.md`): its colours come from Claude Code's own theme, so the pane, the band and the `/specialists` screen follow a light, dark or colour-blind theme, and text keeps about 4.5:1 contrast or better on the light and dark ones. Chips and labels use a deeper orange so their white letters stay readable, and on the light and dark themes running states are no longer terminal yellow, which was unreadable on a light background.
+- While a council run is live, the band above the prompt matches the specialist band: providers finished out of the total, a thin line, an `m:ss` clock and the latest event, such as `gemini answered`. It gives way to the retry offer and the finish notice.
+- The council tool (`council_tool` in `/config`) is on by default. Every call now opens a dialog that quotes the question and names the providers, and nothing leaves the machine until you choose `Send to the council`. Dismissing it, or a run with no one to ask, refuses the call. Needs `CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1`.
+
+### Fixes
+- `/claude-council:status` no longer reports Gemini, OpenAI, Grok or Kimi as connected when the key works but the account cannot run inference. A passed key check is now followed by one chat request capped at 16 output tokens. The row reads `Inference blocked` for a 402 or the vendor's own out-of-quota marker, and `Rate limited` for a plain 429. Any other answer keeps the provider available but adds `inference unverified (HTTP <code>)`, so an unexpected answer shows instead of passing as healthy.
+
+## 2026.9.14
+
+### Features
+- When a pane streamed the answers, the chat no longer reprints them after the run. It shows one status line per provider, any debate rebuttals, and the synthesis. The saved transcript still holds every answer. A pane closed mid-run, or a background `--async` job, gets the full answers as before. `/claude-council:result` and `/claude-council:advise` follow the same rule.
+
+### Fixes
+- The model running `/claude-council:ask` no longer adds `--no-pane`, `--quiet`, `--no-cache` or `--no-auto-context` on its own. It forwards only the flags you typed.
+- `/claude-council:advise` now streams into the pane like `ask`, instead of always suppressing it.
+
+### Other
+- Model fallbacks refreshed by the release-time check. OpenAI falls back to `gpt-6-sol`; the default stays `gpt-6-astra`. The single OpenRouter seat gains its first fallback, `anthropic/claude-opus-5.5`; numbered router seats still run exactly their listed model. Both ids answered a live completion.
+
+## 2026.9.13
+
+### Features
+- `gpt-6` and later ids are routed to `v1/responses` with the reasoning token bump, so the new OpenAI default gets the same treatment as `gpt-5.4+`.
+
+### Other
+- Model defaults refreshed, each verified with a live completion: OpenAI default `gpt-6-astra` (fallback `gpt-5.6-sol`), OpenRouter seat `anthropic/claude-fable-5.1`, Grok fallback `grok-4.6`, Gemini fallback `gemini-3.8-flash`. Aliases `gemini-flash-latest` and `grok-latest` are unchanged and currently serve `gemini-3.8-flash` and `grok-4.7`.
+
+## 2026.9.12
+
+### Added
+- **The pane mod ships inside the plugin.** `hooks/hooks.json` names `mods/council-pane/hooks/pane.tsx` as a module, so an installed council loads the pane whenever Claude Code runs with `CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1`; no `--plugin-dir` is needed. Without the variable Claude Code skips the module and nothing changes. The four settings moved to the plugin's own `/config` rows, and the council tool is now `mcp__claude-council__ask`. A remembered `pane_host` answer from the standalone mod is not carried over; the setting asks again once. The mod creates its watch directory and starts polling with the first council run, so a session that never convenes the council pays nothing. `mods/council-pane` is no longer a plugin of its own: its manifest and `hooks.json` are gone, and `claude plugin validate .` at the repo root checks the module.
+
+### Other
+- The configuration reference lists the four pane settings, and the plugin manifest names the pane in its description and keywords.
+
+## 2026.9.11
+
+### Added
+- **An experimental pane inside Claude Code.** `mods/council-pane` is a Claude Code mod that draws the streaming pane in Claude Code itself, so it works outside tmux. Mods are early access behind `CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1` and the installed plugin does not load it; run it from a checkout with `--plugin-dir . --plugin-dir mods/council-pane`. It shows a status list in each provider's color, with a spinner and a running time on a provider still querying, that collapses to a summary when the run ends. Below it come a banner per answer and the synthesis. A `COUNCIL` row above the prompt carries the retry offer with a countdown bar, and a notice when the run finishes. One setting, `pane_host`, decides where the pane opens: `claude-code`, `tmux`, or `ask`, which puts the question once inside tmux and remembers the answer. Its README lists the other settings and the limits.
+- The scripts support a pane drawn outside the shell. When `COUNCIL_MOD_PANE_DIR` names a directory, a run writes its watch directory there and opens no tmux pane. A run leaves its `pid` there, so the mod can tell a killed run from one still working. Each status event also records the provider's color in `colors`, an `--async` worker writes its `job-id` and the path of its job record in `job-file`, and a pane that stays open can turn the retry offer down with `.retry-declined`, where the tmux pane declines by closing. Only the mod sets the variable, so nothing changes without it.
+
+### Fixed
+- A long answer no longer hangs its provider on macOS. Nine providers and `format-output.sh` tested for an empty answer with `${TEXT//[[:space:]]/}`, which bash 3.2 runs in quadratic time over multibyte text: 18,000 characters took 284 seconds, and a Detailed run left `grok.sh` at 96% CPU for eight minutes. The test is now a regex search that stops at the first character that is not a space, 4 ms for 180,000 characters. A bats guard fails if the old expression comes back.
+- Naming a provider works as a request for it. "Check with grok" already started the council, but with a `--grok` flag that does not exist and the scripts reject. `/claude-council:ask` now resolves a named provider against the roster and passes `--providers=`, picking `grok-cli` when the CLI shadows the API. Two eval cases cover it: one that names a provider, and one that only mentions a provider's API and must stay quiet.
+
+### Other
+- `path_without_clis` in the test helper strips every `PATH` directory that holds a provider CLI. It stripped only the first, so a machine with `codex` or `grok` installed twice failed one `cli-providers` test that CI, which has neither, always passed.
+- `TESTING.md` counts 712 tests across 31 files and covers the nine eval cases, the mod's own checks and the HOL scanner gate. `docs/ARCHITECTURE.md` lists `mods/`, `evals/` and the scanner workflow, and the CLI lists name `cursor-agent`.
+- `.github/workflows/hol-plugin-scanner.yml` runs the HOL plugin scanner on every push to main and every pull request, failing on a high finding or a score under 80. The awesome-ai-plugins catalog scans the repo on its own either way; a maintainer-owned run keeps the listing at full trust score and makes a finding reproducible here. A clean export of the tree scores 100.
+
+## 2026.9.10
+
+### Added
+- **Cursor CLI as a council member.** `cursor-cli` seats Cursor's `cursor-agent` when it is on `PATH`, on the Cursor login, no key. It runs headless in `--mode ask`, the read-only mode, and is never passed `--force`; the prompt goes in on stdin so a big `--file` stays off argv, and the answer is read from the `--output-format json` envelope. The model is whatever the CLI has picked unless `CURSOR_CLI_MODEL` is set; a free plan runs `auto` only and rejects a named model with the CLI's own message. Discovery keys on `cursor-agent`, not the `agent` name the installer also links, because the grok CLI ships an `agent` too. No API sibling, so no shadow and no fallback. `/status` probes it with `cursor-agent status` and reads its "Not logged in"; the stop-review gate accepts it. Closes #33.
+- An eval suite under `evals/` for the unprompted `/claude-council:ask` suggestion, run with `claude plugin eval`: five decision or stuck-debugging prompts must earn the named command beside a real answer, two trivial asks must not. Grader text lives once under `evals/_shared/`, each case holds per-file symlinks to it.
+
+### Fixed
+- Every temp file the scripts create is rooted at `${TMPDIR:-/tmp}`. A bare `mktemp` lands in `/var/folders` on macOS whatever `TMPDIR` says, and a sandboxed host that only allows writes under its own tree (the `claude plugin eval` sandbox is one) killed the query before any provider was called. A bats guard fails on the next bare call.
+
+### Other
+- Both `actions/checkout` steps run v7.0.1, pinned by commit. Dependabot raised the bump and the four Windows shards, macOS, Ubuntu and shellcheck all pass on it.
+- Every `*_API_KEY` assignment reads its value unquoted. A quoted one reads as a hardcoded secret to the HOL plugin scanner, which the awesome-ai-plugins catalog gates a listing on, and an assignment's right-hand side is never word-split. Test fixtures use `example-` key values for the same reason.
+
+## 2026.9.9
+
+### Fixes
+- The Windows bats job runs as four shards listed under `tests/shards/`, about 8 minutes instead of 25. Every test there pays about a second in process creation, so no single file was the cost. `tests/shards.bats` fails when a bats file is missing from the lists or listed twice.
+
+### Other
+- The tests workflow declares `permissions: contents: read`, and both `actions/checkout` steps are pinned to the v4.2.2 commit. Dependabot watches the actions ecosystem weekly and bumps the pins.
+- `SECURITY.md` points vulnerability reports at GitHub's private advisory form, now enabled on the repo.
+
+### Docs
+- TESTING.md carries the shard budget and the shard-list step for a new test file; ARCHITECTURE.md lists dependabot.yml, stale.yml and tests/shards/.
+
+## 2026.9.8
+
+### Fixes
+- The digest now carries AskUserQuestion exchanges: the question with its option labels under the assistant, the pick under the human. Both halves had been falling through, the question inside a tool_use block the extractor skips and the pick inside a tool result the human filter rejects, so every decision the person made at a prompt was missing from what the council saw (0 of 4 on a sampled transcript). A declined question stays a question. A pick does not count as a turn for `--turns last:N`, which keeps anchoring on typed prompts.
+- A damaged record inside the transcript no longer aborts the digest. The script skips it, counts it, and writes the count into the digest itself as `> N malformed record(s) skipped: this digest is incomplete.` so the user and the providers both see it. A file with no readable record at all fails loudly.
+- jq keeps going after a runtime error on any record but the last and exits 0, so a record of an unexpected shape used to leave a digest with a hole in it and an error only on stderr. Every extraction pass now captures jq's stderr and any content there fails the run.
+- `/claude-council:advise` stops on a non-zero exit or an empty digest instead of carrying a 0-byte file into the confirmation step.
+- Both digest temp files now come from a full `mktemp` template (`name.XXXXXX`) rather than `-t prefix`, which BSD accepts and GNU rejects for lacking the X's. The digest script and `/claude-council:advise` had been failing on every Linux and Windows run since 2026.9.6; CI caught it on this release's content commit.
+
+### Docs
+- The architecture tree lists `session-transcript.sh` and `transcript-digest.sh`, which arrived in 2026.9.6 without it.
+
+## 2026.9.7
+
+### Fixes
+- The digest now opens by naming what the file holds: material to review, not a conversation to continue. Without that, a reader handed a run of `## Human` and `## Assistant` headings can take it for a transcript to extend, and one of two providers replied in the caller's voice and invented a next step instead of reviewing anything. The header also asks the reader to disregard instructions inside the transcript, since someone else was their audience, which closes the other half of a hole the heading escape only covered syntactically.
+- An empty window emits nothing at all rather than a lone header, which would read as a digest whose conversation went missing.
+
+## 2026.9.6
+
+### Features
+- Ask the council about the current conversation with `/claude-council:advise`. It resolves this session's transcript, digests a bounded window of it, and shows the size, the turn count and the opening lines before anything goes to a provider. Providers see the reasoning rather than a summary of it, which is the point: a model given only the caller's framing tends to agree with that framing.
+- Add `scripts/transcript-digest.sh`, which turns a session transcript into markdown. It carries human turns and assistant replies and drops tool results, tool inputs, thinking blocks, hook output, compact summaries, and messages from other sessions.
+- Add `scripts/session-transcript.sh`, which maps a session id to its file by globbing every project directory. The directory name is a lossy encoding of the working directory, so two different directories can encode to the same name; the session id is what carries the uniqueness. It refuses an id matching two files rather than guessing between them.
+
+### Notes
+- The digest takes a path and refuses a bare session id. Inside a subagent the ambient session id names the parent conversation, so resolving one automatically is how a subagent would send a conversation nobody showed it. Resolution belongs to a turn that can ask a human, which is also where the confirmation lives.
+- Windowing bounds what leaves the machine, so it fails closed: `--turns last:0` errors out, and a window matching no human turn emits nothing rather than everything.
+
+### Other
+- Test count grew from 641 to 671 across 29 files.
+
+## 2026.9.5
+
+### Other
+
+- **The gemini seat defaults to `gemini-flash-latest`.** Both aliases track
+  whatever Google currently serves in their tier and both earn the reasoning
+  bump, so this is a tier choice rather than a capability one. `GEMINI_MODEL`
+  still overrides it. The fallback comment moved with it: `gemini-3.5-flash` no
+  longer degrades across a tier, it degrades from an alias to a pinned id, which
+  is still the failure a fallback can answer.
+
+## 2026.9.4
+
+### Features
+
+- **The OpenRouter seat sends a thinking budget.** Raising the token cap in
+  v2026.9.3 stopped the roster starving, and the next run showed the failure it
+  had been hiding: all three seats timed out at 300 seconds. Left to its own
+  policy, `z-ai/glm-5.3-flash` thought for 20,861 tokens on a 17 KB prompt and
+  ran to the 900-second mark before answering. `max_tokens` caps thinking and
+  answer together, so it cannot stop that; `reasoning.max_tokens` caps the
+  thinking alone and leaves room for the answer. Every routed request now
+  carries one, default 8000. `OPENROUTER_REASONING_TOKENS` overrides it and `0`
+  sends none. On the same prompt, all three seats now answer in under two
+  minutes. Upstreams without direct allocation map the number to an effort
+  level, and adaptive models ignore it.
+
+- `COUNCIL_DEBUG` names the budget in the seat's header, next to the model and
+  the token cap.
+
+### Docs
+
+- The Reasoning Models section explains the two caps and why one cannot do the
+  other's job.
+
+## 2026.9.3
+
+### Fixes
+
+- **Every OpenRouter seat gets the reasoning token cap.** The first live run of
+  v2026.9.2's diagnostic showed what the empty answers were: `z-ai/glm-5.3-flash`
+  and `xiaomi/mimo-v2.5` spent all 2048 tokens thinking and returned no content.
+  Neither name matched the reasoning pattern list, and on a seat that can point
+  at any id the router serves, a pattern list is the wrong tool. The router now
+  bumps unconditionally. `max_tokens` caps spend rather than causing it, and
+  OpenRouter clamps a value above an upstream's own limit instead of rejecting
+  it (checked against two models capped at 2048). `COUNCIL_MAX_TOKENS` still
+  scales the result.
+
+### Other
+
+- Dropped the test that asserted the old pattern list; the ids it covered take
+  the same path as every other now.
+
+## 2026.9.2
+
+### Fixes
+
+- **A failing OpenRouter seat says why.** Three unrelated failures reached the
+  same branch and all printed "Unknown error": a wire error, a mid-generation
+  upstream failure, and a clean 200 whose content is empty. Only the first
+  carries a top-level `.error`. The seat now reads the choice-level error
+  OpenRouter documents for the second (an HTTP 200 with the error on the choice),
+  and for the third reports `finish_reason`, the upstream native reason, the
+  reasoning token spend and the size of any answer the upstream left in
+  `.reasoning`. `COUNCIL_DEBUG` dumps the raw body for a shape none of those
+  cover.
+- **Two `.error` reads could kill a seat without printing anything.** `gemini.sh`
+  indexed `.error.message` unguarded, so a body of 400 or worse carrying a
+  bare-string `.error` made jq raise, and under `set -eo pipefail` the seat
+  exited 5 with no error line at all. `openrouter.sh` had the same shape one
+  level down, where a scalar `.choices[0]` made the content read raise before the
+  branch that names the failure could run.
+- **The macOS CI leg is green again.** bash 3.2 scans comment text inside a
+  process substitution instead of stripping it, so an apostrophe added to a
+  comment in v2026.9.1 swallowed the closing paren in `tests/pane-watcher.bats`.
+  Only that leg could catch it, and the `not ok` line read like a flaky watcher
+  test.
+
+### Docs
+
+- `docs/ARCHITECTURE.md` gains the empty-answer path. It covered the machinery for a
+  response of 400 or worse and stopped there, so the 2xx that carries no text
+  had no home.
+- The bash 3.2 rule in `TESTING.md` was wrong twice over: stray parens break that
+  construct as well as stray quotes, and neither shape shows up at parse time,
+  so `bash -n` hands you a false all-clear.
+- The new-seat template in the provider-integration skill taught the bare `-z`
+  test and the unguarded `.error` read that no seat has any more.
+
+### Other
+
+- One jq helper serves both error reads in `openrouter.sh` instead of the
+  object-vs-string branch written out twice.
+
+## 2026.9.1
+
+### Features
+
+- **An OpenRouter seat.** `OPENROUTER_API_KEY` enlists an eleventh provider that
+  reaches any model on openrouter.ai, defaulting to `anthropic/claude-sonnet-5` —
+  the one vendor the council had no direct voice for. It sends exactly one model
+  id, never `models[]` or `route: "fallback"`: OpenRouter may fail over among
+  upstreams serving that same id, which preserves identity, but the council
+  labels, caches and synthesizes under the id it asked for, so a switch across
+  ids would silently mislabel the answer. `OPENROUTER_MODEL` retargets the seat;
+  `OPENROUTER_VISION=1` declares such an override image-capable, since the
+  curated default is the only routed model whose modalities are known here.
+
+  Three things this seat does not share with its five API siblings. Its errors
+  can arrive **inside an HTTP 200** — a body carrying `{"error":{"code":N}}` and
+  no `.choices`, where `jq -r '.choices[0].message.content'` prints the literal
+  `null` and exits 0, which would become a fabricated council vote — so it
+  classifies on `.error.code` before falling back to the wire status. It does not
+  use `is_model_unavailable_error`: that helper reads only the `.http_status`
+  stamped on a wire status >= 400, and maps 403 to exit 3, while OpenRouter
+  answers 403 for a moderation-flagged *prompt* that a fallback model would
+  refuse just as fast. And `/status` probes `/api/v1/key` rather than
+  `/api/v1/models`, which answers 200 with no key at all and with a rejected one
+  — an openai-shaped probe would have reported a dead seat as Connected.
+
+  Exit 3 — "a different model would help, and it is safe to remember that for 24
+  hours" — is reserved for a wrong model id. Verified against the live API rather
+  than assumed: an unknown slug comes back **400**, not 404, with the message
+  `<id> is not a valid model ID`, so the 400 class is admitted only when its
+  message names the model as invalid; an ordinary bad-parameter 400 is malformed
+  whichever model receives it and exits 1. 404 stays mapped for "No endpoints
+  found for <id>". 401 and 402 are key and wallet faults the fallback shares (402
+  says where to top up), and 429/5xx are transient, so none writes a day-long
+  verdict. No fallback model id ships: the repo requires each be verified against
+  the live API first, so the seat errors loudly today and degrades the day a
+  verified id lands.
+
+- **One router key can seat several models at once.** `OPENROUTER_MODELS` takes a
+  comma-separated list and each entry becomes its own council member —
+  `openrouter-1`, `openrouter-2`, `openrouter-3` — with its own header, model
+  label, cache entry, colour and role, all sharing the single key.
+  `--providers=openrouter-2` picks one out. The list replaces the single
+  `openrouter` seat rather than adding to it, so the same model never answers
+  twice under two headers.
+
+  The council's unit of identity is the seat, not the script, and this is the
+  first script that answers for more than one. Two pieces follow from that.
+  `provider_script_path` becomes the single definition of name -> script, since
+  there is no `openrouter-N.sh` for the numbered seats to resolve to. And the
+  orchestrator exports `COUNCIL_SEAT` so the script can resolve its own model
+  rather than the script default — without it every seat would post one model
+  while three headers each claimed a different one, with every hermetic test
+  green and `/status` reporting all three connected. A seat opts into images by
+  number (`OPENROUTER_2_VISION=1`): a roster can hold any model, and nothing in
+  an id says whether it reads images.
+
+- **`/status` prints real columns.** The layout used a literal tab, and a tab
+  stop lands at a different place depending on how long the preceding name is —
+  so `Grok` and `Perplexity` pushed their status to different columns. Each field
+  is now padded to a fixed width computed from the PLAIN text, since the painted
+  strings carry SGR escape bytes that occupy no width and would pad every row by
+  a different wrong amount. The last column carries the model when a provider is
+  connected and the remediation hint otherwise, so a failing row still says what
+  to do without widening every healthy row to make room for it. A test asserts
+  every row's status begins at the same column; it fails against the old tab.
+
+- **Roles can bind to a provider by name, not just by position.** `--roles` took
+  a bare list and zipped it against discovery order: role[i] to provider[i]. That
+  made adding a provider script shift every later provider's role by one, and
+  reordering `OPENROUTER_MODELS` reassign which router seat plays which part —
+  silently both times, because only non-empty roles are ever printed.
+  `--roles=openrouter-2=security,perplexity=devil` binds each role to the
+  provider it names and is immune to both. The bare form still works and is
+  still positional; the two cannot be mixed in one flag, since a bare entry
+  beside a keyed one has no unambiguous meaning. A pair naming a provider that
+  is not being queried is refused rather than ignored — a stale binding would
+  otherwise read as "nobody was given that role". And any provider left without
+  a role is now named on stderr instead of vanishing.
+
+  `validate_roles` had to admit the new shape or the flag would be refused
+  before the assigner ever saw it; it validates the role half of a pair exactly
+  as it validates a bare role, and leaves whether the provider exists to the
+  assigner, which is the only part that knows the roster.
+
+- **Agent-mode analysts run on a pinned model, not whatever the session uses.**
+  `--agents` spawns one Claude analyst per provider, and the workflow set no
+  model on those `agent()` calls — so they inherited the session's model, and the
+  cost of a mode that already fans out per provider swung by a factor of several
+  depending on what the user happened to be running. A measured eight-seat run on
+  Opus came to ~456k analyst tokens. The analyst's work is to run one query, judge
+  the reply and emit a structured object, so it now pins `sonnet`, overridable
+  with `COUNCIL_AGENT_MODEL` (`sonnet`/`opus`/`haiku`/`fable`, validated before
+  the run). Note this is the one `*_MODEL`-shaped variable that does not name a
+  model answering the question.
+
+- **`--list-default-models`, and an `/ask` picker that fits the roster.** The
+  provider picker built its options from a table written down in
+  `commands/ask.md`. That table had gone stale three times — it predated kimi,
+  ollama and the OpenRouter seats — and the shape it specified could not be
+  rendered anyway: AskUserQuestion allows four options per question, and a
+  roster of three routed models plus the usual seats needs nine. The one-line
+  note acknowledging the overflow named a fallback ("All / Fast subset /
+  Custom") that was never specified.
+
+  The new flag reports the default set as `<provider>\t<model>` per line, derived
+  from `default_provider_set` and `get_model` so it cannot name a provider a
+  query would not run or a model it would not send. `ask.md` now builds every
+  label from it rather than from a list, which removes the staleness as a class
+  rather than refreshing one instance, and specifies both shapes concretely: one
+  question when three or fewer providers are configured, grouped presets plus a
+  second multi-question call when more are. The model matters most for router
+  seats, which are named `openrouter-1`, `openrouter-2`, … and carry no model in
+  the name — without the pairing the picker shows identical-looking rows. The
+  command layer cannot resolve them itself: `ask.md`'s allowed-tools admits the
+  council's own scripts, not a shell that could source `providers.sh`.
+
+- **A whitespace-only answer is a failure, not an answer.** Every provider
+  guarded with `[[ -z "$TEXT" ]]`, which catches only a truly empty string, so a
+  model replying with a single space passed as a successful answer and reached
+  the synthesis weighted like any other vote. Found in a live debate round, where
+  one seat's rebuttal came back as one character and was recorded `success`. All
+  seven providers now use the whitespace-stripped test the suite's own
+  `assert_not_blank` has always used, and still say why on stderr so the council
+  stores a cause rather than an empty slot.
+
+- **Kimi reads images.** `kimi.sh` has built the OpenAI-shaped `image_url`
+  payload since it landed; only `provider_vision_capable` said otherwise, so the
+  council routed images away from a provider that could read them and `kimi-cli`,
+  whose only route to an image is through that sibling, answered text-only as a
+  consequence. Verified against the live model rather than the docs:
+  `moonshotai/kimi-k3` — the default — is text+image+video and correctly answers
+  a question posed only inside an image. `kimi-k2` and its variants really are
+  text-only while `k2.5` and later are not, so a `KIMI_MODEL` override opts in
+  with `KIMI_VISION=1`, mirroring the router's seat. `kimi-cli` stays out of the
+  capability table like every other CLI: a CLI cannot take an image, it reaches
+  one only by routing.
+
+- **Provider swatches are drawn, not looked up.** Every listing prefixed each
+  provider with an emoji square, and that could never line up: the U+1F7Ex family
+  holds seven colours and no black, and the two codepoints that fill the gaps —
+  U+2B1B and U+2B1C — render at text width in many terminal fonts, so they sat
+  narrower than their neighbours and knocked the provider column out of
+  alignment. `provider_emoji` is replaced by `provider_swatch`, which prints two
+  a circle in the provider's 24-bit colour. A circle is drawn to shape by the
+  font rather than inheriting the cell's roughly 1:2 aspect the way a block does,
+  so it stays round and occupies exactly one column for every provider, and its
+  palette is the RGB table rather than whichever squares Unicode happens to ship.
+
+  `provider_color_rgb` moves from `display.sh` to `providers.sh`, joining the
+  other provider-identity tables, so the header, the status listing and the
+  streaming pane read one definition instead of three that could drift.
+  `display.sh` sources it directly rather than assuming its caller did, keeping
+  the lib usable on its own. Ollama gains the arm it never had.
+
+  OpenRouter takes violet and Kimi the black it brands with, which is what
+  surfaced all of the above: the two had collided on purple. Kimi's name colour
+  is ANSI 90 rather than 30 — 30 is unreadable on a dark terminal, 90 is the grey
+  that renders a black brand on either background.
+
+  This uncovered a live defect: `provider_color` expands `${NAME:-}`, so a colour
+  its caller never defined degrades to no escape at all rather than failing —
+  and `query-council.sh` had never defined `MAGENTA`, so **Kimi had been
+  rendering uncoloured in every council run**. `MAGENTA` is now defined there,
+  and a test derives the required names from `provider_color` itself and asserts
+  both rendering callers define each one. Restating the list is what let it go
+  stale; the test reads the table instead.
+
+- **The synthesis is told a router seat is not a second opinion.** Pointing
+  `OPENROUTER_MODEL` at a model another seat already runs gives two headers
+  voicing one model, which nothing in the response reveals. `prompts/synthesis.md`
+  now reads such agreement as possible duplication rather than corroboration.
+
+### Fixes
+
+- **The prompt reaches jq off the process argv.** Every API provider staged the
+  prompt into a file and then handed it to jq with `--arg`, which puts it back on
+  the argv; Windows caps that near 32 KB. All six read it with `--rawfile` from
+  the file instead, so a `--file`-sized prompt never rides a command line.
+- **An unknown OpenRouter slug is a 400, not a 404.** Verified against the live
+  API. The wrong-model classifier admits the 400 class only when the message
+  names the model as invalid, so an ordinary bad-parameter 400 still exits 1.
+- **A whitespace-only answer is a failure.** A single space passed a bare `-z`
+  test and reached the synthesis as a real vote; all seven providers now strip
+  whitespace before the check and record a cause on stderr.
+- **Kimi reads images.** `kimi.sh` had always built the image payload; only the
+  capability table said otherwise, routing images away from a provider that
+  could read them, and taking `kimi-cli` with it.
+- **A malformed router seat name is refused.** `openrouter-0` aliased the last
+  roster model on newer bash and `openrouter-08` aborted the run outright; a seat
+  suffix that is not a plain positive number now answers `unknown`, and one
+  definition of "is this a seat" is shared by discovery, routing and the script.
+- **The reasoning-token bump covers what the router serves.** The OpenRouter
+  seat bumped only on `reasoning`/`thinking`; it now also covers `r1`, `deepseek`,
+  `qwen`, `gpt-oss` and the o-series, so a routed reasoning model no longer
+  truncates mid-answer and caches the fragment as a success.
+- **Naming a provider twice in `--roles` is refused**, the same as naming an
+  absent one, instead of silently taking the last binding.
+- **Each provider's cleanup trap precedes the temp files it removes.** A failure
+  mid-request no longer leaves the mode-600 curl config holding the bearer token,
+  or the prompt and content files, behind.
+- **A roster seat row keeps the remediation hint.** A missing key on an
+  `openrouter-N` row now shows `export OPENROUTER_API_KEY`, as the single-seat
+  row already did.
+
+### Internal
+
+- **Negated test assertions can fail.** Nineteen `! grep` checks sat mid-test,
+  where bash's errexit exemption means they can never fail the test; the
+  argv-secrecy checks that keep API keys off the process table were among them.
+  All are now `run !`.
+- **Six pane-watcher tests order against observable state, not a clock.** The
+  retry-offer, width-drag and close-prompt tests synchronised on hardcoded
+  sleeps; they now wait on renders, width readings and file markers.
+- **A simplify pass** gives "is this a router seat", the roster parse and the
+  model-unavailable wording one definition each, stages the prompt through one
+  shared helper in place of seven copies, and builds three providers' request
+  content on stdin rather than a temp file.
+
+## 2026.8.10
+
+### Features
+
+- **The test suite runs on Windows.** CI now runs all 556 bats tests on
+  `windows-latest` under Git Bash, alongside Ubuntu and macOS. TESTING.md
+  gains a Windows section: the ~22-minute budget, the CRLF-emitting jq
+  helper that reproduces the Windows build's stdout locally, MSYS's argv and
+  environment path rewriting, and why `@test` names stay ASCII.
+
+### Fixes
+
+- **A hung CLI provider is bounded on Windows.** `perl -e 'alarm shift; exec
+  @ARGV'` never ended the CLI there: perl emulates `exec` by spawning and
+  waiting, so the alarm killed perl and left codex/agy/grok/kimi running until
+  the CLI gave up on its own. `scripts/lib/deadline.sh` `run_with_deadline`
+  replaces it for the four CLI providers and the Rich probe. The watchdog
+  owns the verdict: a CLI that handles SIGTERM by exiting 0 with nothing on
+  stdout (the codex wrapper does) or by exiting 1 with `context canceled`
+  (agy does) is still reported as a timeout, not as an empty answer that
+  skips the API-sibling fallback; one that ignores the signal is killed
+  after five seconds, children first, so nothing it spawned holds the
+  answer pipe open. The watchdog is ended and reaped the moment the command
+  returns, so no sleeper outlives a fast call. A deadline of `0` means none;
+  a non-integer is rejected. The timeout status is 143 (was 142). Not
+  verified: whether ending a native CLI from Git Bash yields 143 on Windows
+  (the suite's fake CLIs are shell scripts), and Git Bash has no `pgrep`,
+  so only the CLI's own process is signalled there.
+- **`--debate` keeps round 2 on Windows.** The rebuttal envelope reached jq on
+  argv, past MSYS's ~32 KB ARG_MAX; jq failed and every debate lost its second
+  round. It goes through stdin now, like the round-1 blobs.
+- **The stop gate and `--cancel` read their own records on Windows.** jq's
+  Windows build CRLF-terminates piped stdout, and a `read < <(jq ... @tsv)`
+  keeps the `\r`: the gate read `max_iterations` as `1\r` (a bash arithmetic
+  error, then invalid JSON for the hook) and `run_cancel` read the pid as
+  `1234\r`, ending the worker but not its query tree. Both strip it.
+- **Background job records keep path values intact on Windows.** MSYS
+  rewrites POSIX-looking paths in argv and in environment values before a
+  native jq sees them, so an outfile of `/some/path.md` was stored as a
+  Windows path. `job_set` hands its value to jq on stdin.
+
+### Docs
+
+- ARCHITECTURE names the Windows runner and lists `deadline.sh`; README's
+  requirements name the supported platforms.
+
+### Other
+
+- 556 tests (was 543): `deadline.bats` pins `run_with_deadline` (stdin
+  passthrough, own status, 143 at the deadline whatever the command did with
+  the signal, SIGKILL escalation, no lingering watchdog or orphaned child,
+  nothing on stderr, `0` and non-integer deadlines);
+  CRLF-jq tests for the stop gate, `--cancel` and format-output. The
+  pane-watcher tests
+  run under `run_with_deadline` too, and eight test names are ASCII so bats
+  on MSYS can find them.
+
+**Full Changelog**: https://github.com/hex/claude-council/compare/v2026.8.9...v2026.8.10
+
+## 2026.8.9
+
+### Features
+
+- **`--agents` mode runs as one Workflow of analyst agents.** One analyst per
+  provider, in parallel, each returning its analysis through schema-enforced
+  structured output, so no reply passes through the orchestrator as text to be
+  pasted and validated. An interrupted run resumes with the finished analysts
+  served from cache. The question is written once to a run-scoped file and sent
+  with `--prompt-file`; role variants are built in shell. Needs a Claude Code
+  with the Workflow tool; a session without it is offered standard mode.
+- **Gemini's reasoning can be capped.** `GEMINI_THINKING_BUDGET` sets
+  `thinkingConfig.thinkingBudget`, keeping room for the visible answer when a
+  thinking model would otherwise spend the whole `maxOutputTokens` and return an
+  empty 200. Unset, the model decides. From #20 by @yp329, made opt-in here.
+
+### Fixes
+
+- **Gemini no longer renders as `null` on Windows.** jq's Windows build
+  CRLF-translates piped output, so the first provider key carried a stray `\r`
+  and `.round1["gemini\r"]` missed. `format-output.sh` strips it. #20, @yp329.
+- **Gemini answers are read whole.** Text split across parts, or preceded by a
+  thought-signature part, is joined instead of taking `parts[0]`; an empty 200
+  reports its `finishReason` and thinking spend instead of "Unknown error". #20.
+
+### Docs
+
+- README, ARCHITECTURE and the deep-execution skill describe the Workflow-based
+  agents mode; `validate-analysis.sh` is documented as the schema's executable
+  mirror for the test suite; the local council's Agent fan-out is recorded as a
+  decision.
+
+### Other
+
+- 543 tests (was 538): gemini's multi-part join, empty-200 diagnostics and the
+  opt-in thinking cap.
+
+**Full Changelog**: https://github.com/hex/claude-council/compare/v2026.8.8...v2026.8.9
+
+## 2026.8.8
+
+### Features
+
+- **The pane offers to retry failed providers.** When a provider fails, the
+  pane shows `[r] retry failed (<providers>) · [esc/ctrl-d] close` with a
+  countdown. `r` re-queries only the failed providers inside the same run, so
+  a recovered answer reaches the synthesis, the saved transcript and the cache
+  like any other; `Esc` closes the pane and the run carries on with what it
+  has. The offer stays open `COUNCIL_RETRY_WAIT` seconds (default 45, `0`
+  disables), once per run. `--async` jobs default to `0`: nobody is committed
+  to answering a detached run's pane, so it never waits.
+
+### Fixes
+
+- **A failed provider's error text is shown in the pane.** The notice read
+  its text with a loop that drops a final line without a trailing newline —
+  which every real error is, since the producer stores a command
+  substitution. The pane showed `✗ kimi-cli error` with nothing under it.
+
+### Docs
+
+- README, ARCHITECTURE and the council-execution skill describe the offer;
+  the skill now names the Bash timeout to pass (`600000`), since an accepted
+  retry adds a provider round to a call whose default limit is two minutes.
+
+### Other
+
+- The round-1 launch and collect loops are functions the retry reuses, and
+  the offer handshake lives in `display.sh` (`pane_retry_offer_write` /
+  `pane_retry_await`) beside the other pane writers. Acceptance is a rename
+  of the offer file, atomic against its withdrawal.
+- 538 tests (was 524): the retry protocol on both sides, the error-text
+  fixture written the way the producer writes it, and test feeders that live
+  exactly as long as the watcher.
+
+**Full Changelog**: https://github.com/hex/claude-council/compare/v2026.8.7...v2026.8.8
+
+## 2026.8.7
+
+### Features
+
+- **Gemini and Grok track their vendor's rolling alias.** The defaults are
+  `gemini-pro-latest` and `grok-latest`, so a new flagship reaches the council
+  without waiting for a release. Pin an explicit id when you need a fixed model
+  across runs: cached answers key on the id, so an alias can serve an answer the
+  model behind it no longer gives.
+
+### Fixes
+
+- **A rolling alias no longer loses the reasoning-token bump.** The cap is
+  matched per provider by glob, and neither alias matched the existing patterns,
+  which would have dropped the cap to the 2048 base on models whose thinking
+  shares that budget with the visible answer — silent mid-sentence truncation.
+- **Gemini degrades across a tier.** Its fallback was the pinned id its own
+  alias serves, so a key without preview access paid two failing calls, was told
+  a different model had answered, and remembered no verdict. It now falls back
+  to `gemini-3.5-flash`.
+- **A deliberate `COUNCIL_MAX_TOKENS` is no longer overridden on
+  non-reasoning models.** Grok matches its alias literally, since xAI also
+  publishes non-reasoning `-latest` aliases whose whole budget is visible output.
+- **The test suite is hermetic against a documented environment.** A
+  `GEMINI_MODEL` or `GROK_MODEL` exported in your shell — which the README tells
+  you to do — turned the suite red.
+
+### Other
+
+- Provider scripts read their model from `get_model` instead of repeating the
+  default. The orchestrator labels answers and builds cache keys from
+  `get_model`, so drift between the two mislabelled a cached answer rather than
+  failing. `check-status` and the pane demo resolve models the same way.
+- Test counts and the new coverage are documented in TESTING.md.
+
+**Full Changelog**: https://github.com/hex/claude-council/compare/v2026.8.6...v2026.8.7
+
+## 2026.8.6
+
+### Fixes
+
+- **The council no longer treats agreement as a result.** Providers are handed a
+  description of your problem and never the system itself, so none of them can
+  test a premise your question asserts — they reason from it correctly and agree
+  with each other while doing it. Unanimity therefore measures how clearly the
+  question was framed, not whether the framing was true, and the more confident
+  it reads the better it hides that nobody could check. Two places said the
+  opposite. The synthesis was told to keep it *short* when every provider
+  agreed, which shortened the answer exactly where the premise had been examined
+  least; it now says they agreed and then names the assumption the whole answer
+  rests on. Agent mode (`--agents`) called high-confidence agreement a stronger
+  signal, which holds for reasoning and not at all for premises.
+- **Questions are checked before they are sent.** The council now separates what
+  you have observed from what you are assuming: claims it can verify locally it
+  verifies, correcting the question when one is wrong, and the rest are labelled
+  and passed through as stated. A provider told "I have not checked whether X
+  holds" can answer "then check X first". One told "X holds" never will.
+
+### Docs
+
+- The README's worked example only ever showed a *divergent* synthesis, which is
+  the case the council always handled well. It now also shows the unanimous one.
+  New section on the observed-versus-assumed labelling, since you will see your
+  own question relabelled before it goes out.
+
+Reported by a peer session whose council returned a unanimous, competent and
+wrong answer: five providers produced a genuinely good design, and one agent
+that could read the disk then measured its premise away — of 4792 logged
+failures, the effect the question assumed was present in about 2 percent.
+
+## 2026.8.5
+
+### Fixes
+
+- **Dragging a pane border no longer re-renders the pane at widths you passed
+  through.** The reflow waited one poll (120ms) for the width to hold still
+  before redrawing. tmux moves a pane in whole-cell steps, so a continuous
+  drag reports the same width on two consecutive polls often enough to satisfy
+  that — firing a full redraw at a width the drag abandoned a moment later.
+  Each one costs about a second of renderer startup for five providers, and
+  takes the scrollback with it. The width must now hold for roughly half a
+  second, which a moving drag never satisfies and a deliberate resize doesn't
+  notice. The wait is scaled to each loop's clock: the close prompt polls once
+  a second rather than eight times, so it settles in two readings instead of
+  four and still reflows about a second after you let go.
+
+### Other
+
+- The redraw's settle counter, the record of the width the pane was drawn at,
+  and the redraw itself now live in one function. Both callers previously
+  repeated the same two-step update and could have advanced one without the
+  other.
+- The rationale for the CLI timeout default had been copied verbatim into four
+  provider scripts while `docs/ARCHITECTURE.md` already stated it. Each copy is
+  now a one-line pointer there.
+
+### Docs
+
+- The README screenshot is served from a new path. The image had been replaced
+  in place, and GitHub serves README images through a cache keyed by URL, so
+  the previous capture kept being shown.
+
+## 2026.8.4
+
+### Features
+
+- **The streaming pane reflows when you resize the window.** Wrap width was
+  chosen once per answer, at the moment it landed, and baked into the
+  scrollback as real newlines — so answers that arrived before and after a
+  resize sat side by side at different widths, which reads as broken output.
+  When a new width holds still for a moment, every answer so far is
+  re-rendered to it, at the close prompt as well as mid-run. The redraw clears
+  the pane's scrollback along with the screen, so no old-width copies survive
+  in history; the cost is that it resets copy-mode position.
+- **Response banners name the model that answered.** Every CLI-backed provider
+  used to read `default`, because the council passes no model flag and so had
+  nothing to name. It does have something: each CLI records its selection in
+  its own config, and reading it is free and needs no extra call — codex from
+  `$CODEX_HOME/config.toml`, grok from `~/.grok/config.toml`, kimi from
+  `~/.kimi-code/config.toml`, and agy from its CLI settings. The value also
+  reaches the cache key, which is the point: reconfiguring a CLI's model now
+  stops the council serving back an answer the previous model gave.
+
+### Fixes
+
+- **A CLI provider no longer gets a deadline four times stricter than an API
+  one.** The API providers wrap `curl` in `curl_with_retry`, so
+  `COUNCIL_TIMEOUT` bounds one attempt and their real ceiling is
+  `(COUNCIL_MAX_RETRIES + 1)` times it. The CLI providers never retry, so the
+  same number was a hard deadline. One value the user sets once meant two
+  different things, and a council carrying a large `--file` dropped kimi on
+  that difference while the API path survived far longer on the same run. CLI
+  providers now default to `COUNCIL_CLI_TIMEOUT` (1200s), matching the API
+  ceiling. Retries are deliberately not extended to the CLI path: a CLI that
+  is slow is not failing transiently, and retrying a fifteen-minute run four
+  times is worse than reporting it.
+- **A kimi timeout reports a timeout.** When the watchdog killed the CLI, bash
+  printed its own report of the signalled child — `Alarm clock: 14`, the PID
+  and the entire command line — on the provider's stderr, which the council
+  stores verbatim as the error text. The pane showed that instead of the
+  timeout message the script already emitted, carrying an absolute plugin path
+  into the display.
+- **The ask command can no longer be talked out of running the council.** A
+  question ending "in exactly this shape and nothing else, no extra sections"
+  was read as governing the command's own reply — and the command's own reply
+  is the provider display, so it answered directly and queried nobody. The
+  question is now declared as data: formatting directives inside it constrain
+  what each provider is asked to return, never the command's output, and never
+  authorize skipping the run.
+- **codex's model is read from `CODEX_HOME`.** codex scopes its configuration
+  to that variable, so a relocated config left the banner naming a model codex
+  itself ignores.
+- **A config the council can't parse no longer takes the run down with it.**
+  Reading a CLI's model left the parser's own stderr and exit status
+  unhandled, so a corrupt config printed a parser complaint as that provider's
+  error text and returned non-zero from a function called under
+  `set -euo pipefail`. One unreadable file could end the whole council run
+  instead of degrading one banner to `default`.
+- **Three ways a valid config was misread.** A commented table header
+  (`[models] # mine`) lost its entire table, so an annotated config silently
+  reverted to `default` and orphaned every answer cached under a real model
+  id. TOML literal strings (`model = 'gpt-x'`) were skipped, so the feature
+  did nothing with no error to explain it. And a bracketed line inside a
+  multi-line value hijacked the parser's idea of which table it was in — with
+  a body line of exactly `[]` re-entering the root table, so quoted lines
+  inside a string were read as configuration.
+- **The close prompt no longer stacks.** Resizing twice with nothing on screen
+  printed a second and third `[esc/ctrl-d] close`; and when the pane's input
+  was already gone, the same dead tty failed the width query, which read as a
+  resize and wiped the reader's scrollback on the way out.
+
+### Changed
+
+- **Two blank lines between provider blocks instead of four.** The response
+  renderer's trailing margin and the banner's leading margin were written
+  without each other in view, and both survived into the gap.
+- **The council answers to its own name.** The ask command described the
+  situations it should volunteer in but never the phrasings that ask for it
+  outright, so "a full council review" matched nothing. Direct mentions now
+  trigger it, and the plugin's keywords cover the full provider set.
+
+### Docs
+
+- **The README leads with a screenshot** of five providers answering the same
+  question with the synthesis alongside.
+- Architecture and testing docs updated: `COUNCIL_CLI_TIMEOUT` and why the CLI
+  bound differs, the file tree, and corrected per-suite test counts.
+
+### Other
+
+- Extracted `json_value` alongside `toml_value` so the per-provider config
+  table reads as a table.
+
+## 2026.8.3
+
+### Fixed
+
+- **The Kimi API provider answers again.** It sent `temperature: 0.7` to match
+  the other providers, and Moonshot rejects every value but `1` across its model
+  line, so every Kimi API query failed outright with "invalid temperature: only 1
+  is allowed for this model". Anyone with `KIMI_API_KEY` set has had a dead
+  provider in the council since Kimi was added. `check-status` reported it
+  connected throughout, because that probe is a `/models` GET rather than a
+  completion.
+- **The documented Kimi model list named ids that not every account can reach.**
+  Moonshot closed the `moonshot-v1` series, its `-vision-preview` variants and
+  `kimi-k2.5` to newly registered accounts ahead of a 2026-08-31 sunset, so a
+  recent key gets 404 for ids the vendor still documents while an older key does
+  not. `kimi-latest` was discontinued outright on 2026-01-28, and
+  `moonshot-v1-auto` appears in no Moonshot documentation at all. The comment
+  now points at `GET /v1/models`, which answers this per key, instead of naming
+  a set that is correct for one account and wrong for the next.
+
+### Changed
+
+- **Five gated tests check that the real endpoints accept what each provider
+  sends.** The hermetic tests drive a fake `curl`, so they assert the endpoint,
+  the key staying off argv and the prompt reaching the body file, and none of
+  them can assert the endpoint accepts any of it. The Kimi payload passed every
+  one while failing every real call. Run them with `COUNCIL_E2E=1`; they skip by
+  default, skip again when a key is absent, and never run in CI.
+- Test inventory corrected in `TESTING.md`, which also documents `COUNCIL_E2E`.
+  That gate gated three CLI tests already without appearing in any documentation.
+
+## 2026.8.2
+
+### Added
+
+- **A large prompt reaches the Antigravity CLI on Windows.** `agy` takes its
+  prompt only as the value of `-p`, and Windows caps a command line at 32k, so
+  a `--file`-sized prompt died in CreateProcess before agy ever started. Past
+  `COUNCIL_ARGV_LIMIT` (24000 by default) the question is written to a file of
+  its own and agy is pointed at it. Found and diagnosed by @DavidChin0.
+- **`COUNCIL_PROVIDERS` pins a standing roster.** Discovery enlists every agent
+  on PATH, ollama included once installed, with no way to say "these, every
+  time" short of retyping `--providers`. Precedence is `--providers`, then
+  `COUNCIL_PROVIDERS`, then discovery; `--list-default` and `--list-available`
+  both report the pinned set, and either accepts spaces around its commas.
+
+### Fixed
+
+- The spill gets a directory of its own. `--add-dir` had been handed the whole
+  temp root, 17,980 entries on the machine it was found on, and it is the only
+  lever that widens `--sandbox` because agy has no allowed-tools flag.
+- The spilled file holds the question and nothing else. It had carried the
+  answer guard, system prompt and verbosity directive into a file the argv
+  prompt then told agy to treat as material rather than instructions, so a
+  `--verbosity brief` run past the size limit lost its directive entirely.
+- The spill prompt no longer forbids the one file it must read. The shared
+  guard ends with "Do NOT reference external files", which contradicted the
+  sentence naming a file to open.
+- A malformed `COUNCIL_ARGV_LIMIT` such as `24k` warns and falls back to 24000.
+  Fed to an arithmetic comparison it evaluated false and skipped the spill in
+  silence, reintroducing the failure the spill exists to prevent.
+- A roster naming nothing usable says which roster emptied, instead of advising
+  you to set an API key you already have.
+- `--list-available` and `--list-default` agree about what a default query
+  runs, and providers left out by a pinned roster are no longer labelled as
+  shadowed by the CLI-prefers-API policy that was never involved.
+
+### Changed
+
+- Test inventory in `TESTING.md` corrected, and `COUNCIL_PROVIDERS` and
+  `COUNCIL_ARGV_LIMIT` added to the configuration table in
+  `docs/ARCHITECTURE.md`.
+
+## 2026.8.1
+
+### Added
+
+- **Kimi (Moonshot AI) as a council member, in both flavours.** `kimi-cli`
+  drives the Kimi Code CLI on subscription auth and is registered as the shadow
+  partner of the `kimi` API provider, so an installed CLI is preferred and the
+  API only steps in when it fails — the same policy codex/antigravity/grok-cli
+  already follow. The CLI is read via `--output-format stream-json`: its text
+  renderer interleaves visible reasoning with the answer, prefixes every line
+  with `• ` and appends a session-resume footer, all of which would otherwise
+  be quoted verbatim in the synthesis.
+- **A local `ollama` model as a council member.** No key, no subscription, no
+  network. Binary-gated like the CLI providers; without `OLLAMA_MODEL` it uses
+  the first locally installed model rather than a hardcoded id that may not be
+  pulled. Local reasoning models spend most of their budget on thinking that
+  never reaches `.content`, so the token floor is raised and an exhausted
+  budget is reported as such instead of as an unknown error.
+
+### Fixed
+
+- **Any provider no colour arm named crashed `check-status.sh`.**
+  `provider_color`'s default arm expands `${CYAN}`, which check-status never
+  defined; under `set -u` that aborted the entire status run the moment a new
+  provider was added. The colour expansions now default to empty.
+- **The provider total in the status footer was hardcoded.** `N/7` would have
+  misreported the moment the roster changed. `format_status` now counts each
+  row as it prints it, so the denominator is what the user can count on screen
+  and a new provider cannot leave it behind.
+- **`path_without_clis` could not hide newly added binary-gated CLIs**, so
+  tests asserting the no-providers path saw a populated council.
+- **The Kimi CLI ran with tool execution auto-approved.** `kimi -p` handles
+  tool calls under the auto permission policy, so file writes and shell
+  commands were approved with no prompt — on a prompt that can carry `--file`
+  contents or, in debate mode, another provider's answer. The other CLI
+  providers each pin a restriction for exactly this reason. Kimi's read-only
+  plan mode cannot be used here (`kimi` rejects `--plan` alongside `--prompt`),
+  so the council now passes an agent file that grants no tools at all.
+- **A stray line from the Kimi CLI discarded a complete answer.** The stream
+  was slurped as one JSON value sequence, so any unstructured line beside it —
+  an upgrade notice, a warning — aborted the parse; the provider then reported
+  "no assistant content" and, with a key set, silently billed the API sibling
+  instead. It is now read line by line, skipping only what will not parse.
+- **A downed Ollama daemon produced a blank error.** `ollama list` exits
+  non-zero when the daemon is not running, which under `set -euo pipefail`
+  aborted the script before its own guard could speak — leaving the council an
+  empty error slot. The call is guarded and reports the daemon state instead.
+- **An image query could route to a sibling that also cannot see.** Routing was
+  gated on a sibling existing rather than on it being vision-capable, which was
+  safe only while every sibling had vision; `kimi` is the first that does not,
+  so the query spent a paid API call on an equally blind answer and skipped the
+  "(answered without the image)" tag that marks one.
+- **`query-council.bats` kept a second copy of the provider-key unset list**
+  that went stale, so the no-providers tests failed on any machine exporting a
+  newly added key. It calls the shared helper now.
+- **The Kimi CLI's stream carries two more shapes than the parser handled.**
+  Content may arrive as a `[{type,text}]` array, which was a jq type error the
+  `|| true` swallowed into "no content"; and an assistant message carrying
+  `tool_calls` narrates the call rather than answering, so its text was being
+  concatenated into the response.
+
+### Docs
+
+- **The stop-gate privacy note named seven of the ten providers it accepts.**
+  Choosing `kimi` sends your full uncommitted diff to Moonshot, a third party
+  the note never mentioned, and it also hid the better option: `ollama` keeps
+  the diff on the machine. Two pre-existing errors went with it, since the CLI
+  list gave binary names where the config field takes provider ids.
+- **A documentation audit found 15 places where the docs contradicted the
+  code.** TESTING.md claimed 438 tests against an actual 468, with five stale
+  per-file rows, and mentioned neither new provider anywhere. README's
+  max-tokens default is wrong for `ollama` (4096), and its vision-sibling rule
+  listed two skip conditions where there are now three. ARCHITECTURE's file
+  tree, fan-out diagram, provider tables and configuration reference all
+  predated three provider scripts. Provider enumerations were also stale in the
+  plugin description, the ask command's frontmatter, the provider-integration
+  skill's table, and two help strings in `query-council.sh`.
+
+## 2026.7.9
+
+### Fixed
+
+- **grok-cli sometimes answered with a plan narration instead of an answer.**
+  grok is agentic in `-p` print mode: on a complex prompt it can announce a
+  plan ("Checking the workspace...") and go explore files, and plain output
+  then carries only that narration. Two-layer fix: `--no-plan` disables plan
+  mode at the flag level, and the prompt now leads with the same inline-answer
+  guard antigravity uses (hoisted to `verbosity.sh` as the shared
+  `INLINE_ANSWER_GUARD`), pinning the complete answer to plain text with no
+  tool use. A pre-fix cached narration can still serve until its TTL (1h)
+  expires; `--no-cache` bypasses it.
+
+## 2026.7.8
+
+### Fixed
+
+- **codex and antigravity now defer to your own model choice.** Both providers
+  pinned a model id (`-m gpt-5.5`, `--model "Gemini 3.5 Flash (High)"`) that
+  silently overrode the model you configured — codex's `~/.codex/config.toml`
+  and the model selected in the Antigravity app. With `CODEX_MODEL` /
+  `ANTIGRAVITY_MODEL` unset, no model flag is passed at all and the CLI's own
+  resolution decides, completing the deference pattern grok-cli already used.
+  Set the `*_MODEL` variable to force a specific model; header and cache
+  labels read `default` when unset.
+
+### Docs
+
+- Synced the `/ask` command and provider-integration skill model tables with
+  the actual API defaults (`gpt-5.6-sol`, `grok-4.5`) — they still listed the
+  fallback models as defaults.
+
+### Changed
+
+- Dropped a dead `providers.sh` source line from the codex and antigravity
+  provider scripts.
+
+## 2026.7.7
+
+### Fixed
+
+- **`grok-cli` crashed on every council query on modern bash.** The
+  model-override variable was derived by uppercasing the provider name
+  verbatim, producing `GROK-CLI_MODEL` — an invalid bash name whose `${!var}`
+  expansion is fatal on bash 5.x. The round-1 worker died before invoking the
+  CLI, so grok-cli always reported "No response received". Env-var prefixes
+  now map hyphens to underscores via a shared `provider_env_prefix` helper,
+  covering the model override, API-key presence, and fallback key-hash
+  derivations.
+- **The test suite ran under the wrong bash, which is how the crash escaped
+  435 green tests.** Stripping CLI directories from PATH for hermetic tests
+  could also strip the directory of the bash users actually run (e.g.
+  Homebrew's 5.x), silently demoting the suite to macOS's `/bin/bash` 3.2 —
+  where invalid-name expansion is non-fatal. Tests now resolve `HOST_BASH`
+  before the strip and run the script under it at every invocation site, with
+  a hyphenated-provider regression test (436 tests total).
+
+## 2026.7.6
+
+### Added
+
+- **`grok-cli` provider.** Drives xAI's Grok CLI (`grok`) in headless
+  single-turn mode (`grok -p ... --output-format plain`), gated on the binary
+  being on PATH rather than an API key — so a Grok CLI subscription answers the
+  council with no `XAI_API_KEY` and no per-call cost, the same way `codex` and
+  `antigravity` already do. It shadows the `grok` API provider (listing both,
+  e.g. `--providers=grok,grok-cli`, runs them side by side), pins grok's
+  built-in `read-only` sandbox as defense-in-depth, and defaults to the grok
+  CLI's own default model unless `GROK_CLI_MODEL` is set. Because it is a
+  CLI, an image query routes to its `grok` API sibling when a key is present,
+  and answers text-only otherwise.
+
+### Docs
+
+- Added grok-cli to provider enumerations, the configuration reference, and
+  manual test scenarios across README, ARCHITECTURE, and TESTING.
+
+## 2026.7.5
+
+### Added
+
+- **Model fallback for API providers.** When a provider's default model is
+  unavailable for your key or region — the API answers 403/404, or a 400
+  naming the model — the council retries with a verified fallback model
+  instead of failing, and reports the substitution on three surfaces: the
+  rendered header (`grok-4.20-reasoning (grok-4.5 unavailable)`), a stderr
+  note, and the synthesis. `grok-4.5`, for example, is not currently served in
+  the EU. The verdict is cached for a day (`COUNCIL_AVAILABILITY_TTL`,
+  seconds, `0` to re-check every query) so the unavailable model isn't
+  retried on every call, and the council returns to the default automatically
+  once it becomes available. An explicit `<PROVIDER>_MODEL` opts a provider
+  out of the fallback.
+- **Image input for Grok and Perplexity.** grok-4.x and Perplexity sonar
+  models now receive images over their OpenAI-compatible `/chat/completions`
+  endpoints, alongside the existing Gemini and OpenAI vision routing. The
+  text-only path is unchanged, and Perplexity's `search_recency_filter` /
+  `return_citations` are preserved on the image path.
+
+### Fixed
+
+- **xAI errors reported their HTTP code instead of their reason.** xAI returns
+  `.error` as a bare string rather than an object. `.error.message` on a string
+  raises a jq error rather than yielding null, and `//` does not catch a raise —
+  so the existing check read every xAI failure as "no usable message" and
+  replaced the body, printing `Error from Grok: HTTP 403` instead of *"The
+  model grok-4.5 is not available in your region."*
+- **Any OpenAI API error crashed the provider script instead of reporting it.**
+  On the `/v1/responses` path — which the default model `gpt-5.6-sol` uses —
+  the text extraction iterated `.output[]` over an error body that has no
+  `.output` key. jq exits 5, and under `set -euo pipefail` the command
+  substitution aborted the script before its error-handling block ever ran.
+  Users saw a raw jq diagnostic and exit 5 instead of a reported error.
+- **The Stop hook wedged the session when the plugin path contained a space.**
+  An unquoted `${CLAUDE_PLUGIN_ROOT}` word-split (common on Windows,
+  `C:\Users\First Last\...`), so bash ran the split-off prefix as a script —
+  exit 127, or a syntax error and exit 2 that Claude Code reads as "block the
+  stop", a loop that survived disabling the plugin. Quoting the expansion
+  passes the path as a single argument. (Fixes #11.)
+
+### Changed
+
+- **Default models bumped to current flagships:** OpenAI `gpt-5.6-sol`,
+  Grok `grok-4.5`.
+
+## 2026.7.4
+
+No user-facing behavior changes. This release makes the shell linter tell the
+truth, then lets it block a merge.
+
+### Fixed
+
+- **`set -e` can see a failing command again in three places.** `local x=$(cmd)`
+  discards the command's exit status, because `local` is itself a command and its
+  success becomes the line's. A failing `dirname` when exporting, and a failing
+  `provider_color` or `provider_emoji` when formatting the provider list, passed
+  silently.
+
+### Other
+
+- **shellcheck reported 58 findings and was configured never to fail.**
+  `continue-on-error: true` kept the run green while the check stayed red, so
+  every commit on main carried a red mark, both releases included. It reports
+  none now, and a finding blocks a merge.
+- **Thirty-four of those came from one blind spot.** Every script reaches its
+  libraries through `source "$SCRIPT_DIR/lib/x.sh"`, a path shellcheck cannot
+  resolve, so it never opened the sourced files and called every shared
+  definition unused. A `.shellcheckrc` resolves them at the root.
+- **The lint target names every tracked script** rather than three globs, which
+  had silently skipped two files and would have skipped any script in a
+  directory added later.
+- **shellcheck is pinned by digest**, and its download retries into a file rather
+  than a pipe, since curl restarts a transfer from byte zero and cannot unwrite
+  what it already emitted. A linter ships new checks in every release, so an
+  unpinned one blocking a merge reddens main on a commit nobody touched.
+- **`available` named three different things**: an array of discovered providers,
+  a padded set string, and a provider counter. Each now names what it holds.
+- **A pane-watcher script global is gone.** The banner was built into a variable
+  through an out-param, then printed once and dropped. It prints directly now.
+
+### Docs
+
+- `TESTING.md` gains a lint section: how to run it, and when suppressing a
+  finding is legitimate.
+- `docs/ARCHITECTURE.md` lists `.shellcheckrc`, `.github/workflows/tests.yml`,
+  and `CHANGELOG.md` in the file tree.
+
+## 2026.7.3
+
+Three bugs made `/status` misreport provider health, including one that told users
+to revoke a working API key.
+
+### Fixed
+
+- **A typo'd model name no longer reads as a rejected API key.** Neither Gemini's
+  `INVALID_ARGUMENT` status nor xAI's `invalid-argument` code names the key: both
+  are the vendor's marker for their whole 400 class, an unusable model name
+  included. A capitalised `GEMINI_MODEL` reported `Auth failed (HTTP 400)` with
+  the remediation `key rejected - regenerate it`, so the user revoked a good key
+  and the symptom survived. Each check now reads the field that names the key,
+  Gemini's `details[].reason` and xAI's error text.
+- **A rejected key is reported even when the vendor answers 400.** Gemini and xAI
+  answer `400` rather than `401`, so half the providers rendered a bad key as a
+  generic error carrying no remediation.
+- **Perplexity is no longer reported as broken when it is fine.** The probe asked
+  for `max_tokens: 1`, under that API's floor of 16, so the API answered 400 to
+  our own request and every valid Perplexity key read as `Error (HTTP 400)`.
+- **Connection failures no longer render as `Error (HTTP 000000)`.** curl reports
+  a failed transfer as `000` and also exits non-zero; the guard that kept `set -e`
+  from aborting appended a second `000`. A body that stalled after a `200` header
+  produced `Error (HTTP 200000)`.
+- **A missing `jq` is reported rather than silently misdiagnosed.** Every `jq`
+  failure looked like "not a rejected key", so a genuinely rejected key reported
+  as an ordinary 400: a wrong answer rather than a missing one.
+
+### Security
+
+- **The OpenAI and Perplexity probes no longer write a response body to disk.**
+  Nothing reads it, and OpenAI's error body echoes a partially redacted copy of
+  the key.
+
+### Changed
+
+- Mutation testing drove these fixes: of ten defects injected into
+  `check-status.sh`, eight survived the suite. All ten now fail it. Coverage added
+  for 403, for 401 and 403 reaching every provider rather than one, for curl
+  writing nothing, for `-X POST` and `--max-time`, for temp-file cleanup, and a
+  cost bound on the billable Perplexity probe. 354 tests to 367.
+- The zombie-reaping test obtains a dead pid from a child that exits at once,
+  rather than backgrounding a 30-second sleep that could outlive the test and
+  hold its output stream, which intermittently failed the macOS runner.
+
+## 2026.7.2
+
+Screenshot/image input for the council, plus a full security & correctness audit
+(67 findings) and continuous integration.
+
+### Added
+
+- **Screenshot / image input (`--image=path`).** Attach one image
+  (png/jpg/jpeg/webp/gif, ≤10 MB) to a council query. Gemini and OpenAI analyze
+  it natively; CLI providers route to their vision-capable API sibling
+  (codex→openai, antigravity→gemini); Grok and Perplexity answer text-only,
+  tagged `(answered without the image)`. The image bytes never touch cache
+  entries or saved `council-*.md` transcripts — only a hash keys the cache.
+- **Continuous integration.** GitHub Actions runs the bats suite on Ubuntu and
+  macOS; releases are gated on a green suite and refuse to run with a pre-staged
+  index.
+
+### Fixed
+
+Security and correctness hardening from a full audit (67 findings):
+
+- **Secrets off the process argv** — API keys reach `curl` via a mode-600
+  `--config` file, never the command line or a URL query string (Gemini uses the
+  `x-goog-api-key` header).
+- **Large prompts no longer fail** — provider prompts and payloads travel via
+  files rather than argv, fixing "argument list too long" on big `--file` inputs.
+- **Cache hardening** — portable SHA-256; keys that account for verbosity, token
+  cap, and any attached image; a self-ignoring cache dir; safe handling of empty
+  or corrupt entries.
+- **No silent failures** — `curl_with_retry` always returns a structured error
+  body; council failures surface, and zombie async jobs are reaped to `failed`.
+- **Display & terminal** — millisecond-correct timing, revived OSC-11 theme
+  detection on bash 3.2, control-byte scrubbing before render, hardened tmux pane
+  manifest writes.
+- **Provider robustness** — CLI providers bounded by `COUNCIL_TIMEOUT`, codex
+  pinned to a read-only sandbox, a near-free Perplexity status probe.
+
+### Docs
+
+- Corrected documentation drift (cache-key formula, file trees, model defaults),
+  documented the vision feature in the architecture and testing guides, added
+  privacy/cost notes, and removed a phantom config block and an unsupported
+  install command from the README.
+
+### Changed
+
+- Extracted the perl / Rich renderers and the pane watcher from inline heredocs
+  into standalone files; untracked session state; localized git attributes.
+
+## 2026.7.1
+
+Rich markdown rendering in the streaming tmux pane, with the perl renderer as
+the zero-install fallback.
+
+### Added
+
+- **Rich markdown rendering in the streaming tmux pane.** When a Rich-capable
+  Python is available (`python3` with a modern `rich`, or `uv`, which fetches
+  it on demand), responses render through a council-tuned
+  [Rich](https://github.com/Textualize/rich) renderer: word-wrapped prose,
+  tables fitted to the pane width, syntax-highlighted code and reasoning
+  blocks styled with the terminal's own palette, and clickable OSC 8 links.
+  Without one, the built-in perl renderer runs unchanged — the plugin stays
+  zero-install. `COUNCIL_RENDERER=perl` forces the perl path.
+- Selection hardening: uv runs isolated from the cwd's Python project
+  (`--no-project`, `--offline` at render time), the pane-open probe is
+  bounded (`COUNCIL_RICH_PROBE_TIMEOUT`, default 10s), pre-13 Rich installs
+  are rejected by feature detection, and any runtime render failure falls
+  back to perl so the pane never goes blank.
+
+### Docs
+
+- Corrected stale `codex` / `gemini` CLI references to `agy` (Antigravity)
+  in README — the gemini CLI was replaced in v2026.6.7.
+- Documented renderer selection, `COUNCIL_RENDERER`, and
+  `COUNCIL_RICH_PROBE_TIMEOUT`; Requirements lists the optional Rich
+  dependency. Test suite 256 → 270.
+
+## 2026.6.9
+
+Fixes a Windows/MSYS bug where large provider responses were silently dropped.
+
+### Fixed
+
+- **Windows/MSYS: provider responses silently dropped at `standard`/`detailed`
+  verbosity.** On MSYS, `ARG_MAX` is ~32 KB, but the council built its final
+  JSON by passing the combined provider responses to `jq` on the command line —
+  so once they exceeded ~32 KB, `jq` aborted with "Argument list too long" and
+  the script emitted nothing. All large data (responses, the metadata prompt,
+  the per-round accumulators) now reaches `jq` via stdin, which isn't bounded by
+  `ARG_MAX`. Linux/macOS were never affected (`ARG_MAX` ~2 MB). Thanks to
+  @GmailTedam (Dr Josh Tedam) for the report and original fix (#5).
+
+### Changed
+
+- Consolidated the jq marshalling onto one stdin-based path — a `merge_result`
+  helper for the result accumulators plus `jq -s`/`jq -Rs` for the metadata and
+  final build — replacing the temp files the initial fix used (byte-identical
+  output on every platform).
+- Added `tests/argmax.bats` (3 tests): large round-1 response, large prompt, and
+  large debate-round-2 response each round-trip through the final JSON intact.
+  Suite 253 → 256.
+
+### Docs
+
+- Listed the new `tests/argmax.bats` coverage in `TESTING.md` and
+  `docs/ARCHITECTURE.md`.
+
+## 2026.6.8
+
+Makes the streaming pane's muted text readable on light/cream backgrounds.
+
+### Fixed
+
+- **Light-background pane contrast** — the pane's *muted* text (link URLs, table
+  grid lines, `---` rules, sub-headings, and the "waiting on" label) now adapts
+  to the terminal theme the way bold/italic emphasis already did. On light/cream
+  backgrounds these render as a readable dark gray instead of the faint
+  (`2`)/bright-black (`90`) codes that washed out; dark themes are unchanged.
+  Force with `COUNCIL_THEME=light`.
+
+### Changed
+
+- Docs (README, ARCHITECTURE, TESTING) updated to describe theme adaptation
+  covering muted text, not just emphasis.
+- Gated the real-`agy` CLI end-to-end test behind `COUNCIL_E2E=1` (matching the
+  codex E2E) so the default suite no longer makes a live model call or depends
+  on its exact wording.
+- Simplified the muted-SGR construction in the waiting-list renderer
+  (byte-identical output).
+
+## 2026.6.7
+
+Replaces the Gemini CLI provider with Google's Antigravity CLI and adds an
+automatic CLI→API fallback.
+
+### Added
+
+- **`antigravity` provider** — drives Google's Antigravity CLI (`agy`) in print
+  mode as the Gemini-vendor subscription-CLI provider, gated on the `agy` binary
+  being on `PATH`. Default model `Gemini 3.5 Flash (High)` (override via
+  `ANTIGRAVITY_MODEL`). A tool-suppression prompt guard keeps the agentic CLI
+  answering inline as plain text instead of writing report artifacts to disk.
+- **CLI→API fallback** — when a CLI provider fails at query time and its API
+  sibling's key is set, the council automatically retries through that sibling
+  (in both the initial and debate rounds), showing the answer in the same slot
+  with the API model's name and a "fell back to … API" note. The fallback is
+  skipped when the sibling is already a selected provider (so you never get the
+  same vendor's answer twice), reuses a cached sibling answer instead of
+  re-billing the API on a repeat, and also rescues a missing/non-executable
+  provider script.
+
+### Removed
+
+- **`gemini-cli` provider** — removed entirely (no compatibility alias);
+  `antigravity` supersedes it as the Gemini-vendor CLI.
+
+### Changed
+
+- `shadow_origin` and `api_sibling` now derive from a single `SHADOW_PAIRS`
+  source list so the API↔CLI pairing can't drift between them; `api_key_present`
+  gates generically on the `<NAME>_API_KEY` convention.
+- Docs (README, ARCHITECTURE, TESTING) updated for the new provider and the
+  fallback behavior.
+
+## 2026.6.6
+
+Streaming-pane fix: the waiting-list spinner no longer waterfalls.
+
+### Fixed
+
+- **The "council is waiting on …" spinner no longer prints a new line every
+  frame.** Whenever the waiting line was wider than the pane it wrapped, and the
+  carriage-return redraw (`\r\033[K`) could only reclaim the last physical row —
+  leaving one stale row per animation frame (a waterfall). The line now disables
+  autowrap (DECAWM) so it clips at the right margin instead of wrapping, and the
+  provider list is truncated to fit the pane width with a `…` overflow. Live pane
+  width comes from `stty size` (the pane tty's winsize); `tput cols` returns the
+  static terminfo default in a non-interactive pane process, not the real width.
+
+## 2026.6.5
+
+Correctness fix for the local council shipped in 2026.6.4.
+
+### Fixed
+
+- **The local council no longer hijacks queries when real providers are
+  available.** 2026.6.4 shipped council members as a standalone `council-member`
+  agent type; because a registered agent is directly spawnable by the model,
+  asking to "use the council" could spawn a local Claude-only council directly —
+  bypassing provider detection, so real providers (Gemini/OpenAI/…) were skipped
+  even when configured. The agent type is removed; the local council now runs
+  **only** through its gated path — when no providers are configured, when the
+  user accepts the offer, or with explicit `--local` — and a skill-level guard
+  enforces this even if the skill is reached directly. Local members are now
+  `general-purpose` subagents (matching `--agents` mode).
+
+## 2026.6.4
+
+A local Claude-only council for users without provider keys, plus collection-loop
+and gemini-CLI robustness fixes.
+
+### Added
+
+- **Local council (`--local`).** Convene a council using Claude alone when no
+  provider keys or CLIs are configured. Spawns N independent subagents — each a
+  different role from `config/roles.json`, blind to the others — and synthesizes
+  them. When a query finds no providers, the command now *offers* a local council
+  instead of erroring. You choose how many members to convene (default 4, up to
+  8); `--roles` still selects specific lenses. Output is explicitly framed as
+  same-model *angles and blind-spot coverage*, not cross-vendor consensus.
+
+### Fixed
+
+- **One bad provider no longer crashes the whole run.** The result-collection
+  loops fed raw provider output straight to `jq --argjson`; a single non-JSON
+  result aborted the entire council under `set -e`. Output is now coerced into a
+  structured error via `coerce_result_json`, so every other provider's result
+  survives.
+
+- **`gemini-cli` only passes `--skip-trust` when the installed CLI advertises
+  it.** Newer Gemini builds dropped the flag, so headless mode aborted with
+  `Unknown argument: skip-trust`. It is now probed via `--help` before use.
+  (Thanks @Deal-Phoenix.)
+
+### Changed
+
+- **Manual-install docs corrected.** Don't clone into `~/.claude/plugins/` (the
+  managed install cache, never scanned for manual plugins); `pluginDirectories`
+  is not a real settings key. Documented the per-session `--plugin-dir` path and
+  the two traps. Refreshed test counts and the token-table standard-model example.
+
+## 2026.6.3
+
+Streaming-pane robustness fixes for the tty probe and light-terminal rendering.
+
+### Fixed
+
+- **Streaming pane no longer leaks a `/dev/tty` error.** The tty-writability
+  probe silenced stderr *after* the failing redirect, so headless runs printed
+  a stray `query-council.sh: line 407: /dev/tty: Device not configured`.
+  Extracted into `council_probe_tty()` with stderr silenced first.
+
+- **Light-theme contrast.** Bold/italic were rendered invisible bright-white on
+  light terminals because `COLORFGBG` goes stale (reports `15;0` "dark" on a
+  light terminal). `council_detect_theme` now trusts `COLORFGBG` only to assert
+  *light*; anything ambiguous falls back to attribute-only emphasis that
+  inherits the real foreground — readable on any theme.
+
+- **`COUNCIL_THEME` no longer clobbered when forwarding to the pane.**
+  `display_pane_open` passed `-e COUNCIL_THEME=` unconditionally, overwriting a
+  theme the pane could otherwise inherit or auto-detect with an empty value. It
+  is now forwarded only when set.
+
+### Changed
+
+- Documentation: corrected `display.bats` (17→21) and `agent-analysis.bats`
+  (9→11) test counts; tightened the `COUNCIL_THEME` description in
+  `ARCHITECTURE.md`.
+
+## 2026.6.2
+
+Patterns adopted from an analysis of openai/codex-plugin-cc, adapted to
+claude-council's bash architecture.
+
+### Added
+
+- **Background jobs (`--async`).** `run-council.sh --async` detaches the
+  query as a tracked job (json + log per job in a workspace-hashed state dir
+  under `$CLAUDE_PLUGIN_DATA`) and returns a job id immediately.
+  `--result=<id>` returns the outfile path (exit 2 while in flight),
+  `--jobs` lists, `--cancel=<id>` terminates the worker process tree. New
+  `/claude-council:result` command fetches, lists, and cancels;
+  `/claude-council:status` now lists jobs.
+
+- **Opt-in stop-gate review hook (off by default).** A `Stop` hook asks one
+  council provider to review the uncommitted diff and blocks the stop only
+  on a first-line `BLOCK:` verdict. Enabled per project via
+  `.claude/council-stop-gate.json`; guarded by a `stop_hook_active` check
+  and a per-session block cap, and any reviewer failure allows the stop.
+
+- **Enforced agent-mode output contract.** Deep-execution agents now return
+  JSON matching `schemas/agent-analysis.schema.json`;
+  `scripts/validate-analysis.sh` checks every field and invalid replies are
+  rendered raw under a visible marker instead of silently accepted.
+
+- **Prompt templates.** `prompts/*.md` with `{{VAR}}` slots filled by
+  `scripts/lib/prompts.sh`; role injection and the synthesis instructions
+  (now with calibration rules) moved out of heredocs and skill prose.
+
+- **Hermetic CLI test fixture.** Fake `codex`/`gemini` binaries on `PATH`
+  (behavior via `COUNCIL_FAKE_BEHAVIOR`, invocations recorded as JSONL) let
+  provider scripts, async jobs, and the stop gate run end-to-end in bats
+  with no network. Suite grew from 132 to 196 tests.
+
+### Changed
+
+- **Malformed provider output is preserved, never dropped.**
+  `format-output.sh` marks empty responses (`[empty response]`) and prints
+  off-shape entries raw in a fenced block (`[unparseable response]`); a
+  missing `round1` no longer crashes the formatter.
+
+- **Provider status is two-tier with fix commands.** `check-status.sh`
+  distinguishes installed-but-unauthenticated codex (via `codex login
+  status`) from available, and every failure state prints the exact
+  remediation (`export KEY=...`, `codex login`, install command).
+
+### Fixes
+
+- **`check-status.sh` died before its summary line.** `((available++))`
+  under `set -e` aborted the script as soon as any provider was available;
+  the summary now always prints.
+
+- **Perplexity status probe rejected by the API.** Perplexity now requires
+  `max_tokens >= 16` for sonar; the probe sent 1 and read as HTTP 400.
+
+- **Pane text was invisible on light terminal themes.** The waiting-list
+  provider colors are now mid-tone shades, and the markdown renderer's
+  bold/italic emphasis adapts to the detected terminal theme (OSC 11
+  background query in the pane, `COLORFGBG` fallback, attribute-only when
+  unknown; force with `COUNCIL_THEME=light|dark`).
+
+- **Closing the streaming pane early failed the query.** `display_pane_close`
+  returned 1 once the watcher had cleaned up its watch dir, and as the last
+  command under `set -e` that became query-council's exit code, making
+  run-council swallow the outfile path. The function now treats a missing
+  watch dir as already closed.
+
+### Other
+
+- Simplify pass: memoized job-state resolution, single-jq JSON reads in the
+  stop gate and job commands, theme forwarded via `tmux -e` instead of a
+  file, shared `unset_provider_keys`/`assert_blank` test helpers, and the
+  validator now enforces the schema's 1-5 recommendation bound.
+
+## 2026.6.1
+
+### Fixes
+
+- **`grok-build` models now get the reasoning token bump.** `grok-build-*`
+  (e.g. `grok-build-0.1`) is a reasoning model that was missing from Grok's
+  token-bump list, so responses were capped at the 2048 default and truncated
+  long answers mid-sentence. It now gets the 32768 cap. xAI caps `max_tokens`
+  on grok-build's *visible* output only (internal thinking is uncapped), so the
+  bump guards against long answers being cut off.
+
+- **Perplexity reasoning models now get the token bump.** `sonar-reasoning*`
+  and `*deep-research*` were documented and unit-tested as bump-eligible, but
+  the logic was never wired into `perplexity.sh` — so the default
+  `sonar-reasoning-pro` stayed capped at 2048, risking truncation of its visible
+  `<think>` chain-of-thought. The bump is now applied (verified live: default
+  model sends `max_tokens=32768` with search and citations intact).
+
+### Docs
+
+- Corrected a stale README claim that Gemini and Grok "use the base limit
+  directly" — both apply the bump (Gemini combines reasoning+output; Grok caps
+  visible output only).
+- Fixed the `tokens.bats` test count in TESTING.md (8 → 9).
+
+## 2026.5.3
+
+### Fixes
+
+- **Bash 3.2 silent corruption fixed.** Three sites used `declare -A`
+  (associative arrays, bash 4+) which crashed on macOS system bash 3.2
+  (`/bin/bash`). Worse than a clean error: bash 3.2 evaluates string
+  subscripts arithmetically on unset names, collapsing every key to
+  index 0 and silently corrupting membership lookups. Concrete user-
+  visible bug: a user with only `OPENAI_API_KEY` configured (no codex
+  CLI) had openai silently dropped from every council query because
+  `prefer_cli_over_api` thought every provider's CLI shadow was already
+  present. Affected: `prefer_cli_over_api`, `--list-available`, the
+  watcher.sh streaming-pane state map.
+
+- **codex CLI: bypass trusted-directory guard.** Pass
+  `--skip-git-repo-check` to `codex exec` so the council can run from
+  any cwd. The guard exists for interactive coding sessions that may
+  edit files; our headless exec only reads stdout. Mirrors the existing
+  `--skip-trust` flag in gemini-cli.sh.
+
+- **Default request timeout raised: 120s → 300s.** Reasoning models
+  (gpt-5.5-pro, grok-4.20-reasoning, sonar-reasoning-pro) routinely
+  exceeded 120s on hard architectural questions, surfacing as confusing
+  timeouts. The deep-execution per-agent override is also raised
+  (240s → 500s).
+
+### Other
+
+- Internal: `display.sh` watcher's per-provider state moved from three
+  associative arrays to parallel arrays + `provider_index` helper using
+  the `printf -v` out-variable idiom (matches existing
+  `provider_color_rgb` pattern). No behavior change.
+
+## 2026.5.2
+
+### Features
+
+- **`--list-default` flag** for `query-council.sh` — returns the providers
+  that would actually run for a default query (post CLI-prefers-API filter).
+  The slash command (`/ask`) now uses it to size its provider-selection
+  AskUserQuestion correctly: with both API keys and CLIs configured, it shows
+  4 options (the queryable set) instead of 6 (the full discovered set).
+
+- **`--list-available` is now human-readable**: multi-line output with the
+  default query set and a "Shadowed by CLI policy" section that names which
+  CLI is preferred. Use `--list-default` for tooling.
+
+### Docs
+
+- **README restructured** for marketplace readers. Quick start (install +
+  example query + sample output) now leads, followed by Usage above
+  Configuration, with deep config (model selection, reasoning models,
+  Perplexity recency, retry/timeout, terminal integration) consolidated
+  under a new "Reference" section. Added a small ToC after the tagline.
+
+### Other
+
+- New `shadow_origin` helper in `lib/providers.sh` — single source of truth
+  for the API↔CLI shadow pairs (codex⇄openai, gemini-cli⇄gemini). Both
+  `prefer_cli_over_api` and the `--list-available` display annotation now
+  use it. Adding a future pair is a one-line change instead of three.
+- New `default_provider_set` helper — collapses the
+  `discover_providers | prefer_cli_over_api` chain that appeared at three
+  call sites into a single function call.
+- Two new tests (`cli-providers.bats` is now 18, up from 16) covering
+  `--list-available`'s shadow annotation and `--list-default`'s
+  machine-readable contract.
+
+## 2026.5.1
+
+### Features
+
+- **Codex and gemini CLI providers.** `codex` and `gemini` CLIs are now
+  first-class council members alongside the existing API providers,
+  discovered automatically when their binaries are on `PATH`. They use
+  your existing CLI subscription auth — no API key, no per-call cost.
+
+  When both an API and a CLI sibling are configured, the council prefers
+  the CLI by default: `codex` shadows `openai`, `gemini-cli` shadows
+  `gemini`. Explicit `--providers=openai` (or `gemini`) bypasses the
+  policy. Listing both in `--providers=gemini,gemini-cli` runs them
+  side-by-side for direct comparison.
+
+  Vendor-grouped colors and emojis: codex shares OpenAI's white square
+  (🔳), gemini-cli shares Gemini's blue square (🟦) — across both the
+  rendered output and the streaming tmux pane. Real model names
+  (`gpt-5.5`, `gemini-3-flash-preview`) flow through to pane headers and
+  JSON metadata via constants matching the CLIs' own current defaults.
+
+### Fixes
+
+- **`discover_providers` portability.** Replaced bash 4+ `${name^^}`
+  with portable `tr` so the script's fallback case runs cleanly under
+  `/bin/bash` 3.2 (macOS system bash). Was a latent crash for users
+  whose only configured provider was perplexity.
+
+- **`query-council.bats` setup leak.** Now also unsets `XAI_API_KEY`,
+  which was silently aliased to `GROK_API_KEY` via `keys.sh`'s
+  `resolve_grok_key`. On developer machines with `XAI_API_KEY` set, grok
+  was sneaking through "no providers" tests.
+
+- **`display.bats: should_open_pane is true inside tmux by default`**
+  now unsets the global `COUNCIL_NO_PANE=1` test guard before exercising
+  the default code path. Test was contradicting itself silently.
+
+### Docs
+
+- README: new "CLI Providers (subscription auth, no API key)" section
+  with the prefer-CLI policy and override examples.
+- ARCHITECTURE.md: file structure and tests trees include the new
+  providers, lib, and bats file; query box updated to show 6 providers;
+  config table adds `CODEX_MODEL` and `GEMINI_CLI_MODEL`.
+- TESTING.md: test coverage table includes `cli-providers.bats` (16),
+  refreshed counts for `query-council.bats` (18) and `verbosity.bats`
+  (9). New "CLI Providers" feature test scenario added.
+- `plugin.json` description and keywords now mention codex / cli.
+
+### Other
+
+- New `scripts/lib/providers.sh` is the single source of truth for
+  everything keyed on provider name: discovery, the CLI-prefers-API
+  policy, `get_model` defaults, and the vendor `provider_color` /
+  `provider_emoji` helpers. Previously these were duplicated across
+  `query-council.sh`, `format-output.sh`, and `check-status.sh`.
+- `check-status.sh` adds a `check_cli_provider` for binary-presence +
+  `--version` health probes, and now uses the consolidated emoji/color
+  helpers instead of hardcoded literals.
+- `tests/cli-providers.bats` — 16 tests covering CLI discovery, the
+  CLI-prefers-API policy, flag parsing, plus 2 gated end-to-end tests
+  behind `COUNCIL_E2E=1`.
+
+## 2026.4.5
+
+### Features
+
+- **Verbosity controls** — new `COUNCIL_VERBOSITY` env var and `--verbosity`
+  flag let you shape provider responses by style and depth, not just length:
+  - `brief` — 3-5 sentences max, bullets where possible, no code unless asked
+  - `standard` — current default, balanced thoroughness (no directive prepended)
+  - `detailed` — thorough analysis with code examples, edge cases, trade-offs
+
+  The `/ask` slash command now combines provider selection and verbosity into
+  a single AskUserQuestion screen so both decisions resolve in one prompt.
+  Standard is the recommended default; the question is skipped when
+  `--verbosity` is passed explicitly.
+
+### Other
+
+- New `scripts/lib/verbosity.sh` houses both the verbosity directive helper
+  AND a `BASE_SYSTEM_PROMPT` constant shared by all four providers. The base
+  prompt was previously duplicated 5× across provider scripts. One source of
+  truth now — future prompt-engineering changes touch one location instead
+  of five. Perplexity continues to append its citation clause inline.
+- `validate_verbosity` helper extracted to verbosity.sh, mirroring the
+  existing `validate_roles` pattern.
+- All providers now follow a consistent "compute verbosity prefix once at
+  startup, reuse in SYSTEM=" pattern.
+- `tests/verbosity.bats` — 9 tests covering directive content, fallback,
+  validation, and base-prompt presence.
+
+### Docs
+
+- README: new "Verbosity" section with the level → output mapping.
+- ARCHITECTURE.md: `verbosity.sh` in lib tree, `verbosity.bats` in tests
+  tree, `COUNCIL_VERBOSITY` in config table.
+- TESTING.md: `verbosity.bats` row.
+- `commands/ask.md`: spec includes the verbosity AskUserQuestion step.
+
+**Full Changelog**: https://github.com/hex/claude-council/compare/v2026.4.4...v2026.4.5
+
+## 2026.4.4
+
+### Fixes
+
+- **Reasoning-model response truncation** — Gemini 3.x, Grok 4.x reasoning,
+  and Perplexity sonar-reasoning models share `maxOutputTokens` between
+  internal "thinking" and visible output. With the 2048 default, the model
+  could burn most of the budget on chain-of-thought before emitting the
+  response, then run out mid-sentence (silently — the API returns success).
+  All three providers now auto-bump to `max(base * 8, 32768)` for known
+  reasoning model patterns, mirroring OpenAI's existing logic. Extracted
+  the bump into a shared `scripts/lib/tokens.sh` helper.
+- **Bats tests no longer spawn orphan tmux panes** — `query-council.bats`
+  invokes `query-council.sh` with fake API keys to test argument parsing.
+  Each invocation called `display_pane_open` before the auth check failed,
+  leaving an open pane waiting for keypress. Across a full run, ~10 panes
+  per invocation accumulated. Tests now set `COUNCIL_NO_PANE=1` and
+  `COUNCIL_AUTO_CLOSE=1` in the bats helper.
+
+### Other
+
+- New `COUNCIL_AUTO_CLOSE` env var: when `=1`, the streaming pane skips
+  the keypress wait and exits when the watcher's `.done` sentinel arrives.
+  Used by `scripts/dev/demo-pane.sh` and the test helper. Interactive
+  `/ask` runs are unaffected (default keeps the keypress wait so users
+  can scroll back through responses).
+- New `tests/tokens.bats` (8 tests) covering the reasoning-model bump
+  helper.
+- `/ask` slash command spec now puts "All providers (Recommended)" as
+  the first option in provider selection — matches the project's general
+  preference for select-all defaults in multi-select prompts.
+- Untrack `.claude/settings.local.json` (per-developer config; mirrors
+  the existing `.claude/*.local.md` rule). History rewritten via
+  `git filter-repo` to remove this file from prior commits, so all
+  post-v2026.4.3 commit hashes have changed (release tags were re-pointed
+  and remain valid).
+
+### Docs
+
+- README: generalize the reasoning-model token bump description from
+  OpenAI-specific to all four providers with their model patterns.
+- ARCHITECTURE.md: document `COUNCIL_AUTO_CLOSE` env var, add `tokens.sh`
+  to the lib tree, add `tokens.bats` to the tests tree.
+- TESTING.md: add `tokens.bats` row to the test coverage table.
+
+**Full Changelog**: https://github.com/hex/claude-council/compare/v2026.4.3...v2026.4.4
+
+## 2026.4.3
+
+### Features
+
+- **Streaming tmux pane** — when running `/ask` inside tmux, council opens a side pane
+  that streams each provider's response as it lands. Each provider gets a colored
+  banner (blue/white/red/green for gemini/openai/grok/perplexity) with the model
+  name and `(timing)` inline. Disable per-call with `--no-pane` or globally via
+  `COUNCIL_NO_PANE=1`.
+- **iTerm2 lifecycle integration** — when the outer terminal is iTerm2, council
+  drives tab color (yellow → green/red), dock attention bounce on slow queries
+  (gated by `COUNCIL_ATTENTION_THRESHOLD`, default 2000 ms), and OSC 1337 SetMark
+  before each response so Cmd+Shift+↑/↓ navigates between providers.
+- **In-house markdown renderer** — fast perl-based renderer that handles
+  headings (H1–H6), bold/italic/strikethrough, inline + fenced code, bullets and
+  nested bullets, numbered lists, blockquotes, links, horizontal rules, borderless
+  tables with column alignment, and `<think>...</think>` reasoning blocks
+  (rendered as a dim italic sidebar with line wrapping).
+- **Multi-line error rendering** — providers that fail show their full error
+  message in the pane (indented dim red) instead of a bare "error" label.
+
+### Other
+
+- New `scripts/lib/display.sh` and `scripts/dev/demo-pane.sh` (visual test harness).
+- New `tests/display.bats` (17 tests for detection, wrappers, manifest writes).
+- `CHANGELOG.md` introduced; release flow now maintains it per release.
+- `scripts/release.sh` resets the `BUILD` counter when the month rolls over.
+- `provider_color_rgb` uses `printf -v` instead of subshells (~1000 fewer forks
+  per query); status-line parsing replaces 4× `cut|echo` with a single `read`.
+
+### Docs
+
+- README documents `--no-pane`, `COUNCIL_NO_PANE`, `COUNCIL_ATTENTION_THRESHOLD`,
+  and Display & Terminal Integration section.
+- ARCHITECTURE.md updated for new files in scripts/lib and tests trees.
+- TESTING.md now lists `keys.bats` and `display.bats`.
+
+**Full Changelog**: https://github.com/hex/claude-council/compare/v2026.4.2...v2026.4.3
+
+## 2026.4.2
+
+### Features
+
+- **`XAI_API_KEY` support** — recognize xAI's canonical env var name for Grok credentials.
+  `GROK_API_KEY` continues to work as a legacy alias; `XAI_API_KEY` wins when both are set.
+- New `scripts/lib/keys.sh` shared helper resolves the env var at each entry point.
+- New `tests/keys.bats` covering precedence, fallback, and silent-conflict policy.
+
+### Other
+
+- Untrack `.cs/` and `.claude-crawl/` (per-machine state, not shared artifacts).
+- Remove `AGENTS.md` (referenced an unused `bd` workflow).
+- History rewritten via `git filter-repo` to remove the above paths from prior commits.
+
+**Full Changelog**: https://github.com/hex/claude-council/compare/v2026.4.1...v2026.4.2
+
+## 2026.4.1
+
+### Other
+
+- Documentation updates for release.
+
+**Full Changelog**: https://github.com/hex/claude-council/compare/v2026.4.0...v2026.4.1
+
+## 2026.4.0
+
+### Features
+
+- Upgrade default OpenAI model to `gpt-5.5-pro` and Grok model to `grok-4.20-reasoning`.
+
+### Fixes
+
+- Fix stale model defaults and documentation inaccuracies.
+
+**Full Changelog**: https://github.com/hex/claude-council/compare/v2026.3.4...v2026.4.0

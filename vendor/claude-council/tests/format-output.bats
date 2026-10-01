@@ -1,0 +1,214 @@
+#!/usr/bin/env bats
+# ABOUTME: Tests for format-output.sh defensive parsing of council JSON
+# ABOUTME: Malformed or empty provider output must surface raw, never vanish
+
+load test_helper
+
+SCRIPT="${SCRIPTS_DIR}/format-output.sh"
+
+# Build a council envelope with one provider entry supplied as raw JSON
+envelope_with_entry() {
+    local entry_json="$1"
+    jq -n --argjson entry "$entry_json" \
+        '{metadata: {quiet_mode: false, debate_mode: false}, round1: {testprov: $entry}}'
+}
+
+@test "format-output: valid response renders verbatim" {
+    local json
+    json=$(envelope_with_entry '{"status":"success","model":"m1","response":"The actual answer"}')
+    run bash "$SCRIPT" "$json"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"The actual answer"* ]]
+}
+
+@test "format-output: error status renders the error message" {
+    local json
+    json=$(envelope_with_entry '{"status":"error","model":"m1","error":"boom"}')
+    run bash "$SCRIPT" "$json"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"Error: boom"* ]]
+}
+
+@test "format-output: empty response is marked, not silently blank" {
+    local json
+    json=$(envelope_with_entry '{"status":"success","model":"m1","response":""}')
+    run bash "$SCRIPT" "$json"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"[empty response]"* ]]
+}
+
+@test "format-output: whitespace-only response is marked as empty" {
+    local json
+    json=$(envelope_with_entry '{"status":"success","model":"m1","response":"  \n  "}')
+    run bash "$SCRIPT" "$json"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"[empty response]"* ]]
+}
+
+@test "format-output: missing response field surfaces raw entry in fenced block" {
+    local json
+    json=$(envelope_with_entry '{"status":"success","model":"m1"}')
+    run bash "$SCRIPT" "$json"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"[unparseable response]"* ]]
+    [[ "$output" == *'```json'* ]]
+    [[ "$output" == *'"m1"'* ]]
+}
+
+@test "format-output: non-string response surfaces raw entry instead of garbage" {
+    local json
+    json=$(envelope_with_entry '{"status":"success","model":"m1","response":{"nested":"object"}}')
+    run bash "$SCRIPT" "$json"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"[unparseable response]"* ]]
+    [[ "$output" == *'"nested"'* ]]
+}
+
+@test "format-output: error status without error message still shows a marker" {
+    local json
+    json=$(envelope_with_entry '{"status":"error","model":"m1"}')
+    run bash "$SCRIPT" "$json"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"Error: Unknown error"* ]]
+}
+
+@test "format-output: missing round1 preserves raw input instead of crashing" {
+    local json='{"metadata":{"quiet_mode":false},"some_other_key":true}'
+    run bash "$SCRIPT" "$json"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"[unparseable council output]"* ]]
+    [[ "$output" == *"some_other_key"* ]]
+}
+
+@test "format-output: invalid JSON input still errors loudly" {
+    run bash "$SCRIPT" '{"not json'
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"Invalid JSON"* ]]
+}
+
+@test "format-output: fallback note appears when fallback field is set" {
+    local json
+    json=$(jq -n '{
+        metadata: {quiet_mode: false, debate_mode: false},
+        round1: {antigravity: {status: "success", model: "gemini-3.1-pro-preview", response: "hi", fallback: "gemini"}}
+    }')
+    run bash "$SCRIPT" "$json"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"fell back to gemini API"* ]]
+}
+
+@test "format-output: a fallback slot prints why the seat did not answer itself" {
+    local json
+    json=$(jq -n '{
+        metadata: {quiet_mode: false, debate_mode: false},
+        round1: {"grok-cli": {status: "success", model: "grok-4.6", response: "hi", fallback: "grok",
+                              fallback_reason: "Error from grok CLI: sandbox could not be applied"}}
+    }')
+    run bash "$SCRIPT" "$json"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"fell back to grok API"* ]]
+    # A quoted line of its own: error text is arbitrary, and emphasis markers
+    # around it break on a trailing space or an underscore.
+    [[ $'\n'"$output"$'\n' == *$'\n'"> grok-cli: Error from grok CLI: sandbox could not be applied"$'\n'* ]]
+}
+
+@test "format-output: a round-2 fallback prints its reason under the rebuttal header too" {
+    local json
+    json=$(jq -n '{
+        metadata: {quiet_mode: false, debate_mode: true},
+        round1: {"grok-cli": {status: "success", model: "grok-4.7", response: "first answer"}},
+        round2: {"grok-cli": {status: "success", model: "grok-4.6", response: "the rebuttal", fallback: "grok",
+                              fallback_reason: "Error from grok CLI: timed out after 1200s"}}
+    }')
+    run bash "$SCRIPT" "$json"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"REBUTTAL"*"fell back to grok API"*"grok-cli: Error from grok CLI: timed out after 1200s"*"the rebuttal"* ]]
+    # Round 1 answered itself, so nothing is printed between its header and its answer.
+    [[ "$output" != *"grok-cli: Error"*"first answer"* ]]
+}
+
+@test "format-output: fallback note absent when fallback field is not set" {
+    local json
+    json=$(jq -n '{
+        metadata: {quiet_mode: false, debate_mode: false},
+        round1: {antigravity: {status: "success", model: "gemini-3.1-pro-preview", response: "hi"}}
+    }')
+    run bash "$SCRIPT" "$json"
+    [ "$status" -eq 0 ]
+    [[ "$output" != *"fell back"* ]]
+}
+
+@test "format-output: model_fallback note names the unavailable preferred model" {
+    local json
+    json=$(jq -n '{
+        metadata: {quiet_mode: false, debate_mode: false},
+        round1: {grok: {status: "success", model: "grok-4.20-reasoning", response: "hi", model_fallback: "grok-4.5"}}
+    }')
+    run bash "$SCRIPT" "$json"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"grok-4.20-reasoning (grok-4.5 unavailable)"* ]]
+}
+
+@test "format-output: model_fallback note absent when field is not set" {
+    local json
+    json=$(jq -n '{
+        metadata: {quiet_mode: false, debate_mode: false},
+        round1: {grok: {status: "success", model: "grok-4.5", response: "hi"}}
+    }')
+    run bash "$SCRIPT" "$json"
+    [ "$status" -eq 0 ]
+    [[ "$output" != *"unavailable"* ]]
+}
+
+@test "format-output: the first provider key renders when jq emits CRLF" {
+    # jq's Windows build CRLF-translates its stdout when piped, so the first
+    # `keys[]` entry carries a stray \r and `.round1["gemini\r"]` misses,
+    # rendering the slot as `null`. gemini sorts first, so it took the hit.
+    # install_crlf_jq makes the CRLF real on every platform.
+    install_crlf_jq
+    local json
+    json=$(jq -n '{metadata: {quiet_mode: false, debate_mode: false},
+        round1: {gemini: {status: "success", model: "g", response: "GEMINI_ANSWER"},
+                 openai: {status: "success", model: "o", response: "OPENAI_ANSWER"}}}')
+    PATH="$CRLF_BIN:$PATH" run bash "$SCRIPT" "$json"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"GEMINI_ANSWER"* ]]
+    [[ "$output" == *"OPENAI_ANSWER"* ]]
+    [[ "$output" != *"null"* ]]
+}
+
+# bash 3.2 runs ${var//[[:space:]]/} in quadratic time over multibyte text:
+# 18000 characters took 284 s. /bin/bash is that shell on macOS.
+@test "format-output: a long multibyte response renders within seconds on the system bash" {
+    local body json
+    body=$(printf 'word — é %.0s' $(seq 1 1400))
+    json=$(envelope_with_entry "$(jq -n --arg r "$body" '{status:"success",model:"m1",response:$r}')")
+    run perl -e 'alarm 20; exec @ARGV' /bin/bash "$SCRIPT" "$json"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"word — é"* ]]
+}
+
+@test "scripts: no blank check strips whitespace from a whole response" {
+    run grep -rn -F '//[[:space:]]/}' "$SCRIPTS_DIR"
+    [ "$status" -eq 1 ]
+    [ -z "$output" ]
+}
+
+@test "format-output: a pane-streamed run opens with the pane marker" {
+    local json
+    json=$(jq -n '{metadata: {quiet_mode: false, debate_mode: false, pane_shown: true},
+        round1: {testprov: {status: "success", model: "m1", response: "The actual answer"}}}')
+    run bash "$SCRIPT" "$json"
+    [ "$status" -eq 0 ]
+    [ "${lines[0]}" = "<!-- council: round 1 was shown in the pane -->" ]
+    [[ "$output" == *"The actual answer"* ]]
+}
+
+@test "format-output: a run without a pane carries no pane marker" {
+    local json
+    json=$(jq -n '{metadata: {quiet_mode: false, debate_mode: false, pane_shown: false},
+        round1: {testprov: {status: "success", model: "m1", response: "The actual answer"}}}')
+    run bash "$SCRIPT" "$json"
+    [ "$status" -eq 0 ]
+    [[ "$output" != *"shown in the pane"* ]]
+}

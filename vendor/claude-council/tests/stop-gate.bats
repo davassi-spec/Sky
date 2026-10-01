@@ -1,0 +1,225 @@
+#!/usr/bin/env bats
+# ABOUTME: Tests for the opt-in Stop-hook review gate
+# ABOUTME: Gate is off by default, loop-guarded, and reviews the uncommitted diff
+
+load test_helper
+load fixtures/fake-clis
+bats_require_minimum_version 1.5.0
+
+GATE="${SCRIPTS_DIR}/stop-review-gate.sh"
+
+setup() {
+    mkdir -p "$TEST_TMP_DIR" "$TEST_CACHE_DIR"
+    install_fake_clis
+    export COUNCIL_JOBS_DIR="${BATS_TEST_TMPDIR}/jobs"
+    # Isolated git repo so diff content is under test control
+    REPO="${BATS_TEST_TMPDIR}/repo"
+    mkdir -p "$REPO/.claude"
+    cd "$REPO"
+    git init -q
+    git -c user.email=t@t -c user.name=t commit -q --allow-empty -m init
+}
+
+stop_event() {
+    local active="${1:-false}"
+    jq -n --argjson a "$active" \
+        '{session_id: "test-session", stop_hook_active: $a, transcript_path: "/dev/null"}'
+}
+
+enable_gate() {
+    jq -n '{enabled: true, provider: "codex", max_iterations: 1}' \
+        > "$REPO/.claude/council-stop-gate.json"
+}
+
+dirty_diff() {
+    echo "tracked" > file.txt
+    git add file.txt
+    git -c user.email=t@t -c user.name=t commit -q -m add
+    echo "changed" > file.txt
+}
+
+@test "stop-gate: silent no-op when no config exists" {
+    run bash "$GATE" <<< "$(stop_event)"
+    [ "$status" -eq 0 ]
+    [[ -z "$output" ]]
+}
+
+@test "stop-gate: silent no-op when config disables it" {
+    jq -n '{enabled: false}' > "$REPO/.claude/council-stop-gate.json"
+    dirty_diff
+    run bash "$GATE" <<< "$(stop_event)"
+    [ "$status" -eq 0 ]
+    [[ -z "$output" ]]
+}
+
+@test "stop-gate: allows when stop_hook_active is true" {
+    enable_gate
+    dirty_diff
+    export COUNCIL_FAKE_BEHAVIOR=block-verdict
+    run bash "$GATE" <<< "$(stop_event true)"
+    [ "$status" -eq 0 ]
+    [[ "$output" != *'"decision"'* ]]
+}
+
+@test "stop-gate: allows without querying the provider when diff is clean" {
+    enable_gate
+    export COUNCIL_FAKE_BEHAVIOR=block-verdict
+    run bash "$GATE" <<< "$(stop_event)"
+    [ "$status" -eq 0 ]
+    [[ "$output" != *'"decision"'* ]]
+    # Provider must not have been called
+    [[ ! -f "$COUNCIL_FAKE_STATE_DIR/calls.jsonl" ]]
+}
+
+@test "stop-gate: blocks with reason when reviewer says BLOCK" {
+    enable_gate
+    dirty_diff
+    export COUNCIL_FAKE_BEHAVIOR=block-verdict
+    run bash "$GATE" <<< "$(stop_event)"
+    [ "$status" -eq 0 ]
+    assert_json_eq "$output" '.decision' "block"
+    [[ "$(echo "$output" | jq -r '.reason')" == *"tests are failing"* ]]
+}
+
+@test "stop-gate: a review several times what a pipe holds still blocks, with its opening as the reason" {
+    enable_gate
+    dirty_diff
+    export COUNCIL_FAKE_BEHAVIOR=long-block-verdict
+    run bash "$GATE" <<< "$(stop_event)"
+    [ "$status" -eq 0 ]
+    assert_json_eq "$output" '.decision' "block"
+    local reason
+    reason=$(echo "$output" | jq -r '.reason')
+    [[ "$reason" == "Council stop-gate reviewer (codex): BLOCK: tests are failing in the changed module"* ]]
+    [ "${#reason}" -lt 1600 ]
+}
+
+@test "stop-gate: verdict survives a jq that emits CRLF" {
+    # jq's Windows build CRLF-translates piped stdout, so the @tsv config read
+    # hands the gate "1\r" as max_iterations and "test-session\r" as the
+    # session id. On other platforms this passes trivially; the Windows CI job
+    # is where it earns its place.
+    install_crlf_jq
+    enable_gate
+    dirty_diff
+    export COUNCIL_FAKE_BEHAVIOR=block-verdict
+    PATH="$CRLF_BIN:$PATH" run bash "$GATE" <<< "$(stop_event)"
+    [ "$status" -eq 0 ]
+    assert_json_eq "$output" '.decision' "block"
+}
+
+@test "stop-gate: allows when reviewer verdict is not BLOCK" {
+    enable_gate
+    dirty_diff
+    export COUNCIL_FAKE_BEHAVIOR=valid
+    run bash "$GATE" <<< "$(stop_event)"
+    [ "$status" -eq 0 ]
+    [[ "$output" != *'"decision"'* ]]
+}
+
+@test "stop-gate: provider failure allows the stop (never traps the user)" {
+    enable_gate
+    dirty_diff
+    export COUNCIL_FAKE_BEHAVIOR=error
+    run bash "$GATE" <<< "$(stop_event)"
+    [ "$status" -eq 0 ]
+    [[ "$output" != *'"decision"'* ]]
+}
+
+@test "stop-gate: rejects an out-of-allowlist provider name without executing anything" {
+    # A provider like "../../evil" would otherwise build an arbitrary script path
+    jq -n '{enabled: true, provider: "../../evil", max_iterations: 1}' \
+        > "$REPO/.claude/council-stop-gate.json"
+    dirty_diff
+    export COUNCIL_FAKE_BEHAVIOR=block-verdict
+    run bash "$GATE" <<< "$(stop_event)"
+    [ "$status" -eq 0 ]
+    [[ "$output" != *'"decision"'* ]]
+    [[ ! -f "$COUNCIL_FAKE_STATE_DIR/calls.jsonl" ]]
+}
+
+# The allowlist fails open on an unknown name, so a seat omitted from it makes
+# the gate exit 0 silently. Only an acceptance case can tell "provider declined
+# to block" from "provider was never allowed to run".
+@test "stop-gate: an API seat on the allowlist actually reviews the diff" {
+    jq -n '{enabled: true, provider: "openrouter", max_iterations: 1}' \
+        > "$REPO/.claude/council-stop-gate.json"
+    dirty_diff
+    local dir="${BATS_TEST_TMPDIR}/orcurl"
+    mkdir -p "$dir"
+    cat > "$dir/curl" <<'CURL'
+#!/bin/bash
+outfile=""; prev=""
+for a in "$@"; do
+    [[ "$prev" == "-o" ]] && outfile="$a"
+    prev="$a"
+done
+[[ -n "$outfile" ]] && printf '%s' '{"choices":[{"message":{"content":"BLOCK: the diff drops a guard"}}]}' > "$outfile"
+printf '200'
+CURL
+    chmod +x "$dir/curl"
+    PATH="$dir:$PATH" OPENROUTER_API_KEY=k run bash "$GATE" <<< "$(stop_event)"
+    [ "$status" -eq 0 ]
+    assert_json_eq "$output" '.decision' "block"
+    [[ "$output" == *"openrouter"* ]]
+}
+
+@test "stop-gate: the reviewer gets its own key and no other secret" {
+    jq -n '{enabled: true, provider: "openrouter", max_iterations: 1}' \
+        > "$REPO/.claude/council-stop-gate.json"
+    dirty_diff
+    local dir="${BATS_TEST_TMPDIR}/envcurl"
+    mkdir -p "$dir"
+    cat > "$dir/curl" <<'CURL'
+#!/bin/bash
+outfile=""; prev=""
+for a in "$@"; do
+    [[ "$prev" == "-o" ]] && outfile="$a"
+    prev="$a"
+done
+seen="own=${OPENROUTER_API_KEY:+set} other=${OPENAI_API_KEY:+set} secret=${EXAMPLE_DB_PASSWORD:+set}"
+[[ -n "$outfile" ]] && printf '{"choices":[{"message":{"content":"BLOCK: %s"}}]}' "$seen" > "$outfile"
+printf '200'
+CURL
+    chmod +x "$dir/curl"
+    PATH="$dir:$PATH" OPENROUTER_API_KEY=k OPENAI_API_KEY=other EXAMPLE_DB_PASSWORD=pw \
+        run bash "$GATE" <<< "$(stop_event)"
+    [ "$status" -eq 0 ]
+    [[ "$(echo "$output" | jq -r '.reason')" == *"BLOCK: own=set other= secret="* ]]
+}
+
+@test "stop-gate: a slow reviewer times out and fails open instead of hanging" {
+    enable_gate
+    dirty_diff
+    export COUNCIL_FAKE_BEHAVIOR=hang COUNCIL_FAKE_SLEEP=30 COUNCIL_TIMEOUT=1
+    local start end
+    start=$SECONDS
+    run bash "$GATE" <<< "$(stop_event)"
+    end=$SECONDS
+    [ "$status" -eq 0 ]
+    [[ "$output" != *'"decision"'* ]]
+    [ $((end - start)) -lt 15 ]
+}
+
+@test "stop-gate: per-session iteration cap stops repeat blocks" {
+    enable_gate
+    dirty_diff
+    export COUNCIL_FAKE_BEHAVIOR=block-verdict
+    run bash "$GATE" <<< "$(stop_event)"
+    assert_json_eq "$output" '.decision' "block"
+    # Second stop in the same session: cap of 1 reached, must allow
+    run bash "$GATE" <<< "$(stop_event)"
+    [ "$status" -eq 0 ]
+    [[ "$output" != *'"decision"'* ]]
+}
+
+@test "stop-gate: cursor-cli is on the allowlist and reviews the diff" {
+    jq -n '{enabled: true, provider: "cursor-cli", max_iterations: 1}' \
+        > "$REPO/.claude/council-stop-gate.json"
+    dirty_diff
+    export COUNCIL_FAKE_BEHAVIOR=valid
+    run bash "$GATE" <<< "$(stop_event)"
+    [ "$status" -eq 0 ]
+    [ -f "$COUNCIL_FAKE_STATE_DIR/calls.jsonl" ]
+    [ "$(tail -1 "$COUNCIL_FAKE_STATE_DIR/calls.jsonl" | jq -r .bin)" = "cursor-agent" ]
+}

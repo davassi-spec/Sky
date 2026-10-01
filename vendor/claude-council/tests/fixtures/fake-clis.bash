@@ -1,0 +1,198 @@
+# ABOUTME: Installs fake codex/agy/grok/kimi/cursor-agent/ollama CLI executables onto PATH for hermetic tests
+# ABOUTME: Behavior switches via COUNCIL_FAKE_BEHAVIOR; calls recorded as JSONL in COUNCIL_FAKE_STATE_DIR
+
+# Behaviors (COUNCIL_FAKE_BEHAVIOR):
+#   valid          - deterministic success response (default)
+#   empty          - exit 0 with no output
+#   malformed-json - syntactically broken JSON on stdout
+#   block-verdict  - stop-gate reviewer reply whose first line is BLOCK:
+#   long-block-verdict - the same verdict followed by 200 KB of review, several
+#                    times what a pipe holds
+#   rate-limit     - 429 message on stderr, exit 1
+#   auth-failure   - login-required message on stderr, exit 1
+#   slow           - sleep COUNCIL_FAKE_SLEEP (default 5s) then respond
+#   hang           - exec sleep COUNCIL_FAKE_SLEEP (default 300s); replaces the
+#                    process so the deadline watchdog's SIGTERM kills it cleanly
+#   hang-handled   - sleep COUNCIL_FAKE_SLEEP but exit 0, silently, on SIGTERM:
+#                    the codex wrapper's response to the deadline
+#   error          - generic failure on stderr, exit 1
+#   sandbox-failure - grok only: the two lines grok 1.0.46 prints when it cannot
+#                    apply a --sandbox profile, exit 1; other fakes answer
+#   noisy-error    - 70 KB of stderr ahead of the cause on its last line, exit 1:
+#                    a CLI that echoes its banner and the whole prompt first,
+#                    clears its progress line and hides the cursor, and
+#                    colours the cause the way codex and agy do
+#   binary-error   - a cause holding a byte that is not valid UTF-8, exit 1
+#   sandbox-warning - grok only: the sandbox warning alone, then an unrelated
+#                    failure, exit 1; other fakes answer
+#   stdin-echo     - answers with whatever arrived on stdin, so a test can see
+#                    whether the caller's stdin reached the CLI
+#   dirty-stream   - kimi only: an unstructured notice line ahead of the JSONL,
+#                    which a real CLI is free to print (upgrade notices etc.)
+#   array-content  - kimi only: content as a [{type,text}] array rather than a
+#                    string, the other shape the message format allows
+#   tool-narration - kimi only: an assistant message carrying tool_calls, whose
+#                    content narrates the call rather than answering
+#
+# Every invocation appends {bin, args} to $COUNCIL_FAKE_STATE_DIR/calls.jsonl
+# so tests can assert exactly what the plugin sent to the CLI.
+
+install_fake_clis() {
+    FAKE_BIN_DIR="${BATS_TEST_TMPDIR}/fakebin"
+    COUNCIL_FAKE_STATE_DIR="${BATS_TEST_TMPDIR}/fake-state"
+    mkdir -p "$FAKE_BIN_DIR" "$COUNCIL_FAKE_STATE_DIR"
+    export FAKE_BIN_DIR COUNCIL_FAKE_STATE_DIR
+
+    local bin
+    for bin in codex agy grok kimi cursor-agent ollama; do
+        write_fake_cli "$bin"
+    done
+    PATH="$FAKE_BIN_DIR:$PATH"
+    export PATH
+}
+
+write_fake_cli() {
+    local bin="$1"
+    local marker
+    marker="FAKE-$(echo "$bin" | tr '[:lower:]' '[:upper:]')-RESPONSE"
+    cat > "$FAKE_BIN_DIR/$bin" <<EOF
+#!/bin/bash
+# Fake $bin CLI: records its invocation, then acts per COUNCIL_FAKE_BEHAVIOR
+set -euo pipefail
+jq -cn --arg bin "$bin" '{bin: \$bin, args: \$ARGS.positional}' --args -- "\$@" \\
+    >> "\${COUNCIL_FAKE_STATE_DIR:?}/calls.jsonl"
+# Version probes succeed regardless of behavior, mirroring real CLIs where
+# --version works even when logged out
+if [[ "\${1:-}" == "--version" ]]; then
+    echo "fake-$bin 0.0.1"
+    exit 0
+fi
+EOF
+    if [[ "$bin" == "agy" ]]; then
+        cat >> "$FAKE_BIN_DIR/$bin" <<EOF
+# Only agy spills. A prompt past COUNCIL_ARGV_LIMIT is named inside the prompt
+# prose rather than passed as its own argument, so recover it by shape and copy
+# it out: the provider's trap deletes the original on exit, and tests need to
+# see what crossed into the file versus what stayed on argv.
+SPILLED=\$(printf '%s\\n' "\$@" | grep -o '[^[:space:]]*council-agy-prompt[^[:space:]]*' | head -1 || true)
+if [[ -n "\${SPILLED:-}" && -f "\$SPILLED" ]]; then
+    cp "\$SPILLED" "\${COUNCIL_FAKE_STATE_DIR:?}/spill.txt"
+fi
+EOF
+    fi
+    if [[ "$bin" == "kimi" ]]; then
+        cat >> "$FAKE_BIN_DIR/$bin" <<EOF
+# The real Kimi Code CLI answers --output-format stream-json with JSONL, one
+# object per event: role "assistant" carries the answer (a long one arrives in
+# several chunks that must be concatenated in order), role "meta" carries the
+# resume hint. A fake that emits plain text here would only ever exercise
+# kimi-cli.sh's error path, never its parser.
+if [[ " \$* " == *" --output-format stream-json "* ]]; then
+    case "\${COUNCIL_FAKE_BEHAVIOR:-valid}" in
+        valid)
+            echo '{"role":"assistant","content":"$marker: "}'
+            echo '{"role":"assistant","content":"deterministic answer"}'
+            echo '{"role":"meta","content":"To resume this session: kimi -r fake123"}'
+            exit 0 ;;
+        dirty-stream)
+            echo "Update available: kimi 2.0 -> 2.1"
+            echo '{"role":"assistant","content":"$marker: deterministic answer"}'
+            exit 0 ;;
+        array-content)
+            echo '{"role":"assistant","content":[{"type":"text","text":"$marker: deterministic answer"}]}'
+            exit 0 ;;
+        tool-narration)
+            echo '{"role":"assistant","content":"Let me check the directory.","tool_calls":[{"type":"function","id":"tc_1","function":{"name":"Shell","arguments":"{}"}}]}'
+            echo '{"role":"tool","tool_call_id":"tc_1","content":"file1.py"}'
+            echo '{"role":"assistant","content":"$marker: deterministic answer"}'
+            exit 0 ;;
+        empty)
+            exit 0 ;;
+    esac
+fi
+EOF
+    fi
+    if [[ "$bin" == "cursor-agent" ]]; then
+        cat >> "$FAKE_BIN_DIR/$bin" <<EOF
+# The real Cursor CLI answers --output-format json with one object whose
+# .result carries the whole answer. A failure emits no JSON at all: the
+# message goes to stderr and the exit is non-zero.
+if [[ " \$* " == *" --output-format json "* ]]; then
+    # A bare -p reads the prompt from stdin; keep a copy so a test can assert
+    # what reached the CLI and that it never rode argv.
+    if [[ " \$* " == *" -p --"* ]]; then
+        cat > "\${COUNCIL_FAKE_STATE_DIR:?}/stdin.txt"
+    fi
+    case "\${COUNCIL_FAKE_BEHAVIOR:-valid}" in
+        valid)
+            echo '{"type":"result","subtype":"success","is_error":false,"duration_ms":1,"result":"$marker: deterministic answer","session_id":"fake"}'
+            exit 0 ;;
+        empty)
+            echo '{"type":"result","subtype":"success","is_error":false,"result":"","session_id":"fake"}'
+            exit 0 ;;
+        bad-model)
+            # Names the model it was actually handed, so a provider that drops
+            # --model on the floor cannot pass this case.
+            MODEL=""; PREV=""
+            for a in "\$@"; do [[ "\$PREV" == "--model" ]] && MODEL="\$a"; PREV="\$a"; done
+            echo "Cannot use this model: \${MODEL:-none}. Available models: auto" >&2
+            exit 1 ;;
+    esac
+fi
+# The real Cursor CLI answers a logged-out "cursor-agent status" with
+# "Not logged in" on stdout and exit 0, never a non-zero exit
+if [[ "\${1:-}" == "status" && "\${COUNCIL_FAKE_BEHAVIOR:-valid}" == "auth-failure" ]]; then
+    echo "Not logged in"
+    exit 0
+fi
+EOF
+    fi
+    if [[ "$bin" == "grok" ]]; then
+        cat >> "$FAKE_BIN_DIR/$bin" <<EOF
+# The real grok CLI loads another vendor's hooks, rules, skills, agents, MCP
+# servers and sessions unless GROK_<VENDOR>_<SURFACE>_ENABLED turns one off;
+# keep each call's switches so a test can assert what the seat was given.
+jq -cnS 'env | with_entries(select(.key | test("^GROK_[A-Z]+_[A-Z]+_ENABLED\$")))' \\
+    >> "\${COUNCIL_FAKE_STATE_DIR:?}/grok-imports.jsonl"
+# The real grok CLI answers a logged-out "grok models" with "You are not
+# authenticated." on stdout and exit 0, never a non-zero exit
+if [[ "\${1:-}" == "models" && "\${COUNCIL_FAKE_BEHAVIOR:-valid}" == "auth-failure" ]]; then
+    echo "You are not authenticated."
+    exit 0
+fi
+if [[ "\${COUNCIL_FAKE_BEHAVIOR:-valid}" == "sandbox-warning" ]]; then
+    echo "warning: sandbox could not be applied: partial protection only" >&2
+    echo "Error: 429 Too Many Requests" >&2
+    exit 1
+fi
+if [[ " \$* " == *" --sandbox "* && "\${COUNCIL_FAKE_BEHAVIOR:-valid}" == "sandbox-failure" ]]; then
+    echo "warning: sandbox could not be applied: socket deny resolution failed: could not resolve runtime-socket deny path /var/run/docker.sock: endpoint is a symlink" >&2
+    echo "error: could not apply the 'read-only' sandbox profile; see the warning above for the cause. Refusing to start with its protections missing." >&2
+    exit 1
+fi
+EOF
+    fi
+    cat >> "$FAKE_BIN_DIR/$bin" <<EOF
+case "\${COUNCIL_FAKE_BEHAVIOR:-valid}" in
+    valid)          echo "$marker: deterministic answer" ;;
+    empty)          ;;
+    malformed-json) echo '{"unterminated": ' ;;
+    block-verdict)  echo "BLOCK: tests are failing in the changed module" ;;
+    long-block-verdict) echo "BLOCK: tests are failing in the changed module"; printf '%0200000d\\n' 0 ;;
+    rate-limit)     echo "Error: 429 Too Many Requests" >&2; exit 1 ;;
+    auth-failure)   echo "Error: not logged in" >&2; exit 1 ;;
+    slow)           sleep "\${COUNCIL_FAKE_SLEEP:-5}"; echo "$marker: slow answer" ;;
+    hang)           exec sleep "\${COUNCIL_FAKE_SLEEP:-300}" ;;
+    hang-handled)   trap 'exit 0' TERM; sleep "\${COUNCIL_FAKE_SLEEP:-300}" & wait ;;
+    error)          echo "Error: fake provider failure" >&2; exit 1 ;;
+    sandbox-failure) echo "$marker: deterministic answer" ;;
+    noisy-error)    printf '%070000d\\n' 0 >&2
+                    printf '\\033[2K\\033[?25l\\033[1m\\033[31mError:\\033[0m cause after the noise\\n' >&2; exit 1 ;;
+    binary-error)   printf 'Error: caf\\351 broke\\n' >&2; exit 1 ;;
+    sandbox-warning) echo "$marker: deterministic answer" ;;
+    stdin-echo)     echo "$marker: stdin=[\$(cat)]" ;;
+    *)              echo "Unknown COUNCIL_FAKE_BEHAVIOR: \${COUNCIL_FAKE_BEHAVIOR}" >&2; exit 64 ;;
+esac
+EOF
+    chmod +x "$FAKE_BIN_DIR/$bin"
+}

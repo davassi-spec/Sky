@@ -1,0 +1,73 @@
+{
+  "name": "claude-council",
+  "version": "2026.10.1",
+  "description": "Consult multiple AI coding agents (Gemini, OpenAI, Grok, Perplexity, Kimi, any model OpenRouter routes to, plus codex, antigravity, grok, kimi and cursor CLIs when installed, and a local ollama model) to get diverse perspectives on coding problems, with a streaming pane in tmux or inside Claude Code. It can also hand a coding task to a Codex specialist that works on its own git branch and follows skills you pick (experimental).",
+  "author": {
+    "name": "hex",
+    "url": "https://github.com/hex"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/hex/claude-council",
+  "repository": "https://github.com/hex/claude-council",
+  "icon": "./assets/icon.png",
+  "keywords": [
+    "multi-agent",
+    "council",
+    "second-opinion",
+    "code-review",
+    "consensus",
+    "perspectives",
+    "gemini",
+    "openai",
+    "grok",
+    "perplexity",
+    "kimi",
+    "openrouter",
+    "codex",
+    "antigravity",
+    "ollama",
+    "cli",
+    "pane",
+    "tmux",
+    "mod",
+    "specialists"
+  ],
+  "userConfig": {
+    "pane_host": {
+      "type": "string",
+      "title": "Pane opens in",
+      "description": "One of: ask, claude-code, tmux. Experimental: applies only when Claude Code runs with CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1. claude-code draws the pane inside Claude Code; tmux leaves it to the tmux pane; ask puts the question once inside tmux and remembers the answer.",
+      "default": "ask"
+    },
+    "collapse_when_done": {
+      "type": "boolean",
+      "title": "Collapse status when done",
+      "description": "Experimental: applies only when Claude Code runs with CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1. Replace the provider list with a one-line summary once a run finishes.",
+      "default": true
+    },
+    "wake_on_async_done": {
+      "type": "boolean",
+      "title": "Wake on async finish",
+      "description": "Experimental: applies only when Claude Code runs with CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1. Submit a prompt when a background council run completes. Starts a model turn, which costs tokens.",
+      "default": false
+    },
+    "council_tool": {
+      "type": "boolean",
+      "title": "Council as a tool",
+      "description": "Experimental: applies only when Claude Code runs with CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1. Let the model call the council as a tool. Every call first asks you to confirm, because the council sends the question to third-party providers.",
+      "default": true
+    },
+    "specialist_round_limit": {
+      "type": "number",
+      "title": "Specialist round limit (minutes)",
+      "description": "Experimental: applies only when Claude Code runs with CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1. A specialist round still running after this many minutes is stopped, and nothing it did is committed. Fractions count to the second. 0 means no limit.",
+      "default": 60
+    },
+    "specialists": {
+      "type": "string",
+      "title": "Specialists",
+      "description": "Experimental: applies only when Claude Code runs with CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1. Set up with /specialists; this field holds what it saves, as a JSON list of objects, and /config does not show it.",
+      "default": "[]"
+    }
+  }
+}

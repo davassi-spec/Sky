@@ -1,0 +1,406 @@
+#!/usr/bin/env bats
+# ABOUTME: Tests for scripts/lib/roles.sh
+# ABOUTME: Validates role loading, presets, validation, and prompt injection
+
+load test_helper
+bats_require_minimum_version 1.5.0
+
+setup() {
+    mkdir -p "$TEST_CACHE_DIR"
+    source "${LIB_DIR}/roles.sh"
+}
+
+teardown() {
+    rm -rf "$TEST_CACHE_DIR"
+}
+
+# ============================================================================
+# roles_config_exists tests
+# ============================================================================
+
+@test "roles_config_exists: returns 0 when config exists" {
+    roles_config_exists
+}
+
+# ============================================================================
+# is_preset tests
+# ============================================================================
+
+@test "is_preset: returns 0 for valid preset 'balanced'" {
+    is_preset "balanced"
+}
+
+@test "is_preset: returns 0 for valid preset 'security-focused'" {
+    is_preset "security-focused"
+}
+
+@test "is_preset: returns 0 for valid preset 'architecture'" {
+    is_preset "architecture"
+}
+
+@test "is_preset: returns 0 for valid preset 'review'" {
+    is_preset "review"
+}
+
+@test "is_preset: returns 1 for non-preset role name" {
+    run is_preset "security"
+    [ "$status" -eq 1 ]
+}
+
+@test "is_preset: returns 1 for unknown name" {
+    run is_preset "nonexistent"
+    [ "$status" -eq 1 ]
+}
+
+# ============================================================================
+# expand_preset tests
+# ============================================================================
+
+@test "expand_preset: expands balanced to security,performance,maintainability" {
+    local result=$(expand_preset "balanced")
+    [ "$result" = "security,performance,maintainability" ]
+}
+
+@test "expand_preset: expands security-focused correctly" {
+    local result=$(expand_preset "security-focused")
+    [ "$result" = "security,devil,compliance" ]
+}
+
+@test "expand_preset: expands architecture correctly" {
+    local result=$(expand_preset "architecture")
+    [ "$result" = "scalability,maintainability,simplicity" ]
+}
+
+@test "expand_preset: expands review correctly" {
+    local result=$(expand_preset "review")
+    [ "$result" = "security,maintainability,dx" ]
+}
+
+@test "expand_preset: returns empty for unknown preset" {
+    local result=$(expand_preset "nonexistent")
+    [ -z "$result" ]
+}
+
+# ============================================================================
+# get_role_prompt tests
+# ============================================================================
+
+@test "get_role_prompt: returns prompt for security role" {
+    local result=$(get_role_prompt "security")
+    [[ "$result" == *"security-focused"* ]]
+}
+
+@test "get_role_prompt: returns prompt for performance role" {
+    local result=$(get_role_prompt "performance")
+    [[ "$result" == *"performance-focused"* ]]
+}
+
+@test "get_role_prompt: returns empty for unknown role" {
+    local result=$(get_role_prompt "nonexistent")
+    [ -z "$result" ]
+}
+
+# ============================================================================
+# get_role_name tests
+# ============================================================================
+
+@test "get_role_name: returns 'Security Auditor' for security role" {
+    local result=$(get_role_name "security")
+    [ "$result" = "Security Auditor" ]
+}
+
+@test "get_role_name: returns 'Performance Optimizer' for performance role" {
+    local result=$(get_role_name "performance")
+    [ "$result" = "Performance Optimizer" ]
+}
+
+@test "get_role_name: returns 'Devil's Advocate' for devil role" {
+    local result=$(get_role_name "devil")
+    [ "$result" = "Devil's Advocate" ]
+}
+
+@test "get_role_name: returns empty for unknown role" {
+    local result=$(get_role_name "nonexistent")
+    [ -z "$result" ]
+}
+
+# ============================================================================
+# list_roles tests
+# ============================================================================
+
+@test "list_roles: includes security role" {
+    local result=$(list_roles)
+    [[ "$result" == *"security"* ]]
+}
+
+@test "list_roles: includes performance role" {
+    local result=$(list_roles)
+    [[ "$result" == *"performance"* ]]
+}
+
+@test "list_roles: includes all 8 roles" {
+    local result=$(list_roles)
+    [[ "$result" == *"security"* ]]
+    [[ "$result" == *"performance"* ]]
+    [[ "$result" == *"maintainability"* ]]
+    [[ "$result" == *"devil"* ]]
+    [[ "$result" == *"simplicity"* ]]
+    [[ "$result" == *"scalability"* ]]
+    [[ "$result" == *"dx"* ]]
+    [[ "$result" == *"compliance"* ]]
+}
+
+# ============================================================================
+# validate_roles tests
+# ============================================================================
+
+@test "validate_roles: accepts valid single role" {
+    validate_roles "security"
+}
+
+@test "validate_roles: accepts valid multiple roles" {
+    validate_roles "security,performance"
+}
+
+@test "validate_roles: accepts valid preset" {
+    validate_roles "balanced"
+}
+
+@test "validate_roles: rejects unknown role" {
+    run validate_roles "fakrole"
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"Unknown role"* ]]
+}
+
+@test "validate_roles: rejects mixed valid and invalid roles" {
+    run validate_roles "security,fakrole"
+    [ "$status" -eq 1 ]
+}
+
+# ============================================================================
+# normalize_roles tests
+# ============================================================================
+
+@test "normalize_roles: expands preset" {
+    local result=$(normalize_roles "balanced")
+    [ "$result" = "security,performance,maintainability" ]
+}
+
+@test "normalize_roles: passes through non-preset" {
+    local result=$(normalize_roles "security,performance")
+    [ "$result" = "security,performance" ]
+}
+
+# ============================================================================
+# build_prompt_with_role tests
+# ============================================================================
+
+@test "build_prompt_with_role: injects role prefix" {
+    local result=$(build_prompt_with_role "user question" "security")
+    [[ "$result" == *"[ROLE: Security Auditor]"* ]]
+    [[ "$result" == *"user question"* ]]
+}
+
+@test "build_prompt_with_role: returns original prompt for empty role" {
+    local result=$(build_prompt_with_role "user question" "")
+    [ "$result" = "user question" ]
+}
+
+@test "build_prompt_with_role: includes role prompt instructions" {
+    local result=$(build_prompt_with_role "user question" "security")
+    [[ "$result" == *"security-focused"* ]]
+}
+
+# ============================================================================
+# local_council_roles tests (issue #1 — local Claude-subagent fallback)
+#
+# Resolves the role set for a local (provider-less) council: honor an explicit
+# --roles value (expanding presets), else default to a diverse trio chosen to
+# pull in different directions for solo brainstorming.
+# ============================================================================
+
+@test "local_council_roles: defaults to a diverse set when no roles given" {
+    local result=$(local_council_roles "")
+    [ "$result" = "devil,simplicity,security,scalability" ]
+}
+
+@test "local_council_roles: honors an explicit role list verbatim" {
+    local result=$(local_council_roles "security,performance")
+    [ "$result" = "security,performance" ]
+}
+
+@test "local_council_roles: expands a preset" {
+    local result=$(local_council_roles "balanced")
+    [ "$result" = "security,performance,maintainability" ]
+}
+
+@test "local_council_roles: default set is all valid, known roles" {
+    validate_roles "$(local_council_roles "")"
+}
+
+@test "local_council_roles: count selects that many lenses from the diverse order" {
+    local result=$(local_council_roles "" 5)
+    [ "$result" = "devil,simplicity,security,scalability,maintainability" ]
+}
+
+@test "local_council_roles: count of 1 yields a single lens" {
+    local result=$(local_council_roles "" 1)
+    [ "$result" = "devil" ]
+}
+
+@test "local_council_roles: count above the pool size is clamped to all roles" {
+    local result=$(local_council_roles "" 99)
+    validate_roles "$result"
+    # 8 roles exist; expect all of them
+    [ "$(echo "$result" | tr ',' '\n' | wc -l | tr -d ' ')" = "8" ]
+}
+
+@test "local_council_roles: explicit roles ignore the count" {
+    local result=$(local_council_roles "balanced" 5)
+    [ "$result" = "security,performance,maintainability" ]
+}
+
+@test "local_council_roles: non-numeric count falls back to the default set" {
+    local result=$(local_council_roles "" "abc")
+    [ "$result" = "devil,simplicity,security,scalability" ]
+}
+
+@test "local_council_roles: every count from 1..8 resolves to valid roles" {
+    local n
+    for n in 1 2 3 4 5 6 7 8; do
+        validate_roles "$(local_council_roles "" "$n")"
+    done
+}
+
+# ============================================================================
+# validate_roles runs before assignment, so it has to admit the keyed form or the
+# feature is unreachable from the CLI — the flag would be refused before the
+# assigner ever sees it. It still validates the ROLE half: a keyed entry naming
+# a role that does not exist is as wrong as a bare one.
+
+@test "validate_roles: accepts name=role pairs, validating the role half" {
+    run validate_roles "gemini=security,openai=performance"
+    [ "$status" -eq 0 ]
+}
+
+@test "validate_roles: rejects a name=role pair whose role is unknown" {
+    run validate_roles "gemini=nosuchrole"
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"nosuchrole"* ]]
+}
+
+# assign_roles_to_providers tests
+# ============================================================================
+
+@test "assign_roles_to_providers: assigns roles in order" {
+    local result=$(assign_roles_to_providers "security,performance" gemini openai grok)
+    [[ "$result" == *"gemini:security"* ]]
+    [[ "$result" == *"openai:performance"* ]]
+    [[ "$result" == *"grok:"* ]]  # Empty role for third provider
+}
+
+# Positional assignment is why adding a provider script silently moved every
+# downstream provider's role by one, and why reordering OPENROUTER_MODELS
+# reassigns which router seat plays which part. A name=role pair binds the two
+# explicitly, so neither discovery order nor roster edits can drift them.
+
+@test "assign_roles_to_providers: name=role pairs bind to the provider, not the position" {
+    local result
+    result=$(assign_roles_to_providers "openrouter-2=security,gemini=performance" gemini openai openrouter-2)
+    [[ "$(get_provider_role gemini "$result")" == "performance" ]]
+    [[ "$(get_provider_role openrouter-2 "$result")" == "security" ]]
+    # Named but unlisted providers still appear, with no role.
+    [[ "$(get_provider_role openai "$result")" == "" ]]
+}
+
+@test "assign_roles_to_providers: a keyed roster is immune to provider order" {
+    local a b
+    a=$(assign_roles_to_providers "gemini=security,openai=performance" gemini openai grok)
+    b=$(assign_roles_to_providers "gemini=security,openai=performance" grok openai gemini)
+    [[ "$(get_provider_role gemini "$a")" == "$(get_provider_role gemini "$b")" ]]
+    [[ "$(get_provider_role openai "$a")" == "$(get_provider_role openai "$b")" ]]
+    [[ "$(get_provider_role gemini "$a")" == "security" ]]
+}
+
+@test "assign_roles_to_providers: naming one provider twice is refused, not resolved" {
+    # Two bindings for one provider: only one can be honoured, and picking the
+    # last silently means the reader believes gemini answered as the security
+    # auditor when it answered as something else. The same reasoning as the
+    # absent-provider guard — a binding that cannot be honoured is refused.
+    run --separate-stderr assign_roles_to_providers "gemini=security,gemini=performance" gemini openai
+    [ "$status" -eq 1 ]
+    [[ "$stderr" == *"gemini"*"twice"* ]]
+    [ -z "$output" ]
+}
+
+@test "assign_roles_to_providers: an empty roster is refused, not a shell error" {
+    # Reached by any direct caller; the CLI stops earlier on an empty roster.
+    # Run in its own shell under set -u rather than in the bats one: expanding
+    # an empty array under set -u is fatal on bash 3.2 and merely empty from
+    # 4.4 on, so only a 3.2 host can see the failure this guards — which is the
+    # macOS leg, and /bin/bash there.
+    run --separate-stderr /bin/bash -c "
+        set -u
+        source '${LIB_DIR}/roles.sh'
+        assign_roles_to_providers 'gemini=security'
+    "
+    [ "$status" -eq 1 ]
+    [[ "$stderr" == *"not among the providers"* ]]
+    [[ "$stderr" != *"unbound variable"* ]]
+}
+
+@test "assign_roles_to_providers: a provider left without a role is reported, not dropped silently" {
+    # The old behaviour: roles ran out, the tail got nothing, and nobody was told
+    # — only non-empty roles are printed, so the omission was invisible.
+    run --separate-stderr assign_roles_to_providers "security" gemini openai grok
+    [ "$status" -eq 0 ]
+    # The assignments themselves are unchanged; the notice is additive.
+    [[ "$(get_provider_role gemini "$output")" == "security" ]]
+    [[ "$(get_provider_role openai "$output")" == "" ]]
+    # Named on stderr so the omission is visible without polluting stdout, which
+    # the caller parses as the assignments string.
+    [[ "$stderr" == *"no role"* ]]
+    [[ "$stderr" == *"openai"* ]]
+    [[ "$stderr" == *"grok"* ]]
+}
+
+@test "assign_roles_to_providers: a name=role naming an absent provider is refused" {
+    # A typo'd or stale binding must not pass silently as "nobody got that role".
+    run assign_roles_to_providers "nosuchprovider=security" gemini openai
+    [ "$status" -ne 0 ]
+}
+
+@test "assign_roles_to_providers: mixing keyed and positional entries is refused" {
+    # Ambiguous: does the bare entry take slot 1, or the first unbound provider?
+    run assign_roles_to_providers "gemini=security,performance" gemini openai
+    [ "$status" -ne 0 ]
+}
+
+@test "assign_roles_to_providers: expands preset before assigning" {
+    local result=$(assign_roles_to_providers "balanced" gemini openai grok)
+    [[ "$result" == *"gemini:security"* ]]
+    [[ "$result" == *"openai:performance"* ]]
+    [[ "$result" == *"grok:maintainability"* ]]
+}
+
+# ============================================================================
+# get_provider_role tests
+# ============================================================================
+
+@test "get_provider_role: extracts correct role for provider" {
+    local assignments="gemini:security openai:performance grok:"
+    local result=$(get_provider_role "gemini" "$assignments")
+    [ "$result" = "security" ]
+}
+
+@test "get_provider_role: returns empty for unassigned provider" {
+    local assignments="gemini:security openai:performance grok:"
+    local result=$(get_provider_role "grok" "$assignments")
+    [ -z "$result" ]
+}
+
+@test "get_provider_role: returns empty for unknown provider" {
+    local assignments="gemini:security openai:performance"
+    local result=$(get_provider_role "perplexity" "$assignments")
+    [ -z "$result" ]
+}

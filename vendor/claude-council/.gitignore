@@ -1,0 +1,44 @@
+# Local per-developer settings (md, json, etc.)
+.claude/*.local.*
+
+# Local commands (dev workflows)
+.claude/commands/
+
+# Response cache
+.claude/council-cache/
+
+# Issue tracker (personal)
+.beads/
+
+# Session state (cs session manager)
+.cs/
+
+# Session state (oh-my-claude)
+.omc/
+
+# Internal design docs — plans/specs stay local, not shipped in the plugin
+docs/superpowers/
+
+# Web/page cache (claude-crawl)
+.claude-crawl/
+
+# Skill-creator iteration output
+claude-council-workspace/
+
+# OS files
+.DS_Store
+
+# Editor files
+*.swp
+*.swo
+*~
+autoresearch-results.tsv
+.cs/local/
+.cs/archives/
+.cs/.narrative-reminder-cooldown
+.claude/settings.local.json
+.obsidian/
+CLAUDE.local.md
+
+# Generated plugin API types (/plugin-types); regenerated per Claude Code build
+.claude/types/
