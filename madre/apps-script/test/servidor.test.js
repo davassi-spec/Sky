@@ -225,5 +225,29 @@ const JPEG = 'data:image/jpeg;base64,' + Buffer.from('foto-de-prueba').toString(
   t('un fallo al medir no rompe la petición', (() => { s.run("CacheService.getScriptCache().put('met_pend', 'esto no es json', 100)"); return JSON.parse(s.run("doGet({parameter:{k:'ADMINKEY'}}).s")).widgets !== undefined; })());
 }
 
+/* ---------- 11. Caché con datos de una versión anterior ---------- */
+{
+  // Datos tal como los guardaba la fase 0 (sin bloques ni estilos), todavía en la caché tras actualizar el código.
+  const f0 = { mensajes: [{ id: 'm1', de: 'Dani', autor: 'admin', texto: 'Hola', t: 1000, hasta: null }],
+    ciudad: 'Maó', latitud: 39.889, longitud: 4.265, calendarios: [],
+    widgets: { mensajes: true, eventos: false, tiempo: true }, noche: { desde: 22, hasta: 7 }, nocheTexto: 'A dormir.',
+    contacto: { nombre: 'Pep', telefono: '600' }, familia: [{ id: 'f1', nombre: 'Ana', clave: 'KANA' }] };
+  const s = crear();
+  s.run('leer_()');                                  // crea el archivo en Drive
+  s.cacheMapa.datos = J(f0);                         // caché antigua
+  t('leer_() devuelve siempre datos con bloques', Array.isArray(s.run('leer_()').bloques) && s.run('leer_()').bloques.length === 5);
+  let estado = null, error = null;
+  try { estado = s.run('estado_()'); } catch (e) { error = e.message; }
+  t('estado_() no falla con una caché antigua' + (error ? ' (' + error + ')' : ''), estado && estado.bloques.length === 5);
+  t('los widgets antiguos se convierten en bloques', estado && estado.widgets.eventos === false && estado.widgets.mensajes === true && estado.bloques.find((b) => b.id === 'proximo').activo === false);
+  t('se conservan mensajes, ajustes y familia', estado && estado.mensajes[0].texto === 'Hola' && estado.noche.desde === 22 && estado.contacto.nombre === 'Pep');
+  t('quien_ y admEstado también funcionan', s.run("quien_('KANA')").rol === 'familia' && s.run("admEstado('ADMINKEY')").rol === 'admin');
+  s.cacheMapa.datos = J(f0);
+  s.run("admEnviar('ADMINKEY','Dani','Nuevo','hoy')");
+  t('escribir con una caché antigua no pierde nada', (s.vaciarCache(), s.run('leer_()').mensajes.length === 2 && s.run('leer_()').familia[0].clave === 'KANA' && s.run('leer_()').bloques.length === 5));
+  const viejo = crear(); viejo.run('leer_()'); viejo.cacheMapa.datos = J({ mensajes: [], familia: [] });
+  t('incluso con una caché casi vacía', (() => { try { return viejo.run('estado_()').bloques.length === 5; } catch (e) { return false; } })());
+}
+
 console.log(bien + ' bien, ' + mal + ' fallos');
 process.exit(mal ? 1 : 0);

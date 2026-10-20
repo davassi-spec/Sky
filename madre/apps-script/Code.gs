@@ -112,7 +112,7 @@ function cargarDeDrive_() {
 
 function leer_() {
   var c = CacheService.getScriptCache().get('datos');
-  if (c) return JSON.parse(c);
+  if (c) return normalizar_(JSON.parse(c));      // la caché puede traer datos de una versión anterior: se normalizan siempre
   var d = cargarDeDrive_();
   guardarCache_(d);
   return d;
