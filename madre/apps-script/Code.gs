@@ -54,6 +54,7 @@ function base_() {
     recEstado: {},                                 // 'idRecordatorio|AAAA-MM-DD' -> { conf: ms, aviso: ms }
     pruebaRec: null,                               // { id, hasta } mientras dura "Probar 1 minuto"
     correoAviso: '',                               // vacío = el correo de tu cuenta de Google
+    enlaceApp: '',                                 // dirección de la app del móvil (el envoltorio); sirve para los enlaces de la familia
     noche: { desde: 21, hasta: 6 },
     nocheTexto: 'Es hora de dormir.',
     contacto: { nombre: '', telefono: '' },
@@ -253,11 +254,37 @@ function doPost(e) {
   try {
     return servirPost_(e);
   } finally {
-    anotar_('post', Date.now() - t0);
+    anotar_(e && e.parameter && e.parameter.a === 'rpc' ? 'rpc' : 'post', Date.now() - t0);
+  }
+}
+
+/** Las únicas funciones que se pueden llamar desde fuera de Apps Script (la app del móvil en su propia página). Cada una comprueba la clave. */
+var RPC_ = {
+  admEstado: admEstado, admVistaPrevia: admVistaPrevia, admCapturaTV: admCapturaTV, admEnviar: admEnviar, admBorrar: admBorrar,
+  admEliminarDelHistorial: admEliminarDelHistorial, admAjustes: admAjustes, admProbarEstilo: admProbarEstilo,
+  admGuardarCuentaAtras: admGuardarCuentaAtras, admBorrarCuentaAtras: admBorrarCuentaAtras, admFamiliaAnadir: admFamiliaAnadir,
+  admFamiliaQuitar: admFamiliaQuitar, admFoto: admFoto, admFotoQuitar: admFotoQuitar, admLeerFoto: admLeerFoto,
+  admRecordatorioGuardar: admRecordatorioGuardar, admRecordatorioBorrar: admRecordatorioBorrar, admRecordatorioConfirmar: admRecordatorioConfirmar,
+  admRecordatorioProbar: admRecordatorioProbar, admRecordatorioFoto: admRecordatorioFoto, admCorreoAviso: admCorreoAviso,
+  admCorreoPrueba: admCorreoPrueba, admBuscarCiudad: admBuscarCiudad, admMedioNuevo: admMedioNuevo, admMedioParte: admMedioParte,
+  admMedioFin: admMedioFin, admMedioBorrar: admMedioBorrar, admMedioReproducir: admMedioReproducir, admMedioControl: admMedioControl,
+  admMediosEstado: admMediosEstado
+};
+
+/** ?a=rpc: el cuerpo es { fn, args } (la clave va dentro de args, nunca en la dirección). Devuelve { valor } o { error }. */
+function rpc_(e) {
+  try {
+    var c = JSON.parse(String((e.postData && e.postData.contents) || '{}'));
+    var f = Object.prototype.hasOwnProperty.call(RPC_, c.fn) ? RPC_[c.fn] : null;
+    if (!f || !Array.isArray(c.args)) return salida_({ error: 'Esa orden no existe' });
+    return salida_({ valor: f.apply(null, c.args) });
+  } catch (err) {
+    return salida_({ error: String(err && err.message ? err.message : err).replace(/^Error:\s*/, '') });
   }
 }
 
 function servirPost_(e) {
+  if (e && e.parameter && e.parameter.a === 'rpc') return rpc_(e);
   var k = e && e.parameter ? e.parameter.k : '';
   var q = quien_(k);
   if (!q) return salida_({ error: 'clave' });
@@ -688,6 +715,7 @@ function admEstado(k) {
       ciudad: d.ciudad, latitud: d.latitud, longitud: d.longitud, calendarios: d.calendarios,
       recordatorios: d.recordatorios.map(function (r) { return recParaPanel_(d, r, ahora); }),
       correoAviso: d.correoAviso,
+      enlaceApp: d.enlaceApp,
       familia: d.familia.map(function (f) {
         var propios = d.mensajes.filter(function (m) { return m.autor === f.id; });
         return { id: f.id, nombre: f.nombre, clave: f.clave, tieneFoto: !!f.foto,
@@ -813,6 +841,11 @@ function admAjustes(k, aj) {
     }
     if (aj.nocheDesde !== undefined && aj.nocheHasta !== undefined) {
       d.noche = { desde: Math.max(0, Math.min(23, Number(aj.nocheDesde))), hasta: Math.max(0, Math.min(23, Number(aj.nocheHasta))) };
+    }
+    if (aj.enlaceApp !== undefined) {
+      var ea = String(aj.enlaceApp || '').trim();
+      if (ea && !/^https:\/\/[^\s?#]{4,190}$/.test(ea)) throw new Error('La dirección de la app tiene que empezar por https:// y no llevar ? ni #');
+      d.enlaceApp = ea;
     }
     if (aj.nocheTexto !== undefined) d.nocheTexto = String(aj.nocheTexto).trim().slice(0, 120) || 'Es hora de dormir.';
     if (aj.contactoNombre !== undefined) {

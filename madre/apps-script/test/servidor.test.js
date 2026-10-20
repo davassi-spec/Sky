@@ -577,5 +577,35 @@ const JPEG = 'data:image/jpeg;base64,' + Buffer.from('foto-de-prueba').toString(
   t('los trozos se quedan privados (sin compartir)', Object.values(s.archivos).every((a) => !a.compartido));
 }
 
+/* ---------- 17. La app del móvil en su propia página (RPC por POST) ---------- */
+{
+  const s = crear({ ahora: new Date(2026, 9, 20, 17, 15).getTime() });
+  s.run("admFamiliaAnadir('ADMINKEY','Ana')"); const ka = s.run('leer_().familia[0].clave');
+  const rpc = (fn, args, a = 'rpc') => JSON.parse(s.run(`doPost({parameter:{a:${J(a)}},postData:{contents:${J(JSON.stringify({ fn, args }))}}}).s`));
+  const r1 = rpc('admEstado', ['ADMINKEY']);
+  t('admEstado por RPC devuelve el estado', r1.valor && r1.valor.rol === 'admin');
+  t('una familiar recibe lo suyo', rpc('admEstado', [ka]).valor.rol === 'familia');
+  t('la clave mala da error claro', /Clave incorrecta/.test(rpc('admEstado', ['mala']).error));
+  t('un familiar no puede lo de administrador', /permiso/.test(rpc('admAjustes', [ka, { estiloDia: 'salvia' }]).error));
+  t('solo se pueden llamar las funciones de la lista', rpc('escribir_', [{}]).error === 'Esa orden no existe' && rpc('leer_', []).error === 'Esa orden no existe' && rpc('constructor', []).error === 'Esa orden no existe' && rpc('__proto__', []).error === 'Esa orden no existe');
+  t('los argumentos tienen que ser una lista', rpc('admEstado', 'ADMINKEY').error === 'Esa orden no existe');
+  const codigo = require('fs').readFileSync(require('path').join(__dirname, '..', 'Code.gs'), 'utf8');
+  const todas = (codigo.match(/^function (adm[A-Z]\w*)/gm) || []).map((x) => x.replace('function ', ''));
+  const lista = s.run('Object.keys(RPC_)');
+  t('toda función adm* está en la lista de RPC (y solo ellas)', todas.every((f) => lista.includes(f)) && lista.every((f) => todas.includes(f)));
+  t('la clave nunca va en la dirección: el RPC la ignora si va ahí', JSON.parse(s.run(`doPost({parameter:{a:'rpc',k:'ADMINKEY'},postData:{contents:${J(JSON.stringify({ fn: 'admEstado', args: [] }))}}}).s`)).error.length > 0);
+  t('se anota como rpc en las métricas', /"rpc"/.test((s.cacheMapa.met_pend || '') + (s.props.METRICAS || '')));
+  // dirección de la app
+  s.run("admAjustes('ADMINKEY', {enlaceApp:'https://ejemplo.github.io/Sky/madre/web-app/'})");
+  t('se guarda la dirección de la app', s.run("admEstado('ADMINKEY')").datos.enlaceApp === 'https://ejemplo.github.io/Sky/madre/web-app/');
+  t('una dirección con clave o sin https se rechaza', falla(() => s.run("admAjustes('ADMINKEY', {enlaceApp:'http://x.com/'})")) && falla(() => s.run("admAjustes('ADMINKEY', {enlaceApp:'https://x.com/#k=1'})")));
+  s.run("admAjustes('ADMINKEY', {enlaceApp:''})");
+  t('y se puede quitar', s.run("admEstado('ADMINKEY')").datos.enlaceApp === '');
+  // subir un envío grande por RPC (1,3 MB por llamada)
+  const trozo = Buffer.alloc(1000000, 3).toString('base64');
+  const { id } = rpc('admMedioNuevo', [ka, { tipo: 'audio', mime: 'audio/wav', bytes: 1000000, partes: 1, texto: '', de: '' }]).valor;
+  t('un trozo de 1 MB entra por RPC', rpc('admMedioParte', [ka, id, 0, trozo]).valor.ok === true && rpc('admMedioFin', [ka, id]).valor.medios.lista.length === 1);
+}
+
 console.log(bien + ' bien, ' + mal + ' fallos');
 process.exit(mal ? 1 : 0);

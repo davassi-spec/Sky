@@ -130,6 +130,9 @@
   .estilo .mini i { display: block; height: 22px; border-radius: 6px; margin-bottom: 5px; }
   .estilo .mini b { position: absolute; left: 10px; bottom: 6px; font-size: 18px; line-height: 1; }
   .estilo .mini u { position: absolute; right: 10px; bottom: 9px; width: 24px; height: 8px; border-radius: 4px; }
+  .ayuda-icono { margin-top: 12px; font-size: 16px; }
+  .ayuda-icono summary { cursor: pointer; font-weight: 700; color: var(--suave-texto); min-height: 44px; display: flex; align-items: center; }
+  .ayuda-icono p { margin: 8px 0 0; }
   .barra-subida { height: 10px; border-radius: 5px; background: var(--borde); overflow: hidden; margin-top: 10px; --pct: 0%; }
   .barra-subida::after { content: ''; display: block; height: 100%; width: var(--pct); background: var(--primario); transition: width .3s; }
   .cuenta-grab { font-size: 22px; font-weight: 800; text-align: center; margin: 12px 0 4px; }
@@ -265,6 +268,7 @@
     taza: '<path d="M4 8h13v5a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5zM17 10h1.5a2.5 2.5 0 0 1 0 5H17M8 3v2M12 3v2"/>',
     campana: '<path d="M6 17h12l-1.5-2.2V10a4.5 4.5 0 0 0-9 0v4.8zM10 20a2 2 0 0 0 4 0"/>',
     papelera: '<path d="M5 7h14M10 7V4h4v3M7 7l1 13h8l1-13"/>',
+    copiar: '<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/>',
     video: '<rect x="2" y="6" width="14" height="12" rx="2"/><path d="M16 10.5l6-3.5v10l-6-3.5"/>',
     sonido: '<path d="M4 9.5v5h3.5L12 18.5v-13L7.5 9.5zM15.5 9a4 4 0 0 1 0 6M18 6.5a8 8 0 0 1 0 11"/>',
     micro: '<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/>',
@@ -1048,7 +1052,22 @@
   }
 
   /* ============================== Familia ============================== */
-  function enlaceDe(f) { return BASE + '?a=admin&k=' + f.clave; }
+  /** Enlace de una persona: apunta a la app del móvil (el envoltorio) si ya se ha dicho dónde está; si no, al panel de Google. La clave va tras el #. */
+  var EN_APP = typeof window.PIZARRA === 'object';
+  function idDeLaWeb() { var m = /\/s\/([^\/]+)\/exec/.exec(BASE); return m ? m[1] : ''; }
+  function direccionApp() { return (EN_APP ? window.PIZARRA.envoltorio : (S && S.datos && S.datos.enlaceApp)) || ''; }
+  function enlaceConClave(clave) {
+    var app = direccionApp(), id = idDeLaWeb();
+    return app && id ? app.replace(/#.*$/, '') + '#u=' + id + '&k=' + clave : BASE + '?a=admin&k=' + clave;
+  }
+  function enlaceDe(f) { return enlaceConClave(f.clave); }
+  /** Cómo poner el icono en la pantalla de inicio (iPhone y Samsung). */
+  function ayudaIcono() {
+    return el('details', { class: 'ayuda-icono' }, el('summary', {}, 'Cómo poner el icono en la pantalla de inicio'),
+      el('p', {}, el('b', {}, 'iPhone (Safari): '), 'toca el botón Compartir (el cuadrado con la flecha), después "Añadir a pantalla de inicio" y "Añadir".'),
+      el('p', {}, el('b', {}, 'Samsung (Chrome): '), 'toca los tres puntos ⋮, después "Añadir a pantalla de inicio" (o "Instalar aplicación") y "Añadir".'),
+      el('p', {}, 'Sale el icono de la tele con un corazón y el nombre "La tele de mamá". Se abre a pantalla completa.'));
+  }
   function copiar(texto) {
     var ta = el('textarea', { class: 'oculto-visual', 'aria-hidden': 'true' }); ta.value = texto; document.body.appendChild(ta); ta.select();
     var ok = false; try { ok = document.execCommand('copy'); } catch (e) {} ta.remove();
@@ -1076,7 +1095,7 @@
         el('div', { class: 'fila', style: 'margin-top:12px' },
           el('button', { class: 'btn suave', type: 'button', onclick: function () { copiar(enlaceDe(f)).then(function (ok) { aviso(ok ? 'Enlace copiado. Mándaselo solo a ' + f.nombre + '.' : 'No se pudo copiar. Usa Compartir.', ok ? 'ok' : 'error'); }); } }, icono('enlace'), 'Copiar enlace'),
           el('button', { class: 'btn suave', type: 'button', onclick: function () {
-            var texto = 'Hola ' + f.nombre + ': con este enlace puedes escribir mensajes en la tele de mamá. No lo reenvíes. ' + enlaceDe(f);
+            var texto = 'Hola ' + f.nombre + ': con este enlace puedes escribir mensajes y mandar audios, vídeos y fotos a la tele de mamá. No lo reenvíes. ' + enlaceDe(f);
             if (navigator.share) navigator.share({ title: 'La tele de mamá', text: texto }).catch(function () {});
             else window.open('https://wa.me/?text=' + encodeURIComponent(texto), '_blank');
           } }, icono('compartir'), 'Compartir')),
@@ -1143,6 +1162,17 @@
         guardarLocal('tema', a[0]); aplicarTema(); aspecto.querySelectorAll('button').forEach(function (b) { b.setAttribute('aria-pressed', 'false'); }); this.setAttribute('aria-pressed', 'true');
       } }, a[1]));
     });
+    var app = el('input', { type: 'url', id: 'app-dir', placeholder: 'https://…/madre/web-app/', value: direccionApp(), autocomplete: 'off', inputmode: 'url' });
+    var miEnlace = enlaceConClave(K);
+    w.appendChild(el('div', { class: 'tarjeta', id: 'icono-inicio' }, el('h2', {}, 'Icono en la pantalla de inicio'),
+      el('p', { class: 'ayuda', style: 'margin-top:0' }, EN_APP ? 'Estás usando la app. Los enlaces de la familia salen ya con su dirección.'
+        : 'Con la app, grabar audio y vídeo funciona bien y queda un icono propio. Pega aquí la dirección donde está publicada (la que termina en web-app/).'),
+      EN_APP ? null : el('label', { class: 'eti', for: 'app-dir' }, 'Dirección de la app'), EN_APP ? null : app,
+      EN_APP ? null : el('button', { class: 'btn suave', type: 'button', style: 'margin-top:10px', onclick: function (e) {
+        accion('admAjustes', [{ enlaceApp: app.value.trim() }], app.value.trim() ? 'Dirección guardada. Los enlaces de la familia ya llevan a la app.' : 'Dirección quitada', e.currentTarget);
+      } }, 'Guardar dirección'),
+      direccionApp() ? el('button', { class: 'btn', type: 'button', style: 'margin-top:10px', onclick: function () { copiar(miEnlace).then(function (ok) { aviso(ok ? 'Tu enlace de administrador está copiado. Ábrelo en el móvil y añade el icono. No lo compartas.' : 'No se pudo copiar', ok ? 'ok' : 'error'); }); } }, icono('copiar'), 'Copiar mi enlace de la app') : null,
+      ayudaIcono()));
     w.appendChild(el('div', { class: 'tarjeta' }, el('h2', {}, 'Aspecto'), aspecto, el('p', { class: 'ayuda' }, 'Solo cambia cómo ves este panel en tu móvil.')));
     var guardar = el('button', { class: 'btn', type: 'button', style: 'margin-top:16px', onclick: function () {
       accion('admAjustes', [{ nocheDesde: Number(desde.value), nocheHasta: Number(hasta.value), nocheTexto: ntexto.value, contactoNombre: cn.value, contactoTelefono: ct.value,
@@ -1217,6 +1247,7 @@
     w.appendChild(estadoTV());
     (S.pendientes || []).forEach(function (p) { w.appendChild(tarjetaPendiente(p)); });
     w.appendChild(tarjetaPrevia());
+    w.appendChild(el('div', { class: 'tarjeta' }, ayudaIcono()));
     var ta = el('textarea', { id: 'texto', maxlength: '200', placeholder: 'Hoy comemos juntos.', oninput: function (e) { borrador.texto = e.target.value; $('cuenta').textContent = e.target.value.length + '/200'; } });
     ta.value = borrador.texto;
     var chips = el('div', { class: 'chips' });
@@ -1606,6 +1637,8 @@
   function cargar(silencioso) {
     return llamar('admEstado').then(function (r) {
       S = r;
+      if (!ROL) { ROL = r.rol; if (ROL === 'admin') { var v0 = leerLocal('vista'); if (v0 === 'inicio' || v0 === 'mensajes' || v0 === 'mas') vista = v0; } }
+      if (EN_APP && r.rol === 'admin' && r.datos.enlaceApp !== window.PIZARRA.envoltorio) llamar('admAjustes', { enlaceApp: window.PIZARRA.envoltorio }).then(function (n) { if (n && n.datos) S.datos.enlaceApp = n.datos.enlaceApp; }, function () {});
       if (ROL === 'familia' && !S.miId) S.miId = 'yo';
       if (r.rol === 'admin' && !r.datos.mensajes) r.datos.mensajes = [];
       pintar();
@@ -1620,9 +1653,21 @@
     cargar(true);
     if (ROL === 'familia' && previa) cargarPrevia(true);
   }
+  /** La app se abre sin su enlace (pasa a veces al añadirla a la pantalla de inicio): se pide pegarlo una vez. */
+  function sinClave() {
+    var campo = el('textarea', { id: 'pegar-enlace', placeholder: 'Pega aquí el enlace que te mandaron', 'aria-label': 'Enlace', style: 'min-height:96px' });
+    var ir_ = el('button', { class: 'btn', type: 'button', style: 'margin-top:12px', onclick: function () {
+      var t = campo.value.trim(), id = /\/s\/([^\/?#]+)\/exec/.exec(t) || /[#&?]u=([^&\s]+)/.exec(t), k = /[#&?]k=([^&\s]+)/.exec(t);
+      if (!id || !k) { aviso('Ese enlace no vale. Cópialo entero, tal como te llegó.', 'error'); return; }
+      try { localStorage.setItem('pizarra_u', id[1]); localStorage.setItem('pizarra_k', k[1]); } catch (e) {}
+      location.hash = 'u=' + id[1] + '&k=' + k[1];
+      location.reload();
+    } }, 'Entrar');
+    $('app').appendChild(el('div', { class: 'tarjeta' }, el('h1', {}, 'La tele de mamá'), el('p', { class: 'sub' }, 'Falta el enlace personal. Pégalo una vez y ya queda guardado.'), campo, ir_));
+  }
   aplicarTema();
   if (ROL === 'admin') { var v = leerLocal('vista'); if (v === 'inicio' || v === 'mensajes' || v === 'mas') vista = v; }
-  cargar(false);
+  if (K) cargar(false); else sinClave();
   setInterval(refrescar, 25000);
   document.addEventListener('visibilitychange', function () { if (!document.hidden) refrescar(); });
 </script>
