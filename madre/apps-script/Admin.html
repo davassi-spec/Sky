@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="es">
+<head>
+<base target="_top">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pizarra</title>
+<style>
+  :root { --fondo:#f5f3ec; --panel:#fff; --texto:#17202a; --apagado:#5d6b7a; --linea:#d9d4c4; --acento:#0d5c3d; --sobre:#fff; --error:#b3261e; --ok:#0d5c3d; }
+  @media (prefers-color-scheme: dark) {
+    :root { --fondo:#121212; --panel:#1e1e1e; --texto:#f2f2f2; --apagado:#b3b3b3; --linea:#3a3a3a; --acento:#ffd23f; --sobre:#111; --error:#ff8a80; --ok:#7fd8a6; }
+  }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--fondo); color:var(--texto); font:18px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; }
+  main { max-width:560px; margin:0 auto; padding:20px 16px 60px; }
+  h1 { font-size:1.5rem; margin:0 0 4px; }
+  h2 { font-size:1.1rem; margin:0 0 12px; }
+  p.sub { margin:0 0 20px; color:var(--apagado); }
+  section { background:var(--panel); border:1px solid var(--linea); border-radius:16px; padding:18px 16px; margin-bottom:16px; }
+  label { display:block; font-weight:600; margin:14px 0 6px; }
+  label:first-of-type { margin-top:0; }
+  input[type=text], select, textarea { width:100%; font:inherit; color:var(--texto); background:var(--fondo); border:2px solid var(--linea); border-radius:10px; padding:12px; }
+  textarea { min-height:120px; resize:vertical; }
+  input:focus, select:focus, textarea:focus { outline:3px solid var(--acento); border-color:var(--acento); }
+  .rapidos { display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
+  .rapidos button { font:inherit; padding:8px 12px; border-radius:999px; border:1px solid var(--linea); background:var(--fondo); color:var(--texto); cursor:pointer; }
+  .principal { margin-top:16px; width:100%; font:inherit; font-weight:700; padding:14px; border:0; border-radius:12px; background:var(--acento); color:var(--sobre); cursor:pointer; }
+  .principal:disabled { opacity:.55; }
+  .fila { display:flex; align-items:center; gap:12px; padding:10px 0; border-top:1px solid var(--linea); }
+  .fila:first-of-type { border-top:0; }
+  .fila input[type=checkbox] { width:26px; height:26px; flex:none; accent-color:var(--acento); }
+  .fila span { flex:1; }
+  .msg { padding:12px 0; border-top:1px solid var(--linea); }
+  .msg:first-of-type { border-top:0; }
+  .msg small { color:var(--apagado); display:block; }
+  .msg button, .enlace { font:inherit; background:none; border:0; color:var(--error); text-decoration:underline; cursor:pointer; padding:4px 0; }
+  .dos { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .res { display:block; width:100%; text-align:left; font:inherit; color:var(--texto); background:var(--fondo); border:1px solid var(--linea); border-radius:10px; padding:10px 12px; margin-top:8px; cursor:pointer; }
+  #estado { position:fixed; left:16px; right:16px; bottom:16px; max-width:528px; margin:0 auto; padding:12px 16px; border-radius:12px; background:var(--panel); border:1px solid var(--linea); font-weight:600; display:none; }
+  #estado.ok { color:var(--ok); } #estado.error { color:var(--error); }
+  .vacio { color:var(--apagado); margin:0; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Pizarra</h1>
+  <p class="sub">Lo que escribas aparece en la tele en menos de un minuto.</p>
+
+  <section>
+    <h2>Escribir un mensaje</h2>
+    <label for="de">¿Quién lo escribe?</label>
+    <input type="text" id="de" placeholder="Daniel" autocomplete="off">
+    <label for="texto">Mensaje</label>
+    <textarea id="texto" maxlength="200" placeholder="Mamá, llámame cuando veas el mensaje."></textarea>
+    <div class="rapidos" id="rapidos"></div>
+    <label for="duracion">¿Cuánto tiempo se ve?</label>
+    <select id="duracion">
+      <option value="hoy">Solo hoy (se quita a medianoche)</option>
+      <option value="manana">Hoy y mañana</option>
+      <option value="siempre">Hasta que yo lo quite</option>
+    </select>
+    <button class="principal" id="enviar" type="button">Enviar a la pantalla</button>
+  </section>
+
+  <section>
+    <h2>Mensajes en la pantalla</h2>
+    <div id="lista"><p class="vacio">Cargando…</p></div>
+  </section>
+
+  <section>
+    <h2>Qué se ve en la pantalla</h2>
+    <label class="fila"><input type="checkbox" id="w-mensajes"><span>Mensajes</span></label>
+    <label class="fila"><input type="checkbox" id="w-eventos"><span>Calendario (hoy y mañana)</span></label>
+    <label class="fila"><input type="checkbox" id="w-tiempo"><span>El tiempo</span></label>
+  </section>
+
+  <section>
+    <h2>Calendarios</h2>
+    <p class="sub" style="margin-bottom:8px">Si no marcas ninguno, se usa tu calendario principal.</p>
+    <div id="calendarios"><p class="vacio">Cargando…</p></div>
+  </section>
+
+  <section>
+    <h2>Ciudad del tiempo</h2>
+    <p id="ciudad-actual" style="margin:0 0 10px;font-weight:600"></p>
+    <input type="text" id="ciudad" placeholder="Escribe una ciudad" autocomplete="off">
+    <button class="principal" id="buscar" type="button" style="margin-top:10px">Buscar</button>
+    <div id="resultados"></div>
+  </section>
+
+  <section>
+    <h2>Por la noche</h2>
+    <p class="sub" style="margin-bottom:8px">La pantalla se pone oscura y deja de mostrar los mensajes del día.</p>
+    <div class="dos">
+      <div><label for="n-desde">Desde las</label><select id="n-desde"></select></div>
+      <div><label for="n-hasta">Hasta las</label><select id="n-hasta"></select></div>
+    </div>
+    <label for="n-texto">Qué se lee en la pantalla de noche</label>
+    <textarea id="n-texto" maxlength="120" style="min-height:90px" placeholder="Es hora de dormir."></textarea>
+    <p class="sub" style="margin:6px 0 0">La primera línea sale grande y las siguientes, más pequeñas. Escribe solo cosas que sean siempre ciertas.</p>
+    <label for="c-nombre">A quién llamar si necesita algo</label>
+    <input type="text" id="c-nombre" placeholder="Pep" autocomplete="off">
+    <label for="c-tel">Teléfono</label>
+    <input type="text" id="c-tel" inputmode="tel" placeholder="600 000 000" autocomplete="off">
+  </section>
+
+  <button class="principal" id="guardar" type="button">Guardar ajustes</button>
+</main>
+<div id="estado" role="status"></div>
+
+<script>
+  var K = <?!= JSON.stringify(clave) ?>;
+  var datos = null, calendarios = [], ciudad = null;
+  var $ = function (id) { return document.getElementById(id); };
+
+  function aviso(txt, tipo) {
+    var e = $('estado'); e.textContent = txt; e.className = tipo || ''; e.style.display = 'block';
+    clearTimeout(aviso.t); aviso.t = setTimeout(function () { e.style.display = 'none'; }, 3500);
+  }
+  function fallo(err) { aviso((err && err.message) ? err.message.replace(/^Error: /, '') : 'Algo ha fallado', 'error'); $('enviar').disabled = false; }
+  function leer(k) { try { return localStorage.getItem(k) || ''; } catch (e) { return ''; } }
+  function guardarLocal(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+
+  function horas(sel, valor) {
+    sel.innerHTML = '';
+    for (var h = 0; h < 24; h++) { var o = document.createElement('option'); o.value = h; o.textContent = h + ':00'; if (h === valor) o.selected = true; sel.appendChild(o); }
+  }
+
+  function pintar(r) {
+    datos = r.datos; calendarios = r.calendarios;
+    // mensajes
+    var l = $('lista'); l.innerHTML = '';
+    if (!datos.mensajes.length) l.innerHTML = '<p class="vacio">No hay mensajes. La pantalla muestra solo el día, el calendario y el tiempo.</p>';
+    datos.mensajes.forEach(function (m) {
+      var d = document.createElement('div'); d.className = 'msg';
+      var cuando = m.hasta ? 'Hasta el ' + new Date(m.hasta * 1000).toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' }) : 'Hasta que lo quites';
+      d.innerHTML = '<strong></strong><small></small><button type="button">Quitar</button>';
+      d.children[0].textContent = (m.de ? m.de + ' dice: ' : '') + m.texto;
+      d.children[1].textContent = cuando;
+      d.children[2].onclick = function () { google.script.run.withSuccessHandler(pintar).withFailureHandler(fallo).admBorrar(K, m.id); };
+      l.appendChild(d);
+    });
+    if (datos.mensajes.length > 1) {
+      var t = document.createElement('button'); t.type = 'button'; t.className = 'enlace'; t.textContent = 'Quitar todos';
+      t.onclick = function () { google.script.run.withSuccessHandler(pintar).withFailureHandler(fallo).admBorrar(K, 'todos'); };
+      l.appendChild(t);
+    }
+    // widgets
+    $('w-mensajes').checked = datos.widgets.mensajes; $('w-eventos').checked = datos.widgets.eventos; $('w-tiempo').checked = datos.widgets.tiempo;
+    // calendarios
+    var c = $('calendarios'); c.innerHTML = '';
+    calendarios.forEach(function (cal) {
+      var f = document.createElement('label'); f.className = 'fila';
+      var i = document.createElement('input'); i.type = 'checkbox'; i.value = cal.id; i.checked = datos.calendarios.indexOf(cal.id) >= 0;
+      var s = document.createElement('span'); s.textContent = cal.nombre;
+      f.appendChild(i); f.appendChild(s); c.appendChild(f);
+    });
+    // ciudad y noche
+    ciudad = { nombre: datos.ciudad, latitud: datos.latitud, longitud: datos.longitud };
+    $('ciudad-actual').textContent = 'Ahora: ' + datos.ciudad;
+    horas($('n-desde'), datos.noche.desde); horas($('n-hasta'), datos.noche.hasta);
+    $('n-texto').value = datos.nocheTexto || ''; $('c-nombre').value = datos.contacto.nombre || ''; $('c-tel').value = datos.contacto.telefono || '';
+  }
+
+  $('de').value = leer('de');
+  ['Hoy comemos juntos.', 'Hoy viene alguien a verte.', 'Te llamamos a las 6.', 'Te queremos mucho.'].forEach(function (t) {
+    var b = document.createElement('button'); b.type = 'button'; b.textContent = t;
+    b.onclick = function () { $('texto').value = t; $('texto').focus(); };
+    $('rapidos').appendChild(b);
+  });
+
+  $('enviar').onclick = function () {
+    var t = $('texto').value.trim();
+    if (!t) { aviso('Escribe un mensaje', 'error'); return; }
+    guardarLocal('de', $('de').value.trim());
+    $('enviar').disabled = true;
+    google.script.run.withSuccessHandler(function (r) {
+      $('enviar').disabled = false; $('texto').value = ''; pintar(r); aviso('Enviado. Saldrá en la tele en menos de un minuto.', 'ok');
+    }).withFailureHandler(fallo).admEnviar(K, $('de').value, t, $('duracion').value);
+  };
+
+  $('buscar').onclick = function () {
+    var q = $('ciudad').value.trim(); if (!q) return;
+    $('resultados').innerHTML = '<p class="vacio">Buscando…</p>';
+    google.script.run.withSuccessHandler(function (rs) {
+      var cont = $('resultados'); cont.innerHTML = '';
+      if (!rs.length) cont.innerHTML = '<p class="vacio">No se ha encontrado esa ciudad.</p>';
+      rs.forEach(function (r) {
+        var b = document.createElement('button'); b.type = 'button'; b.className = 'res';
+        b.textContent = r.nombre + (r.region ? ' (' + r.region + ')' : '');
+        b.onclick = function () { ciudad = r; $('ciudad-actual').textContent = 'Se guardará: ' + r.nombre; cont.innerHTML = ''; };
+        cont.appendChild(b);
+      });
+    }).withFailureHandler(fallo).admBuscarCiudad(K, q);
+  };
+
+  $('guardar').onclick = function () {
+    var cals = []; document.querySelectorAll('#calendarios input:checked').forEach(function (i) { cals.push(i.value); });
+    $('guardar').disabled = true;
+    google.script.run.withSuccessHandler(function (r) {
+      $('guardar').disabled = false; pintar(r); aviso('Ajustes guardados', 'ok');
+    }).withFailureHandler(function (e) { $('guardar').disabled = false; fallo(e); }).admGuardarAjustes(K, {
+      widgets: { mensajes: $('w-mensajes').checked, eventos: $('w-eventos').checked, tiempo: $('w-tiempo').checked },
+      calendarios: cals, ciudad: ciudad.nombre, latitud: ciudad.latitud, longitud: ciudad.longitud,
+      nocheDesde: $('n-desde').value, nocheHasta: $('n-hasta').value,
+      nocheTexto: $('n-texto').value, contactoNombre: $('c-nombre').value, contactoTelefono: $('c-tel').value
+    });
+  };
+
+  google.script.run.withSuccessHandler(pintar).withFailureHandler(fallo).admEstado(K);
+</script>
+</body>
+</html>
