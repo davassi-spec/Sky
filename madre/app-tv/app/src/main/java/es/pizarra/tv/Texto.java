@@ -56,19 +56,27 @@ final class Texto {
     }
 
     /** "Son las cinco y cuarto de la tarde": la hora dicha con la parte del día. */
+    /** "Son las cinco y cuarto de la tarde": la hora dicha con la parte del día. */
     static String horaConParte(Calendar c) {
-        return horaHablada(c) + " " + parteDelDia(c.get(Calendar.HOUR_OF_DAY), c.get(Calendar.MINUTE));
+        return horaHablada(c) + " " + parteDelDia(c.get(Calendar.HOUR_OF_DAY));
     }
 
-    static String parteDelDia(int h, int m) {
-        // Lo que se dice depende de la hora que se nombra ("las siete menos veinte" ya es de la tarde).
-        int dicha = m > 30 ? (h + 1) % 24 : h;
-        if (dicha == 12) return "del mediodía";
-        if (dicha == 0) return "de la noche";
-        if (dicha < 6) return "de la madrugada";
-        if (dicha < 12) return "de la mañana";
-        if (dicha < 20) return "de la tarde";
+    /** Según la hora real: a las 11:40 sigue siendo "de la mañana" aunque se diga "las doce menos veinte". */
+    static String parteDelDia(int h) {
+        if (h == 0) return "de la noche";
+        if (h < 6) return "de la madrugada";
+        if (h < 12) return "de la mañana";
+        if (h == 12) return "del mediodía";
+        if (h < 20) return "de la tarde";
         return "de la noche";
+    }
+
+    /** La etiqueta grande de debajo de la hora. */
+    static String etiquetaParte(int h) {
+        if (h >= 6 && h < 12) return "Por la mañana";
+        if (h == 12) return "Al mediodía";
+        if (h > 12 && h < 20) return "Por la tarde";
+        return "De noche";
     }
 
     /** Mañana 6:00-11:59, tarde 12:00-19:59, noche 20:00-5:59. */
@@ -158,14 +166,14 @@ final class Texto {
     /** Una frase corta sobre cómo vestirse, según la temperatura y el tiempo. */
     static String consejo(int temperatura, int codigo) {
         boolean lluvia = (codigo >= 51 && codigo <= 65) || (codigo >= 80 && codigo <= 82);
-        if (codigo >= 95) return "Hay tormenta. Mejor quedarse en casa.";
-        if (codigo >= 71 && codigo <= 75) return "Está nevando. Si sales, abrígate bien.";
-        if (lluvia) return "Hoy llueve. Si sales, lleva paraguas.";
-        if (temperatura <= 8) return "Hace mucho frío. Si sales, abrígate bien.";
-        if (temperatura <= 14) return "Hace fresco. Si sales, un abrigo.";
-        if (temperatura <= 20) return "Está fresquito. Si sales, una chaqueta.";
-        if (temperatura <= 24) return "No hace frío. Si sales, una chaqueta fina.";
-        if (temperatura <= 29) return "Hace calor. Si sales, ropa fresca.";
-        return "Hace mucho calor. Bebe agua.";
+        if (codigo >= 95) return "Mejor quédate en casa.";
+        if (codigo >= 71 && codigo <= 75) return "Si sales, abrígate bien.";
+        if (lluvia) return "Si sales, lleva paraguas.";
+        if (temperatura <= 8) return "Hace mucho frío. Abrígate.";
+        if (temperatura <= 14) return "Si sales, lleva abrigo.";
+        if (temperatura <= 20) return "Si sales, lleva chaqueta.";
+        if (temperatura <= 24) return "Si sales, chaqueta fina.";
+        if (temperatura <= 29) return "Hace calor. Ropa fresca.";
+        return "Mucho calor. Bebe agua.";
     }
 }

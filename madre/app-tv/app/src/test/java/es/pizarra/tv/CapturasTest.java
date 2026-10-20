@@ -18,6 +18,7 @@ import org.robolectric.RobolectricTestRunner;
 import org.robolectric.RuntimeEnvironment;
 import org.robolectric.annotation.Config;
 import org.robolectric.annotation.GraphicsMode;
+import org.robolectric.shadows.ShadowLooper;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -89,6 +90,7 @@ public class CapturasTest {
         for (int i = 0; i < 3; i++) {   // varias pasadas: el ajuste de letra se hace tras el primer reparto
             raiz.measure(View.MeasureSpec.makeMeasureSpec(1920, View.MeasureSpec.EXACTLY), View.MeasureSpec.makeMeasureSpec(1080, View.MeasureSpec.EXACTLY));
             raiz.layout(0, 0, 1920, 1080);
+            ShadowLooper.idleMainLooper();      // como en la TV: lo que la pantalla deja pendiente (reajustes) se ejecuta
         }
         Bitmap b = Bitmap.createBitmap(1920, 1080, Bitmap.Config.ARGB_8888);
         raiz.draw(new Canvas(b));

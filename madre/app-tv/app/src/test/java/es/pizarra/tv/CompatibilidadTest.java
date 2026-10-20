@@ -61,7 +61,7 @@ public class CompatibilidadTest {
                 + "\"mensajes\":[{\"id\":\"1\",\"de\":\"Dani\",\"texto\":\"Hola\",\"t\":1000}],\"eventos\":[],\"tiempo\":{\"temp\":20,\"codigo\":1}}";
         Datos d = Datos.parse(v1);
         assertTrue(!d.verEventos);
-        assertEquals("calido", d.estiloDia);
+        assertEquals("lavanda", d.estiloDia);
         assertNull(d.cuenta);
         assertNull(d.hoy);
         assertEquals(20, d.temperatura);
@@ -72,9 +72,31 @@ public class CompatibilidadTest {
         assertEquals("Son las cinco y cuarto de la tarde", hora(17, 15));
         assertEquals("Son las diez y diez de la noche", hora(22, 10));
         assertEquals("Son las nueve y media de la mañana", hora(9, 30));
-        assertEquals("Son las doce menos veinte del mediodía", hora(11, 40));
+        assertEquals("Son las doce menos veinte de la mañana", hora(11, 40));
+        assertEquals("Son las doce menos veinte de la noche", hora(23, 40));
+        assertEquals("Es la una menos veinte del mediodía", hora(12, 40));
         assertEquals("Es la una en punto de la madrugada", hora(1, 0));
         assertEquals("Son las doce y cinco del mediodía", hora(12, 5));
+    }
+
+    @Test
+    public void de11_31a11_59SigueSiendoDeLaMananaYDe23_31a23_59DeLaNoche() {
+        for (int m = 31; m <= 59; m++) {
+            assertTrue("11:" + m, hora(11, m).endsWith(" de la mañana"));
+            assertTrue("23:" + m, hora(23, m).endsWith(" de la noche"));
+        }
+        assertTrue(hora(0, 10).endsWith(" de la noche"));
+        assertTrue(hora(5, 45).endsWith(" de la madrugada"));
+        assertTrue(hora(19, 45).endsWith(" de la tarde"));
+    }
+
+    @Test
+    public void laEtiquetaDeLaParteDelDia() {
+        assertEquals("Por la mañana", Texto.etiquetaParte(8));
+        assertEquals("Al mediodía", Texto.etiquetaParte(12));
+        assertEquals("Por la tarde", Texto.etiquetaParte(17));
+        assertEquals("De noche", Texto.etiquetaParte(22));
+        assertEquals("De noche", Texto.etiquetaParte(3));
     }
 
     private static String hora(int h, int m) {

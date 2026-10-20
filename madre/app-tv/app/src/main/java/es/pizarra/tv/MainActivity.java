@@ -60,15 +60,15 @@ public class MainActivity extends Activity {
     private Typeface negrita, normal;
     private Datos datos;
     private boolean noche;
-    private Paleta p = Paleta.de("calido", false);
+    private Paleta p = Paleta.de("lavanda", false);
     private String firma = "";            // lo que se ve ahora; si no cambia, no se repinta
     private boolean pintado;
     private boolean puntos = true;
 
     private FrameLayout marco;
-    private LinearLayout raiz, cuerpo, colIzq, colDer, banda, filaHablada;
-    private ImageView icBanda, icParte;
-    private TextView txBanda, tvDia, tvFecha, tvH, tvDos, tvM, tvHablada;
+    private LinearLayout raiz, cuerpo, colIzq, colDer, banda, pildora;
+    private ImageView icBanda, icPildora;
+    private TextView txBanda, txPildora, tvDia, tvFecha, tvH, tvDos, tvM, tvHablada;
     private final List<LinearLayout> tarjetasMsg = new ArrayList<>();
 
     private final Runnable tic = new Runnable() {
@@ -217,6 +217,7 @@ public class MainActivity extends Activity {
         t.setTypeface(fuerte ? negrita : normal);
         t.setIncludeFontPadding(false);
         t.setTextSize(TypedValue.COMPLEX_UNIT_PX, tam * s);
+        t.setTag(tam);
         return t;
     }
 
@@ -249,6 +250,7 @@ public class MainActivity extends Activity {
         v.setScaleType(ImageView.ScaleType.FIT_CENTER);
         v.setColorFilter(color, PorterDuff.Mode.SRC_IN);
         v.setLayoutParams(lp(px(lado), px(lado)));
+        v.setTag(new float[]{lado, lado});
         return v;
     }
 
@@ -260,6 +262,7 @@ public class MainActivity extends Activity {
         int pad = px((diametro - interior) / 2f);
         v.setPadding(pad, pad, pad, pad);
         v.setLayoutParams(lp(px(diametro), px(diametro)));
+        v.setTag(new float[]{diametro, interior});
         return v;
     }
 
@@ -277,13 +280,53 @@ public class MainActivity extends Activity {
         t.setText(txt);
     }
 
+    /** Cambia a la vez el tamaño de letra y de iconos de una tarjeta (los tamaños base van en las etiquetas). */
+    private void escalar(View v, float k) {
+        Object tag = v.getTag();
+        if (v instanceof TextView && tag instanceof Float) {
+            ((TextView) v).setTextSize(TypedValue.COMPLEX_UNIT_PX, (Float) tag * k * s);
+        } else if (v instanceof ImageView && tag instanceof float[]) {
+            float[] a = (float[]) tag;
+            ViewGroup.LayoutParams l = v.getLayoutParams();
+            l.width = px(a[0] * k);
+            l.height = px(a[0] * k);
+            int pad = px((a[0] - a[1]) * k / 2f);
+            v.setPadding(pad, pad, pad, pad);
+        } else if (v instanceof ViewGroup) {
+            ViewGroup g = (ViewGroup) v;
+            for (int i = 0; i < g.getChildCount(); i++) escalar(g.getChildAt(i), k);
+        }
+    }
+
+    /**
+     * Agranda el contenido de la tarjeta hasta que llene el hueco (como mucho kmax veces el tamaño base).
+     * Devuelve false si ni siquiera cabe con el tamaño base.
+     */
+    private boolean llenar(final LinearLayout t, float kmax) {
+        int ancho = t.getWidth();
+        int alto = t.getHeight();
+        if (ancho <= 0 || alto <= 0) return true;
+        for (int i = Math.round((kmax - 1f) * 10f); i >= 0; i--) {
+            float k = 1f + i / 10f;
+            escalar(t, k);
+            t.measure(View.MeasureSpec.makeMeasureSpec(ancho, View.MeasureSpec.EXACTLY),
+                    View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED));
+            if (t.getMeasuredHeight() <= alto) {
+                t.post(new Runnable() { @Override public void run() { t.requestLayout(); } });
+                return true;
+            }
+        }
+        escalar(t, 1f);
+        return false;
+    }
+
     /* ---------- Construcción de la pantalla ---------- */
 
     private void construir() {
         marco = new FrameLayout(this);
         raiz = new LinearLayout(this);
         raiz.setOrientation(LinearLayout.VERTICAL);
-        raiz.setPadding(px(56), px(28), px(56), px(28));
+        raiz.setPadding(px(56), px(24), px(56), px(24));
         marco.addView(raiz, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
 
         // Cuenta atrás (solo si toca)
@@ -298,8 +341,8 @@ public class MainActivity extends Activity {
         txBanda = texto(56, true);
         txBanda.setSingleLine(true);
         banda.addView(txBanda);
-        LinearLayout.LayoutParams lpBanda = lp(ViewGroup.LayoutParams.MATCH_PARENT, px(88));
-        lpBanda.bottomMargin = px(16);
+        LinearLayout.LayoutParams lpBanda = lp(ViewGroup.LayoutParams.MATCH_PARENT, px(80));
+        lpBanda.bottomMargin = px(12);
         raiz.addView(banda, lpBanda);
 
         // Cabecera: día y fecha a la izquierda; hora en cifras y en palabras a la derecha.
@@ -323,28 +366,41 @@ public class MainActivity extends Activity {
         der.setGravity(Gravity.RIGHT);
         LinearLayout reloj = new LinearLayout(this);
         reloj.setOrientation(LinearLayout.HORIZONTAL);
-        tvH = texto(176, true);
-        tvDos = texto(176, true);
-        tvM = texto(176, true);
+        tvH = texto(180, true);
+        tvDos = texto(180, true);
+        tvM = texto(180, true);
         tvDos.setText(":");
         reloj.addView(tvH);
         reloj.addView(tvDos);
         reloj.addView(tvM);
-        der.addView(reloj);
-        filaHablada = new LinearLayout(this);
-        filaHablada.setOrientation(LinearLayout.HORIZONTAL);
-        filaHablada.setGravity(Gravity.CENTER_VERTICAL | Gravity.RIGHT);
-        icParte = new ImageView(this);
-        icParte.setScaleType(ImageView.ScaleType.FIT_CENTER);
-        LinearLayout.LayoutParams lpParte = lp(px(48), px(48));
-        lpParte.rightMargin = px(14);
-        filaHablada.addView(icParte, lpParte);
+        // La letra deja aire arriba y abajo: se recorta para que la cabecera no crezca.
+        LinearLayout.LayoutParams lpRel = lp(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        lpRel.gravity = Gravity.RIGHT;
+        lpRel.topMargin = -px(42);
+        lpRel.bottomMargin = -px(42);
+        der.addView(reloj, lpRel);
         tvHablada = texto(46, true);
         tvHablada.setSingleLine(true);
-        filaHablada.addView(tvHablada);
         LinearLayout.LayoutParams lpHab = lp(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        lpHab.gravity = Gravity.RIGHT;
         lpHab.topMargin = px(4);
-        der.addView(filaHablada, lpHab);
+        der.addView(tvHablada, lpHab);
+        pildora = new LinearLayout(this);
+        pildora.setOrientation(LinearLayout.HORIZONTAL);
+        pildora.setGravity(Gravity.CENTER_VERTICAL);
+        pildora.setPadding(px(22), px(8), px(26), px(8));
+        icPildora = new ImageView(this);
+        icPildora.setScaleType(ImageView.ScaleType.FIT_CENTER);
+        LinearLayout.LayoutParams lpIcP = lp(px(48), px(48));
+        lpIcP.rightMargin = px(14);
+        pildora.addView(icPildora, lpIcP);
+        txPildora = texto(46, true);
+        txPildora.setSingleLine(true);
+        pildora.addView(txPildora);
+        LinearLayout.LayoutParams lpPil = lp(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        lpPil.gravity = Gravity.RIGHT;
+        lpPil.topMargin = px(10);
+        der.addView(pildora, lpPil);
         LinearLayout.LayoutParams lpDer = lp(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         lpDer.leftMargin = px(32);
         cab.addView(der, lpDer);
@@ -362,7 +418,7 @@ public class MainActivity extends Activity {
         lpColDer.leftMargin = px(28);
         cuerpo.addView(colDer, lpColDer);
         LinearLayout.LayoutParams lpCuerpo = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f);
-        lpCuerpo.topMargin = px(20);
+        lpCuerpo.topMargin = px(16);
         raiz.addView(cuerpo, lpCuerpo);
 
         setContentView(marco);
@@ -374,7 +430,7 @@ public class MainActivity extends Activity {
         Calendar a = Hora.ahora();
         int hora = a.get(Calendar.HOUR_OF_DAY);
         boolean n = datos != null ? datos.esNocheAhora(hora) : (hora >= 21 || hora < 6);
-        String estilo = datos != null ? datos.estiloAhora(n) : "calido";
+        String estilo = datos != null ? datos.estiloAhora(n) : (n ? "calido" : "lavanda");
         String f = n + "/" + estilo + "/" + hora + "/" + a.get(Calendar.DAY_OF_YEAR) + "/"
                 + prefs.getString("url", "").isEmpty() + "/" + (datos != null ? datos.firma() : "");
         if (!f.equals(firma)) {
@@ -394,7 +450,7 @@ public class MainActivity extends Activity {
         setSiCambia(tvM, cifras.substring(dos + 1));
         boolean parte = datos == null || datos.verParte;
         String hablada = parte ? Texto.horaConParte(a) : Texto.horaHablada(a);
-        int ancho = px(1000) - (parte ? px(62) : 0);
+        int ancho = px(1000);
         if (!hablada.contentEquals(tvHablada.getText())) ajustarLinea(tvHablada, hablada, ancho, 46, 40);
     }
 
@@ -446,9 +502,12 @@ public class MainActivity extends Activity {
         tvDia.setText(Texto.nombreDia(ahora));
         tvFecha.setText(Texto.fecha(ahora));
         boolean parte = datos == null || datos.verParte;
-        icParte.setVisibility(parte ? View.VISIBLE : View.GONE);
-        icParte.setImageResource(noche ? R.drawable.ic_luna : R.drawable.ic_sol);
-        icParte.setColorFilter(p.acentoTexto, PorterDuff.Mode.SRC_IN);
+        pildora.setVisibility(parte ? View.VISIBLE : View.GONE);
+        pildora.setBackgroundDrawable(caja(p.pillFondo, 30, p.borde, p.grosorBorde > 2 ? p.grosorBorde : 0));
+        icPildora.setImageResource(noche ? R.drawable.ic_luna : R.drawable.ic_sol);
+        icPildora.setColorFilter(p.pillTexto, PorterDuff.Mode.SRC_IN);
+        txPildora.setTextColor(p.pillTexto);
+        txPildora.setText(Texto.etiquetaParte(hora));
         tvHablada.setText("");           // se vuelve a escribir en pintarHora, con su ancho
         pintarBanda();
         pintarCuerpo(ahora, hora);
@@ -473,25 +532,24 @@ public class MainActivity extends Activity {
         LinearLayout t = new LinearLayout(this);
         t.setOrientation(LinearLayout.VERTICAL);
         t.setBackgroundDrawable(caja(segunda ? p.tarjeta2 : p.tarjeta, 28, p.borde, p.grosorBorde));
-        t.setPadding(px(36), px(28), px(36), px(28));
+        t.setPadding(px(36), px(24), px(36), px(24));
         return t;
     }
 
-    private void anadir(LinearLayout col, View v, boolean rellena) {
-        LinearLayout.LayoutParams l = rellena
-                ? new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f)
-                : lp(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        if (col.getChildCount() > 0) l.topMargin = px(20);
+    private void anadir(LinearLayout col, View v, float peso) {
+        LinearLayout.LayoutParams l = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, peso);
+        if (col.getChildCount() > 0) l.topMargin = px(16);
         col.addView(v, l);
     }
 
     private void pintarCuerpo(Calendar ahora, int hora) {
         colIzq.removeAllViews();
         colDer.removeAllViews();
-        tarjetasMsg.clear();
         boolean conectada = !prefs.getString("url", "").isEmpty();
         List<View> izq = new ArrayList<>();
         List<View> der = new ArrayList<>();
+        // Peso de cada tarjeta de la derecha (la del tiempo necesita algo más de sitio)
+        float pesoTiempo = 1.12f;
 
         if (!conectada) {
             LinearLayout t = tarjeta(false);
@@ -502,17 +560,24 @@ public class MainActivity extends Activity {
             t.addView(x);
             izq.add(t);
         } else if (datos != null && noche) {
-            boolean deManana = hora >= 12;
-            if (datos.verEventos) izq.add(tarjetaEventos(ahora, true, deManana));
-            else if (datos.verMensajes && !datos.mensajes.isEmpty()) izq.add(tarjetaMensaje(datos.mensajes.get(0), ahora, false));
-            der.add(tarjetaDormir());
+            boolean deManana = hora >= 12;      // pasada la medianoche, "lo de mañana" ya es lo de hoy
+            int nm = datos.verMensajes ? Math.min(2, datos.mensajes.size()) : 0;
+            List<Datos.Evento> lista = new ArrayList<>();
+            for (Datos.Evento e : datos.eventos) if (e.manana == deManana) lista.add(e);
+            if (nm > 0) {
+                for (int i = 0; i < nm; i++) izq.add(tarjetaMensaje(datos.mensajes.get(i), ahora, nm > 1));
+                der.add(tarjetaDormir(datos.verEventos, lista, deManana));
+            } else {
+                if (datos.verEventos) izq.add(tarjetaEventos(ahora, true, deManana));
+                der.add(tarjetaDormir(false, lista, deManana));
+            }
             if (!datos.contactoNombre.isEmpty()) der.add(tarjetaTelefono());
+            pesoTiempo = 0.8f;
         } else if (datos != null) {
             int nm = datos.verMensajes ? Math.min(2, datos.mensajes.size()) : 0;
             for (int i = 0; i < nm; i++) izq.add(tarjetaMensaje(datos.mensajes.get(i), ahora, nm > 1));
-            boolean compacto = datos.cuenta != null;
             View ev = datos.verEventos ? tarjetaEventos(ahora, false, false) : null;
-            View tp = datos.verTiempo && datos.hayTiempo ? tarjetaTiempo(compacto) : null;
+            View tp = datos.verTiempo && datos.hayTiempo ? tarjetaTiempo() : null;
             if (nm > 0) {
                 if (ev != null) der.add(ev);
                 if (tp != null) der.add(tp);
@@ -523,12 +588,8 @@ public class MainActivity extends Activity {
         }
 
         if (izq.isEmpty()) { izq = der; der = new ArrayList<>(); }
-        for (View v : izq) anadir(colIzq, v, true);
-        for (int i = 0; i < der.size(); i++) {
-            View v = der.get(i);
-            boolean ultimaTiempo = v.getTag() instanceof String && "tiempo".equals(v.getTag()) && der.size() > 1;
-            anadir(colDer, v, !ultimaTiempo);
-        }
+        for (View v : izq) anadir(colIzq, v, 1f);
+        for (View v : der) anadir(colDer, v, v.getTag() instanceof String && "tiempo".equals(v.getTag()) ? pesoTiempo : "dormir".equals(v.getTag()) ? 1.3f : 1f);
         cuerpo.setVisibility(izq.isEmpty() ? View.GONE : View.VISIBLE);
         colDer.setVisibility(der.isEmpty() ? View.GONE : View.VISIBLE);
         ((LinearLayout.LayoutParams) colIzq.getLayoutParams()).weight = der.isEmpty() ? 1f : 1.55f;
@@ -583,7 +644,8 @@ public class MainActivity extends Activity {
         LinearLayout.LayoutParams lpT = lp(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         lpT.topMargin = px(dos ? 12 : 20);
         t.addView(tx, lpT);
-        final int[] tamanos = dos ? new int[]{60, 54, 48, 44, 40, 36} : new int[]{80, 72, 64, 56, 50, 44, 40, 36};
+        // Se prueba de mayor a menor: la letra crece hasta llenar la tarjeta (hasta 96 px) y solo encoge si no cabe.
+        final int[] tamanos = dos ? new int[]{80, 72, 64, 56, 50, 44, 40, 36} : new int[]{96, 88, 80, 72, 64, 56, 50, 44, 40, 36};
         final View cabeza = cab;
         t.addOnLayoutChangeListener(new View.OnLayoutChangeListener() {
             @Override public void onLayoutChange(View v, int l, int tp, int r, int b, int ol, int ot, int or, int ob) {
@@ -595,17 +657,38 @@ public class MainActivity extends Activity {
                 TextPaint tpnt = new TextPaint(Paint.ANTI_ALIAS_FLAG);
                 tpnt.setTypeface(negrita);
                 int elegido = tamanos[tamanos.length - 1];
+                int anchoElegido = ancho;
                 for (int z : tamanos) {
                     tpnt.setTextSize(z * s);
-                    if (new StaticLayout(m.texto, tpnt, ancho, Layout.Alignment.ALIGN_NORMAL, 1.1f, 0, false).getHeight() <= alto) {
+                    StaticLayout sl = new StaticLayout(m.texto, tpnt, ancho, Layout.Alignment.ALIGN_NORMAL, 1.1f, 0, false);
+                    if (sl.getHeight() > alto) continue;
+                    int w = ancho;
+                    int lineas = sl.getLineCount();
+                    if (lineas > 1 && lineas <= 3) {
+                        // Reparto equilibrado (en Android 5.1 no hay BREAK_STRATEGY_BALANCED): el ancho más estrecho con las mismas líneas.
+                        int lo = ancho / 2, hi = ancho;
+                        for (int i = 0; i < 9; i++) {
+                            int mid = (lo + hi) / 2;
+                            int n = new StaticLayout(m.texto, tpnt, mid, Layout.Alignment.ALIGN_NORMAL, 1.1f, 0, false).getLineCount();
+                            if (n <= lineas) hi = mid; else lo = mid + 1;
+                        }
+                        w = hi;
+                        sl = new StaticLayout(m.texto, tpnt, w, Layout.Alignment.ALIGN_NORMAL, 1.1f, 0, false);
+                    }
+                    // Una palabra suelta en la última línea queda fea: se prefiere una letra algo menor.
+                    boolean huerfana = sl.getLineCount() > 1 && sl.getLineWidth(sl.getLineCount() - 1) < w * 0.3f;
+                    if (!huerfana) {
                         elegido = z;
+                        anchoElegido = w;
                         break;
                     }
                 }
+                ViewGroup.LayoutParams lt = tx.getLayoutParams();
+                lt.width = anchoElegido >= ancho ? ViewGroup.LayoutParams.MATCH_PARENT : anchoElegido + px(4);
+                tx.setLayoutParams(lt);
                 tx.setTextSize(TypedValue.COMPLEX_UNIT_PX, elegido * s);
             }
         });
-        tarjetasMsg.add(t);
         return t;
     }
 
@@ -643,7 +726,7 @@ public class MainActivity extends Activity {
         t.addOnLayoutChangeListener(new View.OnLayoutChangeListener() {
             @Override public void onLayoutChange(View v, int l, int tp, int r, int b, int ol, int ot, int or, int ob) {
                 if (r - l == or - ol && b - tp == ob - ot) return;
-                recortarEventos(t, titulo, listaEv);
+                if (!llenar(t, 1.7f)) recortarEventos(t, titulo, listaEv);
             }
         });
         return t;
@@ -663,9 +746,9 @@ public class MainActivity extends Activity {
         if (separado) lpCaja.topMargin = px(grande ? 28 : 14);
         if (proximo) {
             caja.setBackgroundDrawable(caja(p.proximoFondo, 20, p.acentoTexto, 3));
-            caja.setPadding(px(24), px(18), px(24), px(18));
+            caja.setPadding(px(24), px(16), px(24), px(16));
         } else {
-            caja.setPadding(px(proximo ? 24 : 8), px(8), px(8), px(8));
+            caja.setPadding(px(8), px(8), px(8), px(8));
         }
         float lado = proximo || grande ? 80 : 60;
         ImageView ic = iconoRedondo(icono, p.avatar, lado, lado * 0.56f);
@@ -702,21 +785,25 @@ public class MainActivity extends Activity {
             lista.removeViewAt(lista.getChildCount() - 1);
             quitados++;
         }
-        if (quitados > 0) {
-            TextView mas = texto(36, true);
-            mas.setTextColor(p.sub);
-            mas.setText(quitados == 1 ? "…y 1 más" : "…y " + quitados + " más");
-            LinearLayout.LayoutParams l = lp(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-            l.topMargin = px(10);
-            lista.addView(mas, l);
-        }
+        if (quitados == 0) return;
+        // El aviso "…y N más" solo se pone si cabe; si no, mejor dejar el hueco limpio que una letra cortada.
+        lista.measure(View.MeasureSpec.makeMeasureSpec(ancho, View.MeasureSpec.EXACTLY),
+                View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED));
+        if (lista.getMeasuredHeight() + px(52) > alto) return;
+        TextView mas = texto(36, true);
+        mas.setTextColor(p.sub);
+        mas.setText(quitados == 1 ? "…y 1 más" : "…y " + quitados + " más");
+        LinearLayout.LayoutParams l = lp(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        l.topMargin = px(10);
+        lista.addView(mas, l);
     }
 
-    /** El tiempo de hoy y de mañana, con una frase de qué ponerse. */
-    private View tarjetaTiempo(boolean compacto) {
-        LinearLayout t = tarjeta(true);
+    /** El tiempo de hoy y de mañana, cada uno con su frase de qué ponerse. El texto no baja de 40 px. */
+    private View tarjetaTiempo() {
+        final LinearLayout t = tarjeta(true);
         t.setTag("tiempo");
-        t.setPadding(px(32), px(24), px(32), px(24));
+        t.setGravity(Gravity.CENTER_VERTICAL);
+        t.setPadding(px(32), px(20), px(32), px(20));
         Datos.Dia hoy = datos.hoy;
         if (hoy == null) {
             hoy = new Datos.Dia();
@@ -724,18 +811,13 @@ public class MainActivity extends Activity {
             hoy.codigo = datos.codigoTiempo;
         }
         t.addView(filaTiempo("Hoy", hoy.temp, hoy.codigo, false));
-        if (datos.manana != null) {
-            View f = filaTiempo("Mañana", datos.manana.temp, datos.manana.codigo, true);
-            t.addView(f);
-        }
-        if (!compacto || datos.manana == null) {
-            TextView consejo = texto(40, false);
-            consejo.setTextColor(p.texto);
-            consejo.setText(Texto.consejo(hoy.temp, hoy.codigo));
-            LinearLayout.LayoutParams l = lp(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-            l.topMargin = px(14);
-            t.addView(consejo, l);
-        }
+        if (datos.manana != null) t.addView(filaTiempo("Mañana", datos.manana.temp, datos.manana.codigo, true));
+        t.addOnLayoutChangeListener(new View.OnLayoutChangeListener() {
+            @Override public void onLayoutChange(View v, int l, int tp, int r, int b, int ol, int ot, int or, int ob) {
+                if (r - l == or - ol && b - tp == ob - ot) return;
+                llenar(t, 1.8f);
+            }
+        });
         return t;
     }
 
@@ -752,7 +834,7 @@ public class MainActivity extends Activity {
         LinearLayout l1 = new LinearLayout(this);
         l1.setOrientation(LinearLayout.HORIZONTAL);
         l1.setGravity(Gravity.BOTTOM);
-        TextView d = texto(36, false);
+        TextView d = texto(40, false);
         d.setTextColor(p.sub);
         d.setText(dia);
         TextView g = texto(64, true);
@@ -762,46 +844,74 @@ public class MainActivity extends Activity {
         lpG.leftMargin = px(18);
         l1.addView(d);
         l1.addView(g, lpG);
-        TextView e = texto(40, true);
+        TextView e = texto(40, false);
         e.setTextColor(p.texto);
-        e.setSingleLine(true);
-        e.setText(Texto.estadoDelTiempo(codigo));
+        e.setText(Texto.consejo(temp, codigo));
         col.addView(l1);
         col.addView(e);
-        fila.addView(col);
+        fila.addView(col, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
         LinearLayout.LayoutParams lf = lp(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        if (separada) lf.topMargin = px(12);
+        if (separada) lf.topMargin = px(14);
         fila.setLayoutParams(lf);
         return fila;
     }
 
-    /** "Es hora de dormir." con la luna. */
-    private View tarjetaDormir() {
+    /** "Es hora de dormir." con la luna y, debajo, lo primero de mañana. */
+    private View tarjetaDormir(boolean conAgenda, List<Datos.Evento> lista, boolean deManana) {
         LinearLayout t = tarjeta(false);
-        t.setOrientation(LinearLayout.HORIZONTAL);
+        t.setTag("dormir");
         t.setGravity(Gravity.CENTER_VERTICAL);
-        ImageView luna = icono(R.drawable.ic_luna, p.acentoTexto, 112);
-        LinearLayout.LayoutParams lpL = lp(px(112), px(112));
-        lpL.rightMargin = px(28);
-        t.addView(luna, lpL);
+        LinearLayout fila = new LinearLayout(this);
+        fila.setOrientation(LinearLayout.HORIZONTAL);
+        fila.setGravity(Gravity.CENTER_VERTICAL);
+        ImageView luna = icono(R.drawable.ic_luna, p.acentoTexto, 96);
+        LinearLayout.LayoutParams lpL = lp(px(96), px(96));
+        lpL.rightMargin = px(24);
+        fila.addView(luna, lpL);
         String txt = datos != null && !datos.nocheTexto.isEmpty() ? datos.nocheTexto : "Es hora de dormir.";
         int salto = txt.indexOf('\n');
         LinearLayout col = new LinearLayout(this);
         col.setOrientation(LinearLayout.VERTICAL);
-        TextView a = texto(76, true);
+        TextView a = texto(64, true);
         a.setTextColor(p.texto);
         a.setLineSpacing(0, 1.05f);
         a.setText(salto < 0 ? txt : txt.substring(0, salto).trim());
         col.addView(a);
         if (salto >= 0 && salto < txt.length() - 1) {
-            TextView b = texto(44, false);
+            TextView b = texto(40, false);
             b.setTextColor(p.sub);
             b.setText(txt.substring(salto + 1).trim());
-            LinearLayout.LayoutParams l = lp(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-            l.topMargin = px(10);
-            col.addView(b, l);
+            col.addView(b);
         }
-        t.addView(col, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+        fila.addView(col, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+        t.addView(fila);
+        if (conAgenda) {
+            String dia = deManana ? "Mañana" : "Hoy";
+            View raya = new View(this);
+            raya.setBackgroundColor(p.borde);
+            LinearLayout.LayoutParams lpR = lp(ViewGroup.LayoutParams.MATCH_PARENT, Math.max(2, px(p.grosorBorde)));
+            lpR.topMargin = px(18);
+            lpR.bottomMargin = px(14);
+            t.addView(raya, lpR);
+            TextView cuando = texto(40, false);
+            cuando.setTextColor(p.sub);
+            TextView que = texto(52, true);
+            que.setTextColor(p.texto);
+            que.setSingleLine(true);
+            que.setEllipsize(TextUtils.TruncateAt.END);
+            if (lista.isEmpty()) {
+                cuando.setText(dia);
+                que.setText("No hay nada apuntado.");
+                que.setTextColor(p.sub);
+            } else {
+                Datos.Evento e = lista.get(0);
+                cuando.setText(dia + (e.hora.isEmpty() ? ", todo el día" : " a las " + e.hora)
+                        + (lista.size() > 1 ? " (y " + (lista.size() - 1) + " más)" : ""));
+                que.setText(e.titulo);
+            }
+            t.addView(cuando);
+            t.addView(que);
+        }
         return t;
     }
 

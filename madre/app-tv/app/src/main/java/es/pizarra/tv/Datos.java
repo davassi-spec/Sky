@@ -33,7 +33,7 @@ final class Datos {
         int dias;
     }
 
-    String estiloDia = "calido";
+    String estiloDia = "lavanda";
     String estiloNoche = "calido";
     String pruebaEstilo;            // "Probar 1 minuto" desde el panel; null si no hay prueba
     boolean pruebaNoche;
@@ -77,7 +77,7 @@ final class Datos {
             else if (id.equals("cuentaAtras")) d.verCuenta = on;
             else if (id.equals("parteDelDia")) d.verParte = on;
         }
-        d.estiloDia = o.optString("estiloDia", "calido");
+        d.estiloDia = o.optString("estiloDia", "lavanda");
         d.estiloNoche = o.optString("estiloNoche", "calido");
         JSONObject pr = o.optJSONObject("prueba");
         if (pr != null) {
