@@ -431,5 +431,28 @@ const JPEG = 'data:image/jpeg;base64,' + Buffer.from('foto-de-prueba').toString(
   t('si lo confirma el administrador no consta ningún familiar', Math.abs(r2.confirmadoHoy - a(14, 5)) < 5000 && r2.confirmadoPor === '');
 }
 
+/* ---------- 14. Vista previa fiel: captura real de la TV ---------- */
+{
+  const s = crear({ ahora: new Date(2026, 9, 20, 17, 15).getTime() });
+  const JPG = '/9j/' + 'A'.repeat(200);
+  const post = (k, cuerpo, a = 'captura') => JSON.parse(s.run(`doPost({parameter:{a:${J(a)},k:${J(k)}},postData:{contents:${J(cuerpo)}}}).s`));
+  s.run("admFamiliaAnadir('ADMINKEY','Ana')"); const kf = s.run('leer_()').familia[0].clave;
+  t('la TV no recibe orden de mandar nada si nadie mira', s.run('estado_()').captura === false);
+  t('sin captura al principio', s.run("admCapturaTV('ADMINKEY', 0)").t === 0);
+  s.run(`admCapturaTV(${J(kf)}, 0)`);
+  t('al mirar alguien, se le pide una captura a la TV', s.run('estado_()').captura === true);
+  t('solo la TV (administrador) puede subir capturas', post(kf, JPG).error === 'permiso' && post('inventada', JPG).error === 'clave');
+  t('una captura que no es un JPEG se rechaza', post('ADMINKEY', 'hola'.repeat(50)).error === 'captura no válida' && post('ADMINKEY', 'A'.repeat(200)).error === 'captura no válida' && post('ADMINKEY', '/9j/' + 'A'.repeat(100000)).error === 'captura no válida');
+  t('una acción desconocida también', post('ADMINKEY', JPG, 'otra').error === 'acción desconocida');
+  t('la captura se guarda', post('ADMINKEY', JPG).ok === true);
+  const c = s.run("admCapturaTV('ADMINKEY', 0)");
+  t('el administrador la recibe', c.jpg === 'data:image/jpeg;base64,' + JPG && c.t > 0);
+  t('un familiar también', s.run(`admCapturaTV(${J(kf)}, 0)`).jpg === c.jpg);
+  t('si no ha cambiado no se vuelve a mandar', s.run(`admCapturaTV('ADMINKEY', ${c.t})`).igual === true && !s.run(`admCapturaTV('ADMINKEY', ${c.t})`).jpg);
+  t('recién subida, la TV no tiene que mandar otra', s.run('estado_()').captura === false);
+  t('sin clave no se ve nada', falla(() => s.run("admCapturaTV('', 0)")));
+  t('mirar no cuenta como TV conectada', s.run('tvUltima_()') === 0);
+}
+
 console.log(bien + ' bien, ' + mal + ' fallos');
 process.exit(mal ? 1 : 0);

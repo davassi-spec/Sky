@@ -148,4 +148,57 @@ public class CapturasTest {
             captura(e + "-p-noche-sin-mensajes-ni-eventos", json(e, "", "[]", TIEMPO, "null"), 20, 22, 10);
         }
     }
+
+    private static String contacto(String json, String nombre, String telefono) {
+        return json.replace("\"contacto\":{\"nombre\":\"Dani\",\"telefono\":\"600 000 000\"}", "\"contacto\":{\"nombre\":\"" + nombre + "\",\"telefono\":\"" + telefono + "\"}");
+    }
+
+    /** Textos largos y el teléfono: nada se corta; si no cabe, la letra baja (36 px como mínimo) y luego pasa a dos líneas. */
+    @Test
+    public void textosLargosYTelefono() throws Exception {
+        foto();
+        String largoEv = "[{\"dia\":0,\"titulo\":\"Cita con la doctora Fernández en el centro de salud del barrio\",\"hora\":\"18:30\",\"orden\":1},{\"dia\":0,\"titulo\":\"Cena\",\"hora\":\"21:00\",\"orden\":2},{\"dia\":1,\"titulo\":\"Visita de la prima Maricarmen con los niños\",\"hora\":\"09:00\",\"orden\":3}]";
+        String cuentaLarga = "{\"id\":\"c1\",\"texto\":\"Faltan 12 días para el cumpleaños de la tía Maricarmen y de toda la familia reunida\",\"icono\":\"tarta\",\"dias\":12}";
+        String nombreLargo = "{\"id\":\"9\",\"de\":\"Mª del Carmen Fernández\",\"texto\":\"Hoy no puedo ir.\",\"t\":" + epoch(20, 16, 5) + ",\"autor\":\"p9\",\"foto\":null}";
+        for (String e : new String[]{"lavanda", "calido"}) {
+            captura(e + "-q-contacto-emergencias", contacto(json(e, DANIEL + "," + ANA, EV_DIA, TIEMPO, "null"), "Emergencias", "061"), 20, 22, 10);
+            captura(e + "-q-contacto-nombre-larguisimo", contacto(json(e, DANIEL + "," + ANA, EV_DIA, TIEMPO, "null"), "Servicio de Emergencias Sanitarias", "900 123 456"), 20, 22, 10);
+            captura(e + "-q-telefono-061-solo", contacto(json(e, "", "[]", "null", "null"), "Emergencias", "061"), 20, 22, 10);
+            captura(e + "-q-dormir-solo", contacto(json(e, "", "[]", "null", "null"), "", ""), 20, 22, 10);
+            captura(e + "-q-evento-largo", json(e, DANIEL, largoEv, TIEMPO, "null"), 20, 17, 15);
+            captura(e + "-q-cuenta-larga", json(e, DANIEL, EV_DIA, TIEMPO, cuentaLarga), 20, 17, 15);
+            captura(e + "-q-nombre-largo", json(e, nombreLargo + "," + ANA, EV_DIA, TIEMPO, "null"), 20, 17, 15);
+            captura(e + "-q-noche-evento-largo", json(e, "", largoEv, TIEMPO, "null"), 20, 22, 10);
+        }
+    }
+
+    /** La vista previa del panel es una foto real de la pantalla: pequeña, en JPEG y que cabe en la caché del script. */
+    @Test
+    public void laCapturaParaElPanel() throws Exception {
+        foto();
+        Context ctx = RuntimeEnvironment.getApplication();
+        Calendar c = Calendar.getInstance(TimeZone.getTimeZone("Europe/Madrid"));
+        c.clear();
+        c.set(2026, Calendar.OCTOBER, 20, 17, 15, 0);
+        Hora.fijar(c);
+        ctx.getSharedPreferences("pizarra", Context.MODE_PRIVATE).edit().putString("url", "http://127.0.0.1:1/x").putString("k", "k")
+                .putString("cache", json("lavanda", DANIEL + "," + ANA, EV_DIA, TIEMPO, "null")).putLong("cacheT", System.currentTimeMillis()).commit();
+        Activity a = Robolectric.buildActivity(MainActivity.class).setup().get();
+        View raiz = a.getWindow().getDecorView();
+        for (int i = 0; i < 3; i++) {
+            raiz.measure(View.MeasureSpec.makeMeasureSpec(1920, View.MeasureSpec.EXACTLY), View.MeasureSpec.makeMeasureSpec(1080, View.MeasureSpec.EXACTLY));
+            raiz.layout(0, 0, 1920, 1080);
+            ShadowLooper.idleMainLooper();
+        }
+        Bitmap b = Captura.dibujar(raiz);
+        assertTrue(b != null && b.getWidth() == Captura.ANCHO && b.getHeight() == Captura.ALTO);
+        String b64 = Captura.comprimir(b);
+        assertTrue("cabe en la caché del script", b64.length() <= 90000 && b64.length() > 1000);
+        assertTrue("es un JPEG", b64.startsWith("/9j/"));
+        File dir = new File(System.getProperty("capturas.dir"));
+        dir.mkdirs();
+        try (FileOutputStream o = new FileOutputStream(new File(dir, "captura-para-el-panel.jpg"))) {
+            o.write(android.util.Base64.decode(b64, android.util.Base64.DEFAULT));
+        }
+    }
 }

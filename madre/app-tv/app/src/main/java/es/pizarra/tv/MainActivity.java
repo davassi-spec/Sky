@@ -85,7 +85,7 @@ public class MainActivity extends Activity {
         @Override public void run() {
             buscar();
             // Mientras hay un recordatorio en pantalla se pregunta más a menudo, para volver a la pizarra enseguida al confirmarlo.
-            h.postDelayed(this, datos != null && datos.recordatorio != null ? 15000 : 60000);
+            h.postDelayed(this, datos != null && datos.pidenCaptura ? 6000 : datos != null && datos.recordatorio != null ? 15000 : 60000);
         }
     };
 
@@ -191,6 +191,7 @@ public class MainActivity extends Activity {
                         @Override public void run() {
                             datos = nuevo;
                             pintarReloj();
+                            if (nuevo.pidenCaptura) mandarCaptura(url, k);
                         }
                     });
                 } catch (Exception e) {
@@ -198,6 +199,22 @@ public class MainActivity extends Activity {
                 } finally {
                     if (c != null) c.disconnect();
                 }
+            }
+        }).start();
+    }
+
+    private long ultimaCaptura;
+
+    /** Alguien mira la vista previa en el panel: se manda una foto de la pantalla (como mucho una cada 5 s). */
+    private void mandarCaptura(final String url, final String k) {
+        if (System.currentTimeMillis() - ultimaCaptura < 5000) return;
+        ultimaCaptura = System.currentTimeMillis();
+        final Bitmap b = Captura.dibujar(marco);
+        if (b == null) return;
+        new Thread(new Runnable() {
+            @Override public void run() {
+                Captura.enviar(url, k, Captura.comprimir(b));
+                b.recycle();
             }
         }).start();
     }
@@ -217,7 +234,7 @@ public class MainActivity extends Activity {
     }
 
     private TextView texto(float tam, boolean fuerte) {
-        TextView t = new TextView(this);
+        TextView t = new TextoAjustado(this, 36 * s);       // nunca se corta: baja hasta 36 px y luego usa otra línea
         t.setTypeface(fuerte ? negrita : normal);
         t.setIncludeFontPadding(false);
         t.setTextSize(TypedValue.COMPLEX_UNIT_PX, tam * s);
@@ -358,9 +375,11 @@ public class MainActivity extends Activity {
         lpIcB.rightMargin = px(24);
         banda.addView(icBanda, lpIcB);
         txBanda = texto(56, true);
-        txBanda.setSingleLine(true);
+        txBanda.setMaxLines(1);
         banda.addView(txBanda);
-        LinearLayout.LayoutParams lpBanda = lp(ViewGroup.LayoutParams.MATCH_PARENT, px(80));
+        banda.setMinimumHeight(px(80));
+        banda.setPadding(px(24), px(8), px(24), px(8));
+        LinearLayout.LayoutParams lpBanda = lp(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         lpBanda.bottomMargin = px(12);
         raiz.addView(banda, lpBanda);
 
@@ -371,9 +390,9 @@ public class MainActivity extends Activity {
         LinearLayout izq = new LinearLayout(this);
         izq.setOrientation(LinearLayout.VERTICAL);
         tvDia = texto(120, true);
-        tvDia.setSingleLine(true);
+        tvDia.setMaxLines(1);
         tvFecha = texto(56, true);
-        tvFecha.setSingleLine(true);
+        tvFecha.setMaxLines(1);
         izq.addView(tvDia);
         LinearLayout.LayoutParams lpFecha = lp(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         lpFecha.topMargin = px(4);
@@ -399,7 +418,7 @@ public class MainActivity extends Activity {
         lpRel.bottomMargin = -px(42);
         der.addView(reloj, lpRel);
         tvHablada = texto(46, true);
-        tvHablada.setSingleLine(true);
+        tvHablada.setMaxLines(1);
         LinearLayout.LayoutParams lpHab = lp(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         lpHab.gravity = Gravity.RIGHT;
         lpHab.topMargin = px(4);
@@ -414,7 +433,7 @@ public class MainActivity extends Activity {
         lpIcP.rightMargin = px(14);
         pildora.addView(icPildora, lpIcP);
         txPildora = texto(46, true);
-        txPildora.setSingleLine(true);
+        txPildora.setMaxLines(1);
         pildora.addView(txPildora);
         LinearLayout.LayoutParams lpPil = lp(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         lpPil.gravity = Gravity.RIGHT;
@@ -478,7 +497,7 @@ public class MainActivity extends Activity {
         boolean parte = datos == null || datos.verParte;
         String hablada = parte ? Texto.horaConParte(a) : Texto.horaHablada(a);
         int ancho = px(1000);
-        if (!hablada.contentEquals(tvHablada.getText())) ajustarLinea(tvHablada, hablada, ancho, 46, 40);
+        if (!hablada.contentEquals(tvHablada.getText())) ajustarLinea(tvHablada, hablada, ancho, 46, 36);
     }
 
     /** "Martes 20 de octubre · 5:15": la línea fina de arriba en la pantalla del recordatorio. */
@@ -565,7 +584,7 @@ public class MainActivity extends Activity {
         icBanda.setImageResource(Texto.iconoDeLaCuenta(datos.cuenta.icono));
         icBanda.setColorFilter(p.pillTexto, PorterDuff.Mode.SRC_IN);
         txBanda.setTextColor(p.pillTexto);
-        ajustarLinea(txBanda, datos.cuenta.texto, px(1808 - 56 - 24 - 80), 56, 40);
+        txBanda.setText(datos.cuenta.texto);
     }
 
     /* ---------- Cuerpo ---------- */
@@ -702,7 +721,7 @@ public class MainActivity extends Activity {
         recView.setBackgroundColor(p.fondo);
         tvRecTop = texto(44, true);
         tvRecTop.setTextColor(p.sub);
-        tvRecTop.setSingleLine(true);
+        tvRecTop.setMaxLines(1);
         tvRecTop.setText(lineaFina(ahora));
         recView.addView(tvRecTop, lp(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
@@ -832,7 +851,7 @@ public class MainActivity extends Activity {
         col.setOrientation(LinearLayout.VERTICAL);
         TextView quien = texto(36, true);
         quien.setTextColor(p.acentoTexto);
-        quien.setSingleLine(true);
+        quien.setMaxLines(1);
         quien.setText(m.de.isEmpty() ? "Mensaje" : m.de + " dice");
         col.addView(quien);
         final TextView tx = texto(48, true);
@@ -1110,7 +1129,7 @@ public class MainActivity extends Activity {
             cuando.setTextColor(p.sub);
             TextView que = texto(52, true);
             que.setTextColor(p.texto);
-            que.setSingleLine(true);
+            que.setMaxLines(1);
             que.setEllipsize(TextUtils.TruncateAt.END);
             Datos.Evento e = lista.get(0);
             String cuandoTxt = e.hora.isEmpty() ? "todo el día" : Texto.aLas(e.hora);
@@ -1119,7 +1138,7 @@ public class MainActivity extends Activity {
             t.addView(cuando);
             t.addView(que);
         }
-        agrandarAlHueco(t, 1.8f);
+        agrandarAlHueco(t, 3.2f);
         return t;
     }
 
@@ -1133,35 +1152,48 @@ public class MainActivity extends Activity {
         });
     }
 
-    /** "Si necesitas algo, llama a Daniel" con su teléfono. */
+    /** "Si necesitas algo / Llama a Daniel" y, debajo, el número: lo más grande de la tarjeta, que crece para llenarla. */
     private View tarjetaTelefono() {
-        LinearLayout t = tarjeta(true);
-        t.setOrientation(LinearLayout.HORIZONTAL);
+        final LinearLayout t = tarjeta(true);
         t.setGravity(Gravity.CENTER_VERTICAL);
-        ImageView tel = icono(R.drawable.ic_telefono, p.acentoTexto, 96);
-        LinearLayout.LayoutParams lpT = lp(px(96), px(96));
-        lpT.rightMargin = px(28);
-        t.addView(tel, lpT);
+        final LinearLayout cab = new LinearLayout(this);
+        cab.setOrientation(LinearLayout.HORIZONTAL);
+        cab.setGravity(Gravity.CENTER_VERTICAL);
+        ImageView tel = icono(R.drawable.ic_telefono, p.acentoTexto, 72);
+        LinearLayout.LayoutParams lpT = lp(px(72), px(72));
+        lpT.rightMargin = px(24);
+        cab.addView(tel, lpT);
         LinearLayout col = new LinearLayout(this);
         col.setOrientation(LinearLayout.VERTICAL);
         TextView a = texto(40, false);
         a.setTextColor(p.sub);
+        a.setMaxLines(1);
         a.setText("Si necesitas algo");
         TextView b = texto(56, true);
         b.setTextColor(p.texto);
-        b.setSingleLine(true);
+        b.setMaxLines(1);
         b.setText("Llama a " + datos.contactoNombre);
         col.addView(a);
         col.addView(b);
+        cab.addView(col, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+        t.addView(cab);
         if (!datos.contactoTelefono.isEmpty()) {
-            TextView n = texto(60, true);
+            final TextView n = texto(120, true);
             n.setTextColor(p.acentoTexto);
-            n.setSingleLine(true);
+            n.setMaxLines(1);
             n.setText(datos.contactoTelefono);
-            col.addView(n);
+            LinearLayout.LayoutParams lpN = lp(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+            lpN.topMargin = px(8);
+            t.addView(n, lpN);
+            t.addOnLayoutChangeListener(new View.OnLayoutChangeListener() {
+                @Override public void onLayoutChange(View v, int l, int tp, int r, int bt, int ol, int ot, int or, int ob) {
+                    if (r - l == or - ol && bt - tp == ob - ot) return;
+                    // El número se lleva todo el alto que queda (la letra se encoge sola si no cabe a lo ancho, nunca por debajo de 36 px).
+                    int alto = t.getHeight() - t.getPaddingTop() - t.getPaddingBottom() - cab.getHeight() - px(8);
+                    if (alto > 0) n.setTextSize(TypedValue.COMPLEX_UNIT_PX, Math.min(300 * s, alto / 1.25f));
+                }
+            });
         }
-        t.addView(col, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
-        agrandarAlHueco(t, 1.6f);
         return t;
     }
 }

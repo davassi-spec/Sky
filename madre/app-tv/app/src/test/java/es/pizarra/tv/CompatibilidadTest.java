@@ -137,6 +137,13 @@ public class CompatibilidadTest {
         assertTrue(!d.firma().equals(Datos.parse("{\"mensajes\":[],\"eventos\":[]}").firma()));   // un recordatorio cambia lo que se ve
     }
 
+    @Test
+    public void leeLaPeticionDeCaptura() throws Exception {
+        assertTrue(Datos.parse("{\"captura\":true}").pidenCaptura);
+        assertTrue(!Datos.parse("{\"captura\":false}").pidenCaptura);
+        assertTrue(!Datos.parse(recurso("estado-script-v5.json")).pidenCaptura);
+    }
+
     private static String hora(int h, int m) {
         Calendar c = Calendar.getInstance();
         c.set(Calendar.HOUR_OF_DAY, h);

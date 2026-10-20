@@ -179,6 +179,7 @@
   .recorte { position: relative; width: 280px; height: 280px; margin: 14px auto 6px; border-radius: 50%; overflow: hidden; touch-action: none; background: #000; cursor: grab; box-shadow: 0 0 0 4px var(--primario); }
   .recorte canvas { width: 100%; height: 100%; display: block; }
   input[type=range] { width: 100%; min-height: 48px; accent-color: var(--primario); }
+  .captura { width: 100%; display: block; border-radius: 14px; border: 1px solid var(--borde); margin-top: 12px; aspect-ratio: 16 / 9; background: #000; }
   .oculto-visual { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
   @media (prefers-reduced-motion: reduce) { .sw::before, .sw::after { transition: none; } }
 </style>
@@ -202,6 +203,8 @@
   var fotos = {};                       // personaId -> dataURL | null (null: sin foto)
   var fotosPidiendo = {};
   var cuentaEditando = null;
+  var capt = { t: 0, jpg: null, tv: null, aprox: null };   // última captura real de la TV
+  var captTimer = null;
   var previa = null;                    // vista previa de la TV abierta por un familiar: { vista, prueba }
   var recEditando = null;               // recordatorio que se está editando
   var fotosRec = {}, fotosRecPidiendo = {};   // id -> dataURL | null
@@ -634,6 +637,7 @@
     pintarNav();
     window.scrollTo(0, anterior);
     app.querySelectorAll('.miniatura').forEach(function (m) { if (m._ajustar) m._ajustar(); });
+    if ($('vista-tv')) arrancarCaptura();
   }
 
   /* ============================== Inicio ============================== */
@@ -651,7 +655,7 @@
       w.appendChild(th);
     }
     var t = el('div', { class: 'tarjeta' }, el('h2', {}, 'Así se ve ahora en la TV'),
-      miniatura(v, m.modo, m.estilo),
+      vistaTV(v, m.modo, m.estilo),
       m.prueba ? el('p', { class: 'ayuda' }, 'Estás probando un estilo: la tele vuelve sola a su estilo en menos de un minuto.') : null,
       el('button', { class: 'btn suave', type: 'button', style: 'margin-top:12px', onclick: function () { ir('pantalla'); } }, icono('pantalla'), 'Cambiar lo que se ve'));
     w.appendChild(t);
@@ -1115,6 +1119,43 @@
   }
 
   /* ============================== Versión de familiar ============================== */
+  /**
+   * La vista previa fiel: una foto de la pantalla real de la TV, que manda la propia TV mientras alguien mira
+   * (cada pocos segundos). Mientras no haya ninguna, se enseña una versión aproximada y se avisa.
+   */
+  function vistaTV(vista, modo, estilo) {
+    capt.aprox = { vista: vista, modo: modo, estilo: estilo };
+    var c = el('div', { id: 'vista-tv' });
+    rellenarVistaTV(c);
+    return c;
+  }
+  function rellenarVistaTV(c) {
+    c.innerHTML = '';
+    var nota;
+    if (capt.jpg) {
+      c.appendChild(el('img', { class: 'captura', src: capt.jpg, alt: 'Lo que se ve ahora en la tele' }));
+      var seg = Math.max(0, Math.round((Date.now() - capt.t) / 1000));
+      nota = 'Captura de la tele, ' + (seg < 90 ? 'hace ' + seg + ' segundos' : hace(Math.round(capt.t / 1000)).replace('desde', 'de')) + '.';
+      if (capt.tv && !capt.tv.conectada) nota += ' La tele no está conectada: esta es su última pantalla.';
+    } else {
+      if (capt.aprox) c.appendChild(miniatura(capt.aprox.vista, capt.aprox.modo, capt.aprox.estilo));
+      nota = 'Vista aproximada: la tele todavía no ha mandado su pantalla (tarda unos segundos si está encendida).';
+    }
+    c.appendChild(el('p', { class: 'ayuda', id: 'vista-tv-nota' }, nota));
+  }
+  function cargarCaptura() {
+    return llamar('admCapturaTV', capt.t || 0).then(function (r) {
+      if (r.jpg) { capt.t = r.t; capt.jpg = r.jpg; }
+      capt.tv = r.tv;
+      var c = $('vista-tv'); if (c) rellenarVistaTV(c);
+      var m = (c && c.querySelector('.miniatura')) ? c.querySelector('.miniatura') : null; if (m && m._ajustar) m._ajustar();
+    }, function () {});
+  }
+  function arrancarCaptura() {
+    if (!captTimer) captTimer = setInterval(function () { if ($('vista-tv') && !document.hidden) cargarCaptura(); }, 6000);
+    cargarCaptura();
+  }
+
   /** Para los familiares: "Ver cómo se ve la tele ahora" (solo mirar; no cambia nada). */
   function cargarPrevia(silencioso) {
     return llamar('admVistaPrevia').then(function (p) { previa = p; pintar(); }, function (e) { if (!silencioso) aviso(mensajeError(e), 'error'); });
@@ -1128,9 +1169,9 @@
       return t;
     }
     var m = modoDePrevia(previa);
-    t.appendChild(miniatura(previa.vista, m.modo, m.estilo));
+    t.appendChild(vistaTV(previa.vista, m.modo, m.estilo));
     if (m.prueba) t.appendChild(el('p', { class: 'ayuda' }, 'Ahora se está probando un estilo: la tele vuelve sola al suyo en menos de un minuto.'));
-    t.appendChild(el('p', { class: 'ayuda' }, 'Es solo para mirar. Se actualiza sola cada 25 segundos.'));
+    t.appendChild(el('p', { class: 'ayuda' }, 'Es solo para mirar. Se actualiza sola.'));
     t.appendChild(el('div', { class: 'fila', style: 'margin-top:8px' },
       el('button', { class: 'btn suave', type: 'button', onclick: function (e) { e.currentTarget.disabled = true; cargarPrevia(false); } }, 'Actualizar'),
       el('button', { class: 'btn suave', type: 'button', onclick: function () { previa = null; pintar(); } }, 'Ocultar')));

@@ -200,6 +200,18 @@ const PRUEBAS = {
     t('Inicio dice quién lo confirmó y cuándo', texto().indexOf('Confirmados hoy') >= 0 && texto().indexOf('Confirmado por Ana a las 17:15') >= 0);
     t('ya no está pendiente', S.pendientes.length === 0 && texto().indexOf('Pendiente de confirmar') < 0);
     ir('recordatorios'); await espera(200); t('la lista también lo dice', texto().indexOf('Confirmado por Ana a las 17:15') >= 0);`,
+  'admin: la vista previa es una captura real de la TV': `
+    ir('inicio'); await espera(300);
+    t('sin captura enseña la aproximada y lo dice', !!document.querySelector('#vista-tv .miniatura') && texto().indexOf('Vista aproximada') >= 0);
+    t('y le pide a la TV que mande una', (await llamar('estado_')).captura === true);
+    const c = document.createElement('canvas'); c.width = 64; c.height = 36; c.getContext('2d').fillRect(0, 0, 64, 36);
+    const b64 = c.toDataURL('image/jpeg', 0.5).split(',')[1];
+    const r = await rpc('doPost', { parameter: { a: 'captura', k: 'ADMINKEY' }, postData: { contents: b64 } });
+    t('la TV sube su captura', JSON.parse(r.s).ok === true);
+    await cargarCaptura(); await espera(300);
+    t('ahora se ve la imagen real de la TV y no la aproximada', !!document.querySelector('#vista-tv img.captura') && !document.querySelector('#vista-tv .miniatura'));
+    t('y dice de cuándo es', texto().indexOf('Captura de la tele, hace') >= 0);
+    t('la foto cabe a todo el ancho de la tarjeta en 16:9', document.querySelector('#vista-tv img.captura').getBoundingClientRect().width > 250);`,
   'miniatura: noche y bloques apagados': `
     const v = S.vista; const claseTexto = (n) => n.textContent;
     const noche = miniatura(v, 'noche', 'lavanda'); document.body.appendChild(noche);

@@ -232,6 +232,33 @@ function doGet(e) {
   }
 }
 
+/** La TV manda por POST una foto de su pantalla (?a=captura, con la clave de administrador). */
+function doPost(e) {
+  var t0 = Date.now();
+  try {
+    return servirPost_(e);
+  } finally {
+    anotar_('post', Date.now() - t0);
+  }
+}
+
+function servirPost_(e) {
+  var k = e && e.parameter ? e.parameter.k : '';
+  var q = quien_(k);
+  if (!q) return salida_({ error: 'clave' });
+  var a = e.parameter.a;
+  if (a === 'captura') {
+    if (q.rol !== 'admin') return salida_({ error: 'permiso' });
+    var b64 = String((e.postData && e.postData.contents) || '').replace(/\s/g, '');
+    if (b64.length < 100 || b64.length > 95000 || !/^[A-Za-z0-9+\/=]+$/.test(b64) || b64.indexOf('/9j/') !== 0) return salida_({ error: 'captura no válida' });
+    var cache = CacheService.getScriptCache();
+    cache.put('captura_jpg', b64, 21600);
+    cache.put('captura_t', String(Date.now()), 21600);
+    return salida_({ ok: true });
+  }
+  return salida_({ error: 'acción desconocida' });
+}
+
 function servir_(e) {
   var k = e && e.parameter ? e.parameter.k : '';
   var q = quien_(k);
@@ -346,8 +373,17 @@ function estado_() {
     prueba: prueba,
     cuentaAtras: bloqueActivo_(d, 'cuentaAtras') ? cuentaAtras_(d) : null,
     // Novedades de la versión 3:
-    recordatorio: recordatorioActivo_(d, ahora)
+    recordatorio: recordatorioActivo_(d, ahora),
+    captura: capturaPedida_()
   };
+}
+
+/** ¿Alguien mira la vista previa en el panel y hace falta una captura nueva? La TV la manda (como mucho cada 5 s). */
+function capturaPedida_() {
+  var c = CacheService.getScriptCache();
+  var ped = Number(c.get('captura_ped') || 0);
+  if (!ped || Date.now() - ped > 150000) return false;
+  return Date.now() - Number(c.get('captura_t') || 0) > 5000;
 }
 
 function mensajeParaTV_(m, d) {
@@ -662,6 +698,23 @@ function admVistaPrevia(k) {
   var d = leer_();
   var ahora = Date.now();
   return { vista: vistaPreviaTV_(d), ahora: ahora, prueba: d.prueba && d.prueba.hasta > ahora ? d.prueba : null };
+}
+
+/**
+ * La captura de la pantalla de la TV, tal como la manda la propia TV: la vista previa del panel es idéntica a lo que se ve.
+ * Quien la pide (administrador o familia) hace que la TV mande una nueva mientras la mira. desde: la marca de tiempo que ya tiene.
+ */
+function admCapturaTV(k, desde) {
+  alguien_(k);
+  var cache = CacheService.getScriptCache();
+  cache.put('captura_ped', String(Date.now()), 300);
+  var t = Number(cache.get('captura_t') || 0);
+  var tv = { ultima: tvUltima_(), conectada: (Date.now() / 1000 - tvUltima_()) < TV_CONECTADA_S };
+  if (!t) return { t: 0, tv: tv };
+  if (desde && t <= Number(desde)) return { t: t, igual: true, tv: tv };
+  var b64 = cache.get('captura_jpg');
+  if (!b64) return { t: 0, tv: tv };
+  return { t: t, jpg: 'data:image/jpeg;base64,' + b64, tv: tv };
 }
 
 function finDelDia_(dias) {

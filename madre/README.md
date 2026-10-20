@@ -56,6 +56,13 @@ las distribuciones de pantalla (Reloj a la izquierda, Lista, Sencillo) combinabl
 - **La TV** pregunta cada 60 s y, mientras muestra un recordatorio, cada 15 s (para volver a la pizarra enseguida al confirmarlo).
 - Nunca hay nombres de medicinas en los ejemplos ni en los textos por defecto: lo que se escribe en cada recordatorio lo decides tú.
 
+### Fase 3.1: arreglos
+
+- **Ningún texto se corta.** Si no cabe, la letra baja hasta 36 px y, si aun así no cabe, pasa a otra línea (hasta tres). Vale para contacto, nombres, eventos, cuenta atrás y recordatorios.
+- **Teléfono:** el número es lo más grande de su tarjeta y crece para llenarla ("061" a unos 200 px). La tarjeta de **Es hora de dormir** también crece hasta llenar su hueco.
+- **Vista previa fiel.** "Así se ve ahora en la TV" ya no es un dibujo aproximado: es una foto de la pantalla real que manda la propia TV mientras alguien mira (cada pocos segundos, en JPEG de 640×360; se guarda
+  en la caché del script y no en Drive). Mientras la tele no haya mandado ninguna, el panel enseña una versión aproximada y lo avisa.
+
 ### Desplegar la versión 3 del script (la dirección `/exec` no cambia)
 
 1. En <https://script.google.com> abre tu proyecto. Pega el nuevo `Code.gs` en `Código.gs` y el nuevo `Admin.html` en el archivo `Admin`. Deja `appsscript.json` como está.
