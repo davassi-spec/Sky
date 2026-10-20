@@ -1,5 +1,6 @@
 // Pruebas de Code.gs con el simulador. Uso:  node test/servidor.test.js
-const { crear } = require('./simulador');
+const { crear: crearSimulador } = require('./simulador');
+const crear = (o = {}) => crearSimulador(Object.assign({ limiteProp: 9216 }, o));   // con el límite real de Google: 9 KB por valor de propiedad
 let bien = 0, mal = 0;
 const t = (n, c) => { if (c) bien++; else { mal++; console.log('FALLA:', n); } };
 const falla = (f) => { try { f(); return false; } catch (e) { return true; } };
@@ -200,6 +201,28 @@ const JPEG = 'data:image/jpeg;base64,' + Buffer.from('foto-de-prueba').toString(
   const s = crear();
   s.run("admEnviar('ADMINKEY','Dani','Uno','hoy')");
   t('si falla, no se guarda nada a medias', falla(() => s.run("modificar_(function (d) { d.mensajes = []; throw new Error('fallo'); })")) && s.run('leer_()').mensajes.length === 1);
+}
+
+/* ---------- 10. Contador de uso ---------- */
+{
+  const s = crear();
+  for (let i = 0; i < 5; i++) s.run("doGet({parameter:{k:'ADMINKEY'}})");
+  s.run("doGet({parameter:{k:'ADMINKEY',a:'admin'}})");
+  let m = JSON.parse(s.run("doGet({parameter:{k:'ADMINKEY',a:'metricas'}}).s"));
+  const hoy = Object.keys(m.dias)[0];
+  const contado = (acc) => ((m.dias[hoy] || {})[acc] || { peticiones: 0 }).peticiones + ((m.pendientesDeVolcar || {})[acc] || { n: 0 }).n;
+  t('cuenta las peticiones de estado y de panel', contado('estado') >= 5 && contado('admin') >= 1);
+  t('la primera petición se vuelca enseguida y el resto se acumula', !!hoy && m.dias[hoy].estado.peticiones >= 1);
+  t('incluye el tiempo medio y las cuotas', m.dias[hoy].estado.msMedio >= 0 && m.cuotasGratuitas.llamadasUrlFetchAlDia === 20000);
+  s.run("(function () { CacheService.getScriptCache().put('met_volcado', '0', 100); })()");
+  s.run("doGet({parameter:{k:'ADMINKEY'}})");
+  m = JSON.parse(s.run("doGet({parameter:{k:'ADMINKEY',a:'metricas'}}).s"));
+  t('pasado un minuto se vuelca todo a las propiedades', m.dias[hoy].estado.peticiones >= 6 && Object.keys(m.pendientesDeVolcar).length <= 1);
+  s.props.METRICAS = JSON.stringify({ 20200101: { estado: { n: 1, ms: 1, max: 1 } }, 20200102: {}, 20200103: {}, 20200104: {}, 20200105: {}, 20200106: {}, 20200107: {}, 20200108: {}, 20200109: {} });
+  s.run("(function () { CacheService.getScriptCache().put('met_volcado', '0', 100); })()"); s.run("doGet({parameter:{k:'ADMINKEY'}})");
+  t('solo se guardan los últimos 8 días', Object.keys(JSON.parse(s.props.METRICAS)).length <= 8);
+  t('las métricas solo las ve el administrador', (() => { s.run("admFamiliaAnadir('ADMINKEY','Ana')"); const c = s.run('leer_()').familia[0].clave; return JSON.parse(s.run(`doGet({parameter:{k:'${c}',a:'metricas'}}).s`)).error === 'permiso'; })());
+  t('un fallo al medir no rompe la petición', (() => { s.run("CacheService.getScriptCache().put('met_pend', 'esto no es json', 100)"); return JSON.parse(s.run("doGet({parameter:{k:'ADMINKEY'}}).s")).widgets !== undefined; })());
 }
 
 console.log(bien + ' bien, ' + mal + ' fallos');

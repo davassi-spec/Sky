@@ -30,6 +30,9 @@ y sigue funcionando con el script nuevo. Las fases 2 a 4 (diseño nuevo de la TV
   Se guardan en Drive y la TV las pedirá con la clave de administrador (nunca se comparten con "cualquiera con el enlace").
 - **Estado de la TV.** El panel muestra "Conectada hace 20 segundos" o "Sin conexión desde las 14:10".
 - **Sin aprobación.** Lo que escriben los familiares sale directamente.
+- **Contador de uso** (fase 0). `TU_DIRECCION_EXEC?a=metricas&k=TU_CLAVE` (solo administrador) devuelve cuántas peticiones llegan cada día,
+  de cada tipo (`estado` es la TV, `admin` es el panel), con su tiempo medio y máximo, de los últimos 8 días. Es aproximado; el tiempo real de
+  ejecución sale en la pantalla **Ejecuciones** de Apps Script. Sirve para medir el consumo frente a las cuotas gratuitas.
 
 ## Poner el script (una vez, unos 5 minutos)
 
@@ -75,7 +78,7 @@ Sin dependencias, con Node y Chromium:
 
 ```
 cd apps-script
-node test/servidor.test.js       # lógica del script (simulador de Apps Script): permisos, migración, historial, cuentas atrás…
+node test/servidor.test.js       # lógica del script (simulador de Apps Script con el límite real de 9 KB): permisos, migración, historial, cuentas atrás…
 node test/panel.test.js          # el panel con clics reales en Chromium y el Code.gs real detrás
 python3 test/todas.py /tmp/ui    # capturas de todas las vistas del panel, en claro y oscuro (requiere servidor-ui.js en el puerto 8765)
 ```

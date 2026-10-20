@@ -191,7 +191,21 @@ function autorizar() {
  *  Peticiones web
  * ============================================================ */
 
+/* ============================================================
+ *  Peticiones web
+ * ============================================================ */
+
 function doGet(e) {
+  var t0 = Date.now();
+  var accion = (e && e.parameter && e.parameter.a) || 'estado';
+  try {
+    return servir_(e);
+  } finally {
+    anotar_(accion, Date.now() - t0);
+  }
+}
+
+function servir_(e) {
   var k = e && e.parameter ? e.parameter.k : '';
   var q = quien_(k);
   if (!q) return salida_({ error: 'clave' });
@@ -205,9 +219,56 @@ function doGet(e) {
       .addMetaTag('viewport', 'width=device-width, initial-scale=1');
   }
   if (q.rol !== 'admin') return salida_({ error: 'permiso' });   // la TV usa la clave de administrador
+  if (a === 'metricas') return salida_(metricas_());
   if (a === 'foto') return salida_(fotoParaTV_(e.parameter.p));
   marcarTV_();
   return salida_(estado_());
+}
+
+/* ============================================================
+ *  Contador de uso: cuántas peticiones llegan y cuánto tardan, por día y por tipo.
+ *  Sirve para comprobar que estamos lejos de las cuotas de una cuenta gratuita (?a=metricas, con la clave de admin).
+ *  Es aproximado: se acumula en la caché y se vuelca a las propiedades como mucho una vez por minuto.
+ *  El tiempo es el de dentro de doGet; el tiempo real de ejecución sale en la pantalla "Ejecuciones" de Apps Script.
+ * ============================================================ */
+
+function anotar_(accion, ms) {
+  try {
+    var cache = CacheService.getScriptCache();
+    var pend = JSON.parse(cache.get('met_pend') || '{}');
+    var m = pend[accion] || { n: 0, ms: 0, max: 0 };
+    m.n++; m.ms += ms; if (ms > m.max) m.max = ms;
+    pend[accion] = m;
+    var ahora = Date.now();
+    var ultimo = Number(cache.get('met_volcado') || 0);
+    if (ahora - ultimo < 60000) { cache.put('met_pend', JSON.stringify(pend), 21600); return; }
+    var p = props_();
+    var dia = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyyMMdd');
+    var todo = JSON.parse(p.getProperty('METRICAS') || '{}');
+    var hoy = todo[dia] || {};
+    for (var a in pend) {
+      var h = hoy[a] || { n: 0, ms: 0, max: 0 };
+      h.n += pend[a].n; h.ms += pend[a].ms; if (pend[a].max > h.max) h.max = pend[a].max;
+      hoy[a] = h;
+    }
+    todo[dia] = hoy;
+    Object.keys(todo).sort().slice(0, -8).forEach(function (d) { delete todo[d]; });     // solo los últimos 8 días
+    p.setProperty('METRICAS', JSON.stringify(todo));
+    cache.remove('met_pend');
+    cache.put('met_volcado', String(ahora), 21600);
+  } catch (err) { /* medir nunca debe romper una petición */ }
+}
+
+function metricas_() {
+  var todo = JSON.parse(props_().getProperty('METRICAS') || '{}');
+  var pend = JSON.parse(CacheService.getScriptCache().get('met_pend') || '{}');
+  var dias = {};
+  Object.keys(todo).sort().forEach(function (d) {
+    dias[d] = {};
+    for (var a in todo[d]) dias[d][a] = { peticiones: todo[d][a].n, msTotal: todo[d][a].ms, msMedio: Math.round(todo[d][a].ms / todo[d][a].n), msMaximo: todo[d][a].max };
+  });
+  return { dias: dias, pendientesDeVolcar: pend,
+           cuotasGratuitas: { ejecucionPorLlamada: '6 min', triggersAlDia: '90 min', llamadasUrlFetchAlDia: 20000, ejecucionesSimultaneas: 30 } };
 }
 
 /* ============================================================

@@ -36,7 +36,10 @@ function crear(opciones = {}) {
   const ctx = {
     PropertiesService: { getScriptProperties: () => ({
       getProperty: (k) => (k in props ? props[k] : null),
-      setProperty: (k, v) => { props[k] = String(v); },
+      setProperty: (k, v) => {
+        if (opciones.limiteProp && Buffer.byteLength(String(v)) > opciones.limiteProp) throw new Error('Exception: Argument too large: value');   // Google: 9 KB por valor
+        props[k] = String(v);
+      },
     }) },
     CacheService: { getScriptCache: () => ({
       get: (k) => (k in cacheMapa ? cacheMapa[k] : null),
@@ -81,7 +84,7 @@ function crear(opciones = {}) {
     };
   }
   vm.createContext(ctx);
-  vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'Code.gs'), 'utf8'), ctx);
+  vm.runInContext(fs.readFileSync(opciones.codigo || path.join(__dirname, '..', 'Code.gs'), 'utf8'), ctx);
   const run = (c) => vm.runInContext(c, ctx);
   return { run, props, cacheMapa, archivos, contarFetch: () => llamadasFetch, vaciarCache: () => Object.keys(cacheMapa).forEach((k) => delete cacheMapa[k]) };
 }
