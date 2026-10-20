@@ -652,6 +652,17 @@ function vistaPreviaTV_(d) {
            estiloDia: e.estiloDia, estiloNoche: e.estiloNoche, noche: e.noche, nocheTexto: e.nocheTexto, contacto: e.contacto };
 }
 
+/**
+ * Lo que se ve ahora en la TV, solo para mirar. Cualquier persona con su enlace (familia o administrador) puede previsualizarlo.
+ * No cuenta como "TV conectada" y no cambia nada.
+ */
+function admVistaPrevia(k) {
+  alguien_(k);
+  var d = leer_();
+  var ahora = Date.now();
+  return { vista: vistaPreviaTV_(d), ahora: ahora, prueba: d.prueba && d.prueba.hasta > ahora ? d.prueba : null };
+}
+
 function finDelDia_(dias) {
   var n = new Date();
   return Math.floor(new Date(n.getFullYear(), n.getMonth(), n.getDate() + dias, 23, 59, 59).getTime() / 1000);

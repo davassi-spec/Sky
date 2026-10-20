@@ -208,7 +208,14 @@ const PRUEBAS = {
     const propio = S.mensajes.find((m) => m.texto === 'Voy a las cinco.'); t('se envía firmado con su nombre', propio && propio.de === 'Ana');
     await clic('Quitar el mensaje: Voy a las cinco.'); t('puede quitar lo suyo', !S.mensajes.find((m) => m.texto === 'Voy a las cinco.' && (!m.hasta || m.hasta * 1000 > Date.now())));
     let denegado = false; try { await llamar('admAjustes', { estiloDia: 'salvia' }); } catch (e) { denegado = true; } t('el servidor le niega los ajustes', denegado);
-    t('sigue teniendo su foto tras enviar y quitar', S.tieneFoto === true && S.miId && !!document.querySelector('.avatar img'));` },
+    t('sigue teniendo su foto tras enviar y quitar', S.tieneFoto === true && S.miId && !!document.querySelector('.avatar img'));
+    t('la vista previa de la tele no se enseña hasta que se pide', !document.querySelector('.miniatura') && texto().indexOf('Ver cómo se ve la tele') >= 0);
+    await clic('Ver cómo se ve la tele'); await espera(600);
+    t('el familiar puede previsualizar la pantalla de la tele', !!document.querySelector('#previa-tv .miniatura') && texto().indexOf('Es solo para mirar') >= 0);
+    t('y ve lo que hay ahora en la tele', document.querySelector('#previa-tv .miniatura').textContent.indexOf('Hoy viene Ana a las seis.') >= 0 && document.querySelector('#previa-tv .miniatura').textContent.indexOf('Merienda con Ana') >= 0);
+    await clic('Actualizar'); await espera(500); t('se puede actualizar', !!document.querySelector('#previa-tv .miniatura'));
+    await clic('Ocultar'); t('y ocultar', !document.querySelector('.miniatura') && texto().indexOf('Ver cómo se ve la tele') >= 0);
+    let sigueSinPoder = false; try { await llamar('admAjustes', { estiloDia: 'salvia' }); } catch (e) { sigueSinPoder = true; } t('mirar no le da permiso para cambiar nada', sigueSinPoder);` },
 };
 
 function chrome(url) {

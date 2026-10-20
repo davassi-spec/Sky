@@ -202,6 +202,7 @@
   var fotos = {};                       // personaId -> dataURL | null (null: sin foto)
   var fotosPidiendo = {};
   var cuentaEditando = null;
+  var previa = null;                    // vista previa de la TV abierta por un familiar: { vista, prueba }
   var recEditando = null;               // recordatorio que se está editando
   var fotosRec = {}, fotosRecPidiendo = {};   // id -> dataURL | null
   var $ = function (id) { return document.getElementById(id); };
@@ -555,6 +556,12 @@
     MINIS.push(ajustar); setTimeout(ajustar, 0);
     caja.style.height = '190px'; caja._ajustar = ajustar;
     return caja;
+  }
+  /** Modo y estilo de una vista previa pedida con admVistaPrevia (la ve cualquiera con su enlace). */
+  function modoDePrevia(p) {
+    if (p.prueba) return { modo: p.prueba.modo, estilo: p.prueba.estilo, prueba: true };
+    var n = esNoche(new Date().getHours(), p.vista.noche);
+    return { modo: n ? 'noche' : 'dia', estilo: n ? p.vista.estiloNoche : p.vista.estiloDia };
   }
   function modoActual() {
     var d = S && S.datos;
@@ -1088,10 +1095,32 @@
   }
 
   /* ============================== Versión de familiar ============================== */
+  /** Para los familiares: "Ver cómo se ve la tele ahora" (solo mirar; no cambia nada). */
+  function cargarPrevia(silencioso) {
+    return llamar('admVistaPrevia').then(function (p) { previa = p; pintar(); }, function (e) { if (!silencioso) aviso(mensajeError(e), 'error'); });
+  }
+  function tarjetaPrevia() {
+    var t = el('div', { class: 'tarjeta', id: 'previa-tv' }, el('h2', {}, 'La pantalla de la tele'));
+    if (!previa) {
+      t.appendChild(el('p', { class: 'sub', style: 'margin:0' }, 'Si quieres, mira cómo se ve ahora en casa de mamá.'));
+      var ver = el('button', { class: 'btn suave', type: 'button', style: 'margin-top:12px', onclick: function () { ver.disabled = true; cargarPrevia(false).then(function () { ver.disabled = false; }); } }, icono('pantalla'), 'Ver cómo se ve la tele');
+      t.appendChild(ver);
+      return t;
+    }
+    var m = modoDePrevia(previa);
+    t.appendChild(miniatura(previa.vista, m.modo, m.estilo));
+    if (m.prueba) t.appendChild(el('p', { class: 'ayuda' }, 'Ahora se está probando un estilo: la tele vuelve sola al suyo en menos de un minuto.'));
+    t.appendChild(el('p', { class: 'ayuda' }, 'Es solo para mirar. Se actualiza sola cada 25 segundos.'));
+    t.appendChild(el('div', { class: 'fila', style: 'margin-top:8px' },
+      el('button', { class: 'btn suave', type: 'button', onclick: function (e) { e.currentTarget.disabled = true; cargarPrevia(false); } }, 'Actualizar'),
+      el('button', { class: 'btn suave', type: 'button', onclick: function () { previa = null; pintar(); } }, 'Ocultar')));
+    return t;
+  }
   function vistaFamiliar() {
     var w = document.createDocumentFragment();
     w.appendChild(cabecera('Hola, ' + S.nombre, 'Lo que mandes aparece en la tele de mamá.'));
     w.appendChild(estadoTV());
+    w.appendChild(tarjetaPrevia());
     var ta = el('textarea', { id: 'texto', maxlength: '200', placeholder: 'Hoy comemos juntos.', oninput: function (e) { borrador.texto = e.target.value; $('cuenta').textContent = e.target.value.length + '/200'; } });
     ta.value = borrador.texto;
     var chips = el('div', { class: 'chips' });
@@ -1144,6 +1173,7 @@
     var a = document.activeElement;
     if (a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)) return;
     cargar(true);
+    if (ROL === 'familia' && previa) cargarPrevia(true);
   }
   aplicarTema();
   if (ROL === 'admin') { var v = leerLocal('vista'); if (v === 'inicio' || v === 'mensajes' || v === 'mas') vista = v; }

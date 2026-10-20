@@ -387,5 +387,23 @@ const JPEG = 'data:image/jpeg;base64,' + Buffer.from('foto-de-prueba').toString(
   t('hay un máximo de 20 recordatorios', falla(() => g({ texto: 'uno más' })));
 }
 
+/* ---------- 12. Vista previa de la TV para quien tenga un enlace ---------- */
+{
+  const s = crear();
+  s.run("admEnviar('ADMINKEY','Dani','Hoy comemos juntos.','hoy')");
+  s.run("admFamiliaAnadir('ADMINKEY','Ana')"); const kf = s.run('leer_()').familia[0].clave;
+  const antes = s.run('tvUltima_()');
+  const v = s.run(`admVistaPrevia(${J(kf)})`);
+  t('un familiar puede previsualizar la pantalla', v.vista.mensajes[0].texto === 'Hoy comemos juntos.' && Array.isArray(v.vista.bloques) && v.vista.estiloDia === 'lavanda' && v.prueba === null);
+  t('el administrador también', s.run("admVistaPrevia('ADMINKEY')").vista.mensajes.length === 1);
+  t('sin clave o con una clave inventada no', falla(() => s.run("admVistaPrevia('')")) && falla(() => s.run("admVistaPrevia('inventada')")));
+  t('mirar no cuenta como "TV conectada"', s.run('tvUltima_()') === antes);
+  t('y no cambia nada', s.run('leer_()').mensajes.length === 1);
+  s.run("admProbarEstilo('ADMINKEY','salvia','noche')");
+  const p = s.run(`admVistaPrevia(${J(kf)})`).prueba;
+  t('si se está probando un estilo, la vista previa lo sabe', p && p.estilo === 'salvia' && p.modo === 'noche');
+  t('un familiar sigue sin poder cambiar ajustes', falla(() => s.run(`admAjustes(${J(kf)}, {estiloDia: 'salvia'})`)));
+}
+
 console.log(bien + ' bien, ' + mal + ' fallos');
 process.exit(mal ? 1 : 0);
