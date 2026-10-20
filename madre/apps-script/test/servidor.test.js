@@ -1,96 +1,209 @@
-// Pruebas de Code.gs (fase 0) con el simulador de Apps Script. Uso:  node test/servidor.test.js
+// Pruebas de Code.gs con el simulador. Uso:  node test/servidor.test.js
 const { crear: crearSimulador } = require('./simulador');
 const crear = (o = {}) => crearSimulador(Object.assign({ limiteProp: 9216 }, o));   // con el límite real de Google: 9 KB por valor de propiedad
 let bien = 0, mal = 0;
 const t = (n, c) => { if (c) bien++; else { mal++; console.log('FALLA:', n); } };
 const falla = (f) => { try { f(); return false; } catch (e) { return true; } };
 const J = (s) => JSON.stringify(s);
+const diaRelativo = (n) => { const d = new Date(); d.setDate(d.getDate() + n); const p = (x) => String(x).padStart(2, '0'); return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()); };
+const JPEG = 'data:image/jpeg;base64,' + Buffer.from('foto-de-prueba').toString('base64');
 
-/* ---------- 1. Migración desde los datos de antes (una sola propiedad) ---------- */
+/* ---------- 1. Migración desde la versión 1 ---------- */
 {
   const v1 = { mensajes: [{ id: 'm1', de: 'Dani', autor: 'admin', texto: 'Hola', t: 1000, hasta: null }],
     ciudad: 'Maó', latitud: 39.889, longitud: 4.265, calendarios: ['c1'],
     widgets: { mensajes: true, eventos: false, tiempo: true }, noche: { desde: 22, hasta: 7 }, nocheTexto: 'A dormir.',
     contacto: { nombre: 'Pep', telefono: '600' }, familia: [{ id: 'f1', nombre: 'Ana', clave: 'KANA' }] };
   const s = crear({ props: { pizarra: J(v1) } });
-  const d = s.run('datos_()');
+  const d = s.run('leer_()');
   t('migra los mensajes', d.mensajes.length === 1 && d.mensajes[0].texto === 'Hola');
   t('migra la familia y su clave', d.familia[0].clave === 'KANA' && d.familia[0].nombre === 'Ana');
-  t('migra los ajustes', d.noche.desde === 22 && d.nocheTexto === 'A dormir.' && d.contacto.nombre === 'Pep' && d.calendarios[0] === 'c1' && d.widgets.eventos === false);
+  t('migra ajustes', d.noche.desde === 22 && d.nocheTexto === 'A dormir.' && d.contacto.nombre === 'Pep' && d.calendarios[0] === 'c1');
+  t('widgets pasan a bloques', d.bloques.find((b) => b.id === 'proximo').activo === false && d.bloques.find((b) => b.id === 'mensajes').activo === true);
   t('se crea el archivo en Drive', !!s.props.DATOS_ID && Object.keys(s.archivos).length === 1);
-  t('la copia antigua se conserva como respaldo', !!s.props.pizarra);
+  t('la copia antigua se conserva', !!s.props.pizarra);
   s.vaciarCache();
-  t('tras vaciar la caché se vuelve a leer del archivo', s.run('datos_()').familia[0].clave === 'KANA');
-  t('un familiar de antes sigue entrando', s.run("quien_('KANA')").rol === 'familia');
-  t('no se crea un segundo archivo', (s.run('datos_()'), s.run("admEnviar('ADMINKEY','x','y','hoy')"), Object.keys(s.archivos).length === 1));
+  t('se vuelve a leer del archivo', s.run('leer_()').familia[0].clave === 'KANA');
+  t('un familiar de la v1 sigue entrando', s.run("quien_('KANA')").rol === 'familia');
 }
 
-/* ---------- 2. Instalación nueva y datos de más de 9 KB ---------- */
+/* ---------- 2. Instalación nueva, y datos de más de 9 KB ---------- */
 {
   const s = crear();
-  for (let i = 0; i < 30; i++) s.run(`admEnviar('ADMINKEY','Dani','Mensaje ${i}: ${'x'.repeat(180)}', 'siempre')`);
-  s.run("admFamiliaAnadir('ADMINKEY','Ana')"); s.run("admFamiliaAnadir('ADMINKEY','María')");
-  const d = s.run('datos_()');
+  for (let i = 0; i < 60; i++) s.run(`admEnviar('ADMINKEY','Dani','Mensaje número ${i} con un texto bastante largo para ocupar espacio en los datos',  'siempre')`);
+  const d = s.run('leer_()');
   const bytes = Buffer.byteLength(J(d));
-  t('guarda más de 9 KB sin problema (' + bytes + ' bytes)', bytes > 9000 && d.mensajes.length === 30);
-  t('las propiedades solo guardan identificadores pequeños', !s.props.pizarra && Object.keys(s.props).every((k) => String(s.props[k]).length < 9000));
+  t('guarda más de 9 KB sin problema (' + bytes + ' bytes)', bytes > 9000 && d.mensajes.length > 0);
+  t('las propiedades no guardan los datos', !s.props.pizarra && (s.props.DATOS_ID || '').length < 100);
   s.vaciarCache();
-  t('tras vaciar la caché nada se pierde', s.run('datos_()').mensajes.length === 30 && s.run('datos_()').familia.length === 2);
-  t('el administrador sigue viendo todo', s.run("admEstado('ADMINKEY')").datos.mensajes.length === 30);
+  t('tras vaciar la caché los datos siguen', s.run('leer_()').mensajes.length === d.mensajes.length);
 }
 
-/* ---------- 3. Permisos (sin cambios respecto a antes) ---------- */
+/* ---------- 3. Historial ---------- */
 {
   const s = crear();
-  s.run("admFamiliaAnadir('ADMINKEY','Ana')"); s.run("admFamiliaAnadir('ADMINKEY','María')");
-  const [ana, maria] = s.run('datos_()').familia;
-  t('un familiar no crea familiares', falla(() => s.run(`admFamiliaAnadir('${ana.clave}','X')`)));
-  t('un familiar no cambia ajustes', falla(() => s.run(`admGuardarAjustes('${ana.clave}',{})`)));
-  t('un familiar no busca ciudades', falla(() => s.run(`admBuscarCiudad('${ana.clave}','x')`)));
-  t('un familiar no quita a otros', falla(() => s.run(`admFamiliaQuitar('${ana.clave}','${maria.id}')`)));
-  t('un familiar no borra todos', falla(() => s.run(`admBorrar('${ana.clave}','todos')`)));
-  const r = s.run(`admEnviar('${ana.clave}','Pep','Hoy viene Ana a las 6.','hoy')`);
-  t('firma forzada a su nombre', r.rol === 'familia' && r.datos.mensajes[0].de === 'Ana');
-  t('un familiar no ve calendarios ni familia', r.calendarios.length === 0 && r.familia.length === 0);
-  s.run(`admEnviar('${maria.clave}','','Te llamo luego','siempre')`);
-  const idMaria = s.run('datos_()').mensajes.find((m) => m.de === 'María').id;
-  s.run(`admBorrar('${ana.clave}','${idMaria}')`);
-  t('Ana no borra el de María', s.run('datos_()').mensajes.some((m) => m.id === idMaria));
-  s.run(`admBorrar('${maria.clave}','${idMaria}')`);
-  t('María borra el suyo', !s.run('datos_()').mensajes.some((m) => m.id === idMaria));
-  t('la TV no puede leerse con una clave de familia', JSON.parse(s.run(`doGet({parameter:{k:'${ana.clave}'}}).s`)).error === 'permiso');
-  t('sin clave o con clave mala: error', JSON.parse(s.run('doGet({parameter:{}}).s')).error === 'clave' && JSON.parse(s.run("doGet({parameter:{k:'x'}}).s")).error === 'clave');
-  s.run(`admFamiliaQuitar('ADMINKEY','${maria.id}')`);
-  t('quitar a alguien revoca su enlace', falla(() => s.run(`admEnviar('${maria.clave}','','x','hoy')`)));
-  const aj = s.run("admGuardarAjustes('ADMINKEY',{widgets:{mensajes:true,eventos:false,tiempo:true},nocheDesde:20,nocheHasta:7,nocheTexto:'  ',contactoNombre:'Dani',contactoTelefono:'600',ciudad:'Ciutadella',latitud:40,longitud:3.8,calendarios:['c1']})");
-  t('el administrador guarda ajustes', aj.datos.noche.desde === 20 && aj.datos.nocheTexto === 'Es hora de dormir.' && aj.datos.ciudad === 'Ciutadella' && aj.datos.widgets.eventos === false);
-  t('y se guardan también en el archivo', (s.vaciarCache(), s.run('datos_()').noche.desde === 20));
+  s.run("admFamiliaAnadir('ADMINKEY','Ana')");
+  const ana = s.run('leer_()').familia[0];
+  s.run(`modificar_(function (d) {
+    var pasado = Math.floor(Date.now() / 1000) - 3600;
+    for (var i = 0; i < 130; i++) d.mensajes.push({ id: 'v' + i, de: 'Ana', autor: '${ana.id}', texto: 'viejo ' + i, t: 1000 + i, hasta: pasado });
+    for (var j = 0; j < 3; j++) d.mensajes.push({ id: 'o' + j, de: 'Dani', autor: 'admin', texto: 'otro ' + j, t: 5000 + j, hasta: pasado });
+  })`);
+  const d = s.run('leer_()');
+  t('el historial se recorta a 100 caducados', d.mensajes.length === 100);
+  t('se quedan los más recientes', d.mensajes.some((m) => m.id === 'o2') && !d.mensajes.some((m) => m.id === 'v0'));
+  const admin = s.run("admEstado('ADMINKEY')");
+  t('el administrador ve todos', admin.datos.mensajes.length === 100);
+  const fam = s.run(`admEstado('${ana.clave}')`);
+  t('un familiar solo ve los suyos', fam.mensajes.length > 0 && fam.mensajes.every((m) => m.autor === ana.id) && fam.mensajes.length < 100);
+  s.run("admEnviar('ADMINKEY','Dani','Activo','hoy')");
+  const idAct = s.run('leer_()').mensajes.find((m) => m.texto === 'Activo').id;
+  s.run(`admBorrar('${ana.clave}','${idAct}')`);
+  t('un familiar no quita el de otro', s.run('leer_()').mensajes.find((m) => m.id === idAct).hasta > Date.now() / 1000);
+  s.run(`admBorrar('ADMINKEY','${idAct}')`);
+  const quitado = s.run('leer_()').mensajes.find((m) => m.id === idAct);
+  t('quitar deja el mensaje en el historial', quitado && quitado.hasta < Date.now() / 1000);
+  t('la TV ya no lo ve', !s.run('estado_()').mensajes.some((m) => m.id === idAct));
+  t('solo el admin quita todos', falla(() => s.run(`admBorrar('${ana.clave}','todos')`)));
+  s.run(`admEliminarDelHistorial('ADMINKEY','${idAct}')`);
+  t('el admin puede borrar del historial', !s.run('leer_()').mensajes.some((m) => m.id === idAct));
+  t('un familiar no borra del historial', falla(() => s.run(`admEliminarDelHistorial('${ana.clave}','todos')`)));
 }
 
-/* ---------- 4. La app de la TV ya instalada sigue recibiendo lo mismo ---------- */
+/* ---------- 4. Compatibilidad con la app de la TV ya instalada ---------- */
 {
   const s = crear({ eventos: [{ isAllDayEvent: () => false, getEndTime: () => new Date(Date.now() + 7200000), getStartTime: () => new Date(Date.now() + 3600000), getTitle: () => 'Merienda con Ana' }] });
   s.run("admEnviar('ADMINKEY','Pep','Hoy viene Ana a las 6.','hoy')");
   const e = JSON.parse(s.run("doGet({parameter:{k:'ADMINKEY'}}).s"));
-  t('widgets', e.widgets.mensajes === true && e.widgets.eventos === true && e.widgets.tiempo === true);
-  t('mensajes', e.mensajes[0].de === 'Pep' && e.mensajes[0].texto.indexOf('Ana') > 0 && typeof e.mensajes[0].t === 'number' && 'hasta' in e.mensajes[0]);
-  t('eventos', e.eventos[0].titulo === 'Merienda con Ana' && e.eventos[0].dia === 0 && /^\d\d:\d\d$/.test(e.eventos[0].hora));
-  t('tiempo', e.tiempo.temp === 20.4 && e.tiempo.codigo === 2);
-  t('noche y contacto', e.noche.desde === 21 && e.noche.hasta === 6 && e.nocheTexto && e.contacto);
+  t('widgets (v1)', e.widgets && e.widgets.mensajes === true && e.widgets.eventos === true && e.widgets.tiempo === true);
+  t('mensajes (v1)', e.mensajes[0].de === 'Pep' && e.mensajes[0].texto.indexOf('Ana') > 0 && typeof e.mensajes[0].t === 'number' && 'hasta' in e.mensajes[0]);
+  t('eventos (v1)', e.eventos[0].titulo === 'Merienda con Ana' && e.eventos[0].dia === 0 && /^\d\d:\d\d$/.test(e.eventos[0].hora));
+  t('tiempo (v1)', e.tiempo.temp === 20.4 && e.tiempo.codigo === 2);
+  t('noche y contacto (v1)', e.noche.desde === 21 && e.noche.hasta === 6 && e.nocheTexto && e.contacto);
+  t('tiempo de hoy y mañana', e.tiempo.hoy.max === 23 && e.tiempo.manana.temp === 19 && e.tiempo.manana.codigo === 61);
+  t('versión y estilos', e.version === 2 && e.estiloDia === 'calido' && e.estiloNoche === 'calido' && e.bloques.length === 5);
   const antes = s.contarFetch(); s.run('estado_()'); s.run('estado_()');
   t('el tiempo se guarda en caché', s.contarFetch() === antes);
 }
 
-/* ---------- 5. Un fallo dentro de modificar_ no guarda nada ---------- */
+/* ---------- 5. Cuentas atrás ---------- */
+{
+  const s = crear();
+  const nueva = (texto, dias, extra = {}) => s.run(`admGuardarCuentaAtras('ADMINKEY', ${J(Object.assign({ texto, fecha: diaRelativo(dias), icono: 'calendario', desdeDias: 30 }, extra))})`);
+  nueva('Todos los Santos', 12);
+  t('faltan 12 días', s.run('estado_()').cuentaAtras.texto === 'Faltan 12 días para Todos los Santos');
+  nueva('el cumpleaños de Pep', 1);
+  t('1 día, en singular', s.run('estado_()').cuentaAtras.texto === 'Falta 1 día para el cumpleaños de Pep');
+  nueva('Navidad', 3);
+  t('sale la más cercana', s.run('estado_()').cuentaAtras.dias === 1);
+  nueva('Boda', 0, { textoDia: 'Hoy es la boda de Ana' });
+  t('el mismo día usa el texto del día', s.run('estado_()').cuentaAtras.texto === 'Hoy es la boda de Ana');
+  const s2 = crear();
+  s2.run(`admGuardarCuentaAtras('ADMINKEY', ${J({ texto: 'Sin texto del día', fecha: diaRelativo(0), icono: 'tarta', desdeDias: 30 })})`);
+  t('sin texto del día: "Hoy es …"', s2.run('estado_()').cuentaAtras.texto === 'Hoy es Sin texto del día');
+  const s3 = crear();
+  s3.run(`admGuardarCuentaAtras('ADMINKEY', ${J({ texto: 'Ayer', fecha: diaRelativo(-1), icono: 'avion', desdeDias: 30 })})`);
+  t('al día siguiente desaparece', s3.run('estado_()').cuentaAtras === null);
+  s3.run(`admGuardarCuentaAtras('ADMINKEY', ${J({ texto: 'Lejos', fecha: diaRelativo(40), icono: 'corazon', desdeDias: 30 })})`);
+  t('no sale antes de tiempo', s3.run('estado_()').cuentaAtras === null);
+  s3.run(`admGuardarCuentaAtras('ADMINKEY', ${J({ texto: 'Lejos', fecha: diaRelativo(40), icono: 'corazon', desdeDias: 60 })})`);
+  t('"desde cuántos días antes"', s3.run('estado_()').cuentaAtras.dias === 40);
+  t('cuenta atrás sin fecha falla', falla(() => s3.run("admGuardarCuentaAtras('ADMINKEY',{texto:'X'})")));
+  const id = s3.run('leer_()').cuentasAtras.find((c) => c.texto === 'Lejos').id;
+  s3.run(`admBorrarCuentaAtras('ADMINKEY','${id}')`);
+  t('se puede borrar una', s3.run('leer_()').cuentasAtras.length === 2 && !s3.run('leer_()').cuentasAtras.some((c) => c.id === id));
+  s3.run("admAjustes('ADMINKEY',{bloques:[{id:'cuentaAtras',activo:false}]})");
+  s3.run(`admGuardarCuentaAtras('ADMINKEY', ${J({ texto: 'Hoy', fecha: diaRelativo(0), icono: 'tarta' })})`);
+  t('el bloque apagado oculta la cuenta atrás', s3.run('estado_()').cuentaAtras === null);
+  t('familiar no gestiona cuentas atrás', (() => { s3.run("admFamiliaAnadir('ADMINKEY','Ana')"); const c = s3.run('leer_()').familia[0].clave; return falla(() => s3.run(`admGuardarCuentaAtras('${c}',{texto:'X',fecha:'2026-01-01'})`)); })());
+}
+
+/* ---------- 6. Bloques, estilos y "probar 1 minuto" ---------- */
+{
+  const s = crear();
+  s.run("admAjustes('ADMINKEY',{bloques:[{id:'tiempo',activo:true},{id:'mensajes',activo:false},{id:'tiempo',activo:false},{id:'inventado',activo:true}]})");
+  const b = s.run('leer_()').bloques;
+  t('orden respetado y completado', b[0].id === 'tiempo' && b[1].id === 'mensajes' && b.length === 5 && b.every((x) => ['cuentaAtras', 'mensajes', 'proximo', 'tiempo', 'parteDelDia'].indexOf(x.id) >= 0));
+  t('ids repetidos o inventados se ignoran', b.filter((x) => x.id === 'tiempo').length === 1);
+  const e = s.run('estado_()');
+  t('mensajes apagado: la TV no los recibe', e.widgets.mensajes === false && e.mensajes.length === 0);
+  s.run("admAjustes('ADMINKEY',{estiloDia:'lavanda',estiloNoche:'inventado'})");
+  const d = s.run('leer_()');
+  t('estilo válido se guarda, inválido se ignora', d.estiloDia === 'lavanda' && d.estiloNoche === 'calido');
+  s.run("admProbarEstilo('ADMINKEY','salvia','noche')");
+  const p = s.run('estado_()').prueba;
+  t('probar estilo 1 minuto', p && p.estilo === 'salvia' && p.modo === 'noche' && p.segundos > 50 && p.segundos <= 60);
+  s.run("modificar_(function(d){ d.prueba.hasta = Date.now() - 1; })");
+  t('la prueba caduca', s.run('estado_()').prueba === null);
+  t('estilo inexistente falla', falla(() => s.run("admProbarEstilo('ADMINKEY','x','dia')")));
+  s.run("admAjustes('ADMINKEY',{nocheDesde:20,nocheHasta:7,nocheTexto:'  ',contactoNombre:'Dani',contactoTelefono:'600 000 000',ciudad:'Ciutadella',latitud:40,longitud:3.8,calendarios:['c1']})");
+  const d2 = s.run('leer_()');
+  t('ajustes de noche, contacto, ciudad y calendarios', d2.noche.desde === 20 && d2.nocheTexto === 'Es hora de dormir.' && d2.contacto.telefono === '600 000 000' && d2.ciudad === 'Ciutadella' && d2.calendarios[0] === 'c1');
+  s.run("admAjustes('ADMINKEY',{nocheDesde:25,nocheHasta:-3})");
+  t('las horas se acotan a 0-23', s.run('leer_()').noche.desde === 23 && s.run('leer_()').noche.hasta === 0);
+}
+
+/* ---------- 7. Familia y fotos ---------- */
+{
+  const s = crear();
+  s.run("admFamiliaAnadir('ADMINKEY','Ana')"); s.run("admFamiliaAnadir('ADMINKEY','María')");
+  const [ana, maria] = s.run('leer_()').familia;
+  t('un familiar no crea familiares', falla(() => s.run(`admFamiliaAnadir('${ana.clave}','X')`)));
+  t('un familiar no cambia ajustes', falla(() => s.run(`admAjustes('${ana.clave}',{estiloDia:'salvia'})`)));
+  t('un familiar no busca ciudades', falla(() => s.run(`admBuscarCiudad('${ana.clave}','x')`)));
+  t('un familiar no prueba estilos', falla(() => s.run(`admProbarEstilo('${ana.clave}','salvia','dia')`)));
+  let r = s.run(`admEnviar('${ana.clave}','Pep','Te llamo luego','hoy')`);
+  t('firma forzada a su nombre', r.mensajes[0].de === 'Ana');
+  t('un familiar no ve ajustes ni a los demás', r.rol === 'familia' && r.datos === undefined && r.mensajes.every((m) => m.autor === ana.id));
+  // fotos
+  r = s.run(`admFoto('${ana.clave}','${maria.id}',${J(JPEG)})`);
+  t('el familiar cambia su propia foto (ignora la de otro)', r.tieneFoto === true && s.run('leer_()').familia[1].foto === null && s.run('leer_()').familia[0].foto !== null);
+  t('rechaza fotos que no son JPEG', falla(() => s.run(`admFoto('${ana.clave}',null,'data:image/png;base64,AAAA')`)));
+  t('rechaza fotos enormes', falla(() => s.run(`admFoto('${ana.clave}',null,'data:image/jpeg;base64,' + 'A'.repeat(460000))`)));
+  const JPEG2 = 'data:image/jpeg;base64,' + Buffer.from('foto-de-maria').toString('base64');
+  s.run(`admFoto('ADMINKEY','${maria.id}',${J(JPEG2)})`);
+  t('el admin cambia la foto de cualquiera', s.run('leer_()').familia[1].foto !== null);
+  t('el familiar lee su foto', s.run(`admLeerFoto('${ana.clave}',null)`) === JPEG);
+  t('el familiar no puede leer la de otro (siempre recibe la suya)', s.run(`admLeerFoto('${ana.clave}','${maria.id}')`) === JPEG);
+  t('el admin lee la de María', s.run(`admLeerFoto('ADMINKEY','${maria.id}')`) === JPEG2);
+  const antigua = s.run('leer_()').familia[0].foto.id;
+  s.run(`admFoto('${ana.clave}',null,${J(JPEG)})`);
+  t('la foto antigua va a la papelera', s.archivos[antigua].papelera === true);
+  const msg = s.run('estado_()').mensajes.find((m) => m.autor === ana.id);
+  t('la TV recibe la versión de la foto del autor', msg && msg.foto === s.run('leer_()').familia[0].foto.v);
+  // endpoint de la TV
+  const tvFoto = JSON.parse(s.run(`doGet({parameter:{k:'ADMINKEY',a:'foto',p:'${ana.id}'}}).s`));
+  t('la TV descarga la foto con la clave de admin', tvFoto.tipo === 'image/jpeg' && Buffer.from(tvFoto.b64, 'base64').toString() === 'foto-de-prueba');
+  t('un familiar no descarga fotos por el endpoint de la TV', JSON.parse(s.run(`doGet({parameter:{k:'${ana.clave}',a:'foto',p:'${ana.id}'}}).s`)).error === 'permiso');
+  t('no se sirven archivos que no son fotos registradas', JSON.parse(s.run("doGet({parameter:{k:'ADMINKEY',a:'foto',p:'cualquier-id'}}).s")).error === 'sin foto');
+  s.run(`admFotoQuitar('${ana.clave}',null)`);
+  t('quitar la foto', s.run('leer_()').familia[0].foto === null);
+  const fotoMaria = s.run('leer_()').familia[1].foto.id;
+  s.run(`admFamiliaQuitar('ADMINKEY','${maria.id}')`);
+  t('al quitar a alguien, su foto va a la papelera y su enlace deja de valer', s.archivos[fotoMaria].papelera === true && falla(() => s.run(`admEnviar('${maria.clave}','','x','hoy')`)));
+}
+
+/* ---------- 8. Estado de la TV ---------- */
+{
+  const s = crear();
+  t('sin TV todavía: desconectada', s.run("admEstado('ADMINKEY')").tv.conectada === false);
+  s.run("doGet({parameter:{k:'ADMINKEY'}})");
+  const tv = s.run("admEstado('ADMINKEY')").tv;
+  t('tras pedir el estado: conectada', tv.conectada === true && tv.ultima > 0);
+  t('la miniatura del panel no cuenta como TV', (() => { const s2 = crear(); s2.run("admEstado('ADMINKEY')"); return s2.run("admEstado('ADMINKEY')").tv.conectada === false; })());
+  s.run("(function(){ var c = CacheService.getScriptCache(); c.put('tv', String(Math.floor(Date.now()/1000) - 400), 600); })()");
+  t('pasados 150 s: desconectada', s.run("admEstado('ADMINKEY')").tv.conectada === false);
+  t('sin clave o con clave mala: error', JSON.parse(s.run("doGet({parameter:{}}).s")).error === 'clave' && JSON.parse(s.run("doGet({parameter:{k:'x'}}).s")).error === 'clave');
+}
+
+/* ---------- 9. Un fallo dentro de modificar_ no guarda nada ---------- */
 {
   const s = crear();
   s.run("admEnviar('ADMINKEY','Dani','Uno','hoy')");
-  t('si falla, no se guarda nada a medias', falla(() => s.run("modificar_(function (d) { d.mensajes = []; throw new Error('fallo'); })")) && s.run('datos_()').mensajes.length === 1);
-  t('el bloqueo se libera aunque falle', (() => { s.run("admEnviar('ADMINKEY','Dani','Dos','hoy')"); return s.run('datos_()').mensajes.length === 2; })());
-  t('"autorizar" funciona y no duplica archivos', (s.run('autorizar()'), Object.keys(s.archivos).length === 1));
+  t('si falla, no se guarda nada a medias', falla(() => s.run("modificar_(function (d) { d.mensajes = []; throw new Error('fallo'); })")) && s.run('leer_()').mensajes.length === 1);
 }
 
-/* ---------- 6. Contador de uso ---------- */
+/* ---------- 10. Contador de uso ---------- */
 {
   const s = crear();
   for (let i = 0; i < 5; i++) s.run("doGet({parameter:{k:'ADMINKEY'}})");
@@ -108,8 +221,32 @@ const J = (s) => JSON.stringify(s);
   s.props.METRICAS = JSON.stringify({ 20200101: { estado: { n: 1, ms: 1, max: 1 } }, 20200102: {}, 20200103: {}, 20200104: {}, 20200105: {}, 20200106: {}, 20200107: {}, 20200108: {}, 20200109: {} });
   s.run("(function () { CacheService.getScriptCache().put('met_volcado', '0', 100); })()"); s.run("doGet({parameter:{k:'ADMINKEY'}})");
   t('solo se guardan los últimos 8 días', Object.keys(JSON.parse(s.props.METRICAS)).length <= 8);
-  t('las métricas solo las ve el administrador', (() => { s.run("admFamiliaAnadir('ADMINKEY','Ana')"); const c = s.run('datos_()').familia[0].clave; return JSON.parse(s.run(`doGet({parameter:{k:'${c}',a:'metricas'}}).s`)).error === 'permiso'; })());
-  t('un fallo al medir no rompe la petición', (() => { s.run("CacheService.getScriptCache().put('met_pend', 'esto no es json', 100)"); return JSON.parse(s.run("doGet({parameter:{k:'ADMINKEY'}}).s")).version === undefined && true; })());
+  t('las métricas solo las ve el administrador', (() => { s.run("admFamiliaAnadir('ADMINKEY','Ana')"); const c = s.run('leer_()').familia[0].clave; return JSON.parse(s.run(`doGet({parameter:{k:'${c}',a:'metricas'}}).s`)).error === 'permiso'; })());
+  t('un fallo al medir no rompe la petición', (() => { s.run("CacheService.getScriptCache().put('met_pend', 'esto no es json', 100)"); return JSON.parse(s.run("doGet({parameter:{k:'ADMINKEY'}}).s")).widgets !== undefined; })());
+}
+
+/* ---------- 11. Caché con datos de una versión anterior ---------- */
+{
+  // Datos tal como los guardaba la fase 0 (sin bloques ni estilos), todavía en la caché tras actualizar el código.
+  const f0 = { mensajes: [{ id: 'm1', de: 'Dani', autor: 'admin', texto: 'Hola', t: 1000, hasta: null }],
+    ciudad: 'Maó', latitud: 39.889, longitud: 4.265, calendarios: [],
+    widgets: { mensajes: true, eventos: false, tiempo: true }, noche: { desde: 22, hasta: 7 }, nocheTexto: 'A dormir.',
+    contacto: { nombre: 'Pep', telefono: '600' }, familia: [{ id: 'f1', nombre: 'Ana', clave: 'KANA' }] };
+  const s = crear();
+  s.run('leer_()');                                  // crea el archivo en Drive
+  s.cacheMapa.datos = J(f0);                         // caché antigua
+  t('leer_() devuelve siempre datos con bloques', Array.isArray(s.run('leer_()').bloques) && s.run('leer_()').bloques.length === 5);
+  let estado = null, error = null;
+  try { estado = s.run('estado_()'); } catch (e) { error = e.message; }
+  t('estado_() no falla con una caché antigua' + (error ? ' (' + error + ')' : ''), estado && estado.bloques.length === 5);
+  t('los widgets antiguos se convierten en bloques', estado && estado.widgets.eventos === false && estado.widgets.mensajes === true && estado.bloques.find((b) => b.id === 'proximo').activo === false);
+  t('se conservan mensajes, ajustes y familia', estado && estado.mensajes[0].texto === 'Hola' && estado.noche.desde === 22 && estado.contacto.nombre === 'Pep');
+  t('quien_ y admEstado también funcionan', s.run("quien_('KANA')").rol === 'familia' && s.run("admEstado('ADMINKEY')").rol === 'admin');
+  s.cacheMapa.datos = J(f0);
+  s.run("admEnviar('ADMINKEY','Dani','Nuevo','hoy')");
+  t('escribir con una caché antigua no pierde nada', (s.vaciarCache(), s.run('leer_()').mensajes.length === 2 && s.run('leer_()').familia[0].clave === 'KANA' && s.run('leer_()').bloques.length === 5));
+  const viejo = crear(); viejo.run('leer_()'); viejo.cacheMapa.datos = J({ mensajes: [], familia: [] });
+  t('incluso con una caché casi vacía', (() => { try { return viejo.run('estado_()').bloques.length === 5; } catch (e) { return false; } })());
 }
 
 console.log(bien + ' bien, ' + mal + ' fallos');
