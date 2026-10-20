@@ -25,6 +25,33 @@ Tres piezas:
 
 Quien tenga la dirección y la clave puede leer los mensajes y los eventos de los calendarios elegidos. No las compartas.
 
+## Actualizar el script ya publicado (fase 0: datos en Drive)
+
+Los datos pasan de una propiedad del script a un archivo **`pizarra-datos.json`** en una carpeta **Pizarra** de tu Drive.
+Las propiedades de Apps Script solo admiten 9 KB por valor y con el tiempo se habrían roto. No cambia nada visible ni en el panel ni en la TV.
+
+1. Pega **solo `Code.gs`** en el archivo `Código.gs` de tu proyecto (`Admin.html` y `appsscript.json` no cambian). **Guardar.**
+2. Elige la función **`autorizar`** y pulsa **Ejecutar**. Google pide un permiso **nuevo**: acceso a tu **Drive** (para guardar el archivo de datos). Acéptalo.
+   En el registro verás cuántos mensajes y personas se han migrado. La copia antigua queda en las propiedades del script (`pizarra`) como respaldo;
+   puedes borrarla cuando compruebes que todo funciona.
+3. **Implementar → Gestionar implementaciones → lápiz → Versión: Nueva versión → Implementar.**
+   **No uses "Nueva implementación"**: la dirección `/exec` no puede cambiar, porque la TV la tiene guardada.
+4. Comprueba que el panel y la TV siguen funcionando (envía un mensaje de prueba).
+
+### Contador de uso
+
+`TU_DIRECCION_EXEC?a=metricas&k=TU_CLAVE` (solo con la clave de administrador) devuelve cuántas peticiones llegan cada día, de cada tipo
+(`estado` es la TV, `admin` es el panel), con su tiempo medio y máximo, de los últimos 8 días. Es aproximado: el tiempo es el de dentro de
+`doGet`, y el real de ejecución sale en la pantalla **Ejecuciones** de Apps Script. Sirve para comprobar que estamos lejos de las cuotas de
+una cuenta gratuita (6 min por ejecución, 90 min/día de triggers, 20.000 llamadas externas al día, 30 ejecuciones simultáneas).
+
+## Pruebas
+
+```
+cd apps-script
+node test/servidor.test.js     # simulador de Apps Script, con el límite real de 9 KB por propiedad
+```
+
 ## 2. App de la TV
 
 Con la TV y el ordenador en la misma Wi-Fi y la depuración USB activada:
