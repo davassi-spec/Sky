@@ -405,5 +405,31 @@ const JPEG = 'data:image/jpeg;base64,' + Buffer.from('foto-de-prueba').toString(
   t('un familiar sigue sin poder cambiar ajustes', falla(() => s.run(`admAjustes(${J(kf)}, {estiloDia: 'salvia'})`)));
 }
 
+/* ---------- 13. Confirmar desde los enlaces de la familia ---------- */
+{
+  const a = (h, mi) => new Date(2026, 9, 20, h, mi).getTime();
+  const s = crear({ ahora: a(13, 0) });
+  s.run(`admRecordatorioGuardar('ADMINKEY', ${J({ hora: '13:00', dias: [], texto: 'Comer con calma', duracion: 20, confirmar: true })}, null, false)`);
+  s.run("admFamiliaAnadir('ADMINKEY','Ana')"); s.run("admFamiliaAnadir('ADMINKEY','Javier')");
+  const [ana, javier] = s.run('leer_()').familia;
+  s.fijar(a(13, 40));
+  const pa = s.run(`admEstado(${J(ana.clave)})`);
+  t('un familiar ve lo que está pendiente de confirmar', pa.pendientes.length === 1 && pa.pendientes[0].texto === 'Comer con calma');
+  const e = s.run(`admRecordatorioConfirmar(${J(ana.clave)}, ${J(pa.pendientes[0].clave)})`);
+  t('y lo puede confirmar', e.pendientes.length === 0 && s.run('estado_()').recordatorio === null);
+  const r = s.run("admEstado('ADMINKEY')").datos.recordatorios[0];
+  t('el administrador ve quién lo confirmó y a qué hora', r.confirmadoPor === 'Ana' && Math.abs(r.confirmadoHoy - a(13, 40)) < 5000);
+  t('otro familiar ya no lo ve pendiente', s.run(`admEstado(${J(javier.clave)})`).pendientes.length === 0);
+  t('no se puede confirmar dos veces', falla(() => s.run(`admRecordatorioConfirmar(${J(javier.clave)}, ${J(pa.pendientes[0].clave)})`)));
+  t('sin clave válida no se confirma', falla(() => s.run(`admRecordatorioConfirmar('inventada', ${J(pa.pendientes[0].clave)})`)));
+  t('un familiar sigue sin poder crear recordatorios', falla(() => s.run(`admRecordatorioGuardar(${J(ana.clave)}, ${J({ hora: '10:00', texto: 'x' })}, null, false)`)));
+  s.fijar(a(14, 0)); s.run('revisarAvisos()'); t('confirmado por la familia: no hay correo', s.correos.length === 0);
+  s.run("admRecordatorioGuardar('ADMINKEY', " + J({ hora: '14:00', dias: [], texto: 'Otra cosa', duracion: 10, confirmar: true }) + ", null, false)");
+  s.fijar(a(14, 5)); const p2 = s.run("admEstado('ADMINKEY')").pendientes[0];
+  s.run(`admRecordatorioConfirmar('ADMINKEY', ${J(p2.clave)})`);
+  const r2 = s.run("admEstado('ADMINKEY')").datos.recordatorios.find((x) => x.texto === 'Otra cosa');
+  t('si lo confirma el administrador no consta ningún familiar', Math.abs(r2.confirmadoHoy - a(14, 5)) < 5000 && r2.confirmadoPor === '');
+}
+
 console.log(bien + ' bien, ' + mal + ' fallos');
 process.exit(mal ? 1 : 0);

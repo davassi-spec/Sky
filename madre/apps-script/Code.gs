@@ -610,6 +610,7 @@ function admEstado(k) {
     return {
       rol: 'familia', nombre: q.nombre, miId: q.id, tv: tv, ahora: ahora,
       tieneFoto: !!(yo && yo.foto),
+      pendientes: pendientes_(d, ahora),
       mensajes: d.mensajes.filter(function (m) { return m.autor === q.id; }),
       ciudad: d.ciudad
     };
@@ -846,7 +847,8 @@ function recParaPanel_(d, r, ahora) {
   var hoy = fechaClave_(new Date(ahora));
   var est = d.recEstado[r.id + '|' + hoy];
   return { id: r.id, hora: r.hora, dias: r.dias, texto: r.texto, texto2: r.texto2, duracion: r.duracion, confirmar: !!r.confirmar,
-           activo: r.activo !== false, tieneFoto: !!r.foto, confirmadoHoy: est && est.conf ? est.conf : null };
+           activo: r.activo !== false, tieneFoto: !!r.foto, confirmadoHoy: est && est.conf ? est.conf : null,
+           confirmadoPor: est && est.conf ? (est.por || '') : '' };
 }
 
 /**
@@ -896,15 +898,18 @@ function admRecordatorioBorrar(k, id) {
   return admEstado(k);
 }
 
-/** "Confirmar que lo ha tomado": la TV vuelve a la pizarra en cuanto pregunta de nuevo. Si era una prueba, la termina. */
+/**
+ * "Confirmar que lo ha tomado": la TV vuelve a la pizarra en cuanto pregunta de nuevo. Si era una prueba, la termina.
+ * Lo puede confirmar el administrador o cualquier persona de la familia con su enlace; se anota quién y a qué hora.
+ */
 function admRecordatorioConfirmar(k, clave) {
-  admin_(k);
+  var q = alguien_(k);
   var id = String(clave || '').split('|')[0];
   modificar_(function (d) {
     if (d.pruebaRec && d.pruebaRec.id === id && String(clave).split('|')[1] === 'prueba') { d.pruebaRec = null; return; }
     var p = pendientes_(d, Date.now()).filter(function (x) { return x.clave === clave; })[0];
     if (!p) throw new Error('Ese recordatorio ya no está pendiente');
-    d.recEstado[clave] = Object.assign({}, d.recEstado[clave], { conf: Date.now() });
+    d.recEstado[clave] = Object.assign({}, d.recEstado[clave], { conf: Date.now(), por: q.rol === 'familia' ? q.nombre : '' });
   });
   return admEstado(k);
 }

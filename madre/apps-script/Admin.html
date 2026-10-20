@@ -263,6 +263,11 @@
     return s;
   }
 
+  /** "Confirmado por Ana a las 13:40" (sin "por…" si lo confirmó el administrador). */
+  function textoConfirmado(r) {
+    var f = new Date(r.confirmadoHoy);
+    return 'Confirmado' + (r.confirmadoPor ? ' por ' + r.confirmadoPor : '') + ' a las ' + f.getHours() + ':' + dos(f.getMinutes());
+  }
   function aviso(txt, tipo) {
     var e = $('aviso'); e.textContent = txt; e.className = tipo || 'ok';
     clearTimeout(aviso.t); aviso.t = setTimeout(function () { e.className = ''; e.textContent = ''; }, tipo === 'error' ? 6000 : 3500);
@@ -521,16 +526,19 @@
         el('div', { style: css({ 'font-size': '44px', 'margin-top': '6px' }) }, horaHablada(h, m, true) + '.'),
         ver.parteDelDia ? el('div', { style: css({ 'font-size': '40px', color: p.acento, 'margin-top': '8px' }) }, franja(h)) : null)));
     var cuerpo = el('div', { style: css({ display: 'flex', gap: '24px', flex: '1 1 auto', 'min-height': '0' }) });
-    var izq = el('div', { style: css({ flex: msgs.length ? '1.85' : '0', display: msgs.length ? 'flex' : 'none', 'flex-direction': 'column', gap: '20px', 'min-width': '0' }) });
+    var izq = el('div', { style: css({ flex: msgs.length ? (der_vacia(v, ver, noche) ? '1' : '1.85') : '0', display: msgs.length ? 'flex' : 'none', 'flex-direction': 'column', gap: '20px', 'min-width': '0' }) });
     msgs.forEach(function (x) {
       var d = new Date(x.t * 1000);
       izq.appendChild(el('div', { style: tarj({ flex: '1', display: 'flex', 'flex-direction': 'column', 'justify-content': 'center' }) },
-        el('div', { style: css({ 'font-size': '40px', color: p.acento }) }, (x.de ? x.de + ' dice' : 'Mensaje') + ' · ' + mayus(nombreDia(d, ahora)) + ' ' + aLas(d.getHours(), d.getMinutes())),
+        el('div', { style: css({ 'font-size': '44px', color: p.acento }) }, x.de ? x.de + ' dice' : 'Mensaje'),
         el('div', { style: css({ 'font-size': msgs.length > 1 ? '72px' : '88px', 'line-height': '1.08', 'margin-top': '10px', 'overflow-wrap': 'anywhere' }) }, x.texto)));
     });
     var der = el('div', { style: css({ flex: '1', display: 'flex', 'flex-direction': 'column', gap: '20px', 'min-width': '0', 'justify-content': msgs.length ? 'flex-start' : 'center' }) });
     if (noche) {
-      der.appendChild(el('div', { style: tarj({ flex: '1', display: 'flex', 'align-items': 'center', 'font-size': '64px', 'line-height': '1.1' }) }, (v.nocheTexto || 'Es hora de dormir.').split('\n')[0]));
+      var manana = ver.proximo ? (v.eventos || []).filter(function (e) { return e.dia === (h >= 12 ? 1 : 0); })[0] : null, mh = manana && manana.hora ? manana.hora.split(':') : null;
+      der.appendChild(el('div', { style: tarj({ flex: '1.3', 'font-size': '64px', 'line-height': '1.1' }) }, (v.nocheTexto || 'Es hora de dormir.').split('\n')[0],
+        manana ? el('div', { style: css({ 'font-size': '40px', 'margin-top': '14px', opacity: .85 }) }, (h >= 12 ? 'Mañana ' : 'Hoy ') + (mh ? aLas(Number(mh[0]), Number(mh[1])) : 'todo el día')) : null,
+        manana ? el('div', { style: css({ 'font-size': '52px' }) }, mayus(manana.titulo)) : null));
       if (v.contacto && v.contacto.nombre) der.appendChild(el('div', { style: tarj({ flex: '1', 'font-size': '48px' }) }, 'Si necesitas algo, llama a ' + v.contacto.nombre, el('div', { style: css({ 'font-size': '64px', 'margin-top': '10px' }) }, v.contacto.telefono || '')));
     } else {
       if (ev) {
@@ -538,8 +546,6 @@
         der.appendChild(el('div', { style: tarj({ flex: '1' }) }, el('div', { style: css({ 'font-size': '40px', color: p.acento }) }, 'Lo próximo'),
           el('div', { style: css({ 'font-size': '44px', 'margin-top': '6px' }) }, hh ? mayus(aLas(Number(hh[0]), Number(hh[1]))) : 'Todo el día'),
           el('div', { style: css({ 'font-size': '60px', 'margin-top': '4px', 'line-height': '1.1' }) }, ev.titulo)));
-      } else if (ver.proximo) {
-        der.appendChild(el('div', { style: tarj({ flex: '1', 'font-size': '48px' }) }, 'Hoy no hay nada apuntado.'));
       }
       if (tiempo) {
         var hoy = tiempo.hoy || { temp: tiempo.temp }, man = tiempo.manana;
@@ -562,6 +568,12 @@
     if (p.prueba) return { modo: p.prueba.modo, estilo: p.prueba.estilo, prueba: true };
     var n = esNoche(new Date().getHours(), p.vista.noche);
     return { modo: n ? 'noche' : 'dia', estilo: n ? p.vista.estiloNoche : p.vista.estiloDia };
+  }
+  /** ¿La columna de la derecha quedará vacía? Entonces los mensajes ocupan todo el ancho (como en la TV). */
+  function der_vacia(v, ver, noche) {
+    if (noche) return false;
+    var hayEv = ver.proximo && (v.eventos || []).some(function (e) { return e.dia === 0; });
+    return !hayEv && !(ver.tiempo && v.tiempo);
   }
   function modoActual() {
     var d = S && S.datos;
@@ -631,6 +643,13 @@
     w.appendChild(cabecera('La tele de mamá'));
     w.appendChild(estadoTV());
     (S.pendientes || []).forEach(function (p) { w.appendChild(tarjetaPendiente(p)); });
+    var hechos = (d.recordatorios || []).filter(function (r) { return r.confirmadoHoy; });
+    if (hechos.length) {
+      var th = el('div', { class: 'tarjeta', id: 'confirmados' }, el('h2', {}, 'Confirmados hoy'));
+      hechos.forEach(function (r) { th.appendChild(el('div', { class: 'item' }, el('span', { class: 'avatar' }, icono('campana')),
+        el('div', { class: 'cuerpo' }, el('div', { class: 'texto' }, r.texto), el('div', { class: 'meta', style: 'color:var(--ok);font-weight:600' }, textoConfirmado(r))))); });
+      w.appendChild(th);
+    }
     var t = el('div', { class: 'tarjeta' }, el('h2', {}, 'Así se ve ahora en la TV'),
       miniatura(v, m.modo, m.estilo),
       m.prueba ? el('p', { class: 'ayuda' }, 'Estás probando un estilo: la tele vuelve sola a su estilo en menos de un minuto.') : null,
@@ -898,7 +917,8 @@
       l.appendChild(el('div', { class: 'item' }, miniFotoRec(r),
         el('button', { class: 'cuerpo rec-cuerpo', type: 'button', 'aria-label': 'Editar: ' + r.texto, onclick: function () { recEditando = Object.assign({}, r); ir('recordatorio'); } },
           el('div', { class: 'hora-grande' }, r.hora), el('div', { class: 'texto' }, r.texto),
-          el('div', { class: 'meta' }, resumenDias(r.dias) + ' · ' + r.duracion + ' min' + (r.confirmar ? ' · hay que confirmarlo' : ''))), sw));
+          el('div', { class: 'meta' }, resumenDias(r.dias) + ' · ' + r.duracion + ' min' + (r.confirmar ? ' · hay que confirmarlo' : '')),
+          r.confirmadoHoy ? el('div', { class: 'meta', style: 'color:var(--ok);font-weight:600' }, textoConfirmado(r)) : null), sw));
     });
     t.appendChild(l);
     t.appendChild(el('button', { class: 'btn', type: 'button', style: 'margin-top:12px', onclick: function () {
@@ -1070,15 +1090,15 @@
     });
     w.appendChild(el('div', { class: 'tarjeta' }, el('h2', {}, 'Calendarios de Google'), cals, el('p', { class: 'ayuda' }, 'Si no marcas ninguno, se usa tu calendario principal.')));
     var av = S.avisos || {};
-    var correo = el('input', { type: 'email', id: 'a-correo', maxlength: '100', autocomplete: 'off', inputmode: 'email', placeholder: av.destino || 'tucorreo@ejemplo.com', value: d.correoAviso || '' });
-    var bCorreo = el('button', { class: 'btn', type: 'button', style: 'margin-top:12px', onclick: function () { accion('admCorreoAviso', [correo.value], 'Correo guardado', bCorreo); } }, 'Guardar correo');
-    var bPrueba = el('button', { class: 'btn suave', type: 'button', onclick: function () { accion('admCorreoPrueba', [], 'Correo de prueba enviado a ' + (correo.value.trim() || av.destino), bPrueba); } }, 'Enviar un correo de prueba');
+    var correo = el('input', { type: 'email', id: 'a-correo', maxlength: '100', autocomplete: 'off', inputmode: 'email', placeholder: 'tucorreo@ejemplo.com', value: d.correoAviso || av.destino || '' });
+    var bCorreo = el('button', { class: 'btn', type: 'button', style: 'margin-top:12px', onclick: function () { var v = correo.value.trim(); if (v === av.destino && !d.correoAviso) v = ''; accion('admCorreoAviso', [v], 'Correo guardado', bCorreo); } }, 'Guardar correo');
+    var bPrueba = el('button', { class: 'btn suave', type: 'button', onclick: function () { accion('admCorreoPrueba', [], 'Correo de prueba enviado a ' + (d.correoAviso || av.destino), bPrueba); } }, 'Enviar un correo de prueba');
     w.appendChild(el('div', { class: 'tarjeta', id: 'avisos' }, el('h2', {}, 'Avisos por correo'),
       av.activos
         ? el('p', { class: 'ayuda', style: 'margin:0 0 10px' }, 'Activados: si un recordatorio que hay que confirmar sigue sin confirmar tras ' + av.minutos + ' minutos, te llega un correo.')
         : el('div', { class: 'pista', style: 'margin:0 0 10px' }, 'Todavía no están activados. En el editor de Apps Script ejecuta la función autorizar (una sola vez) y acepta los permisos nuevos.'),
       el('label', { class: 'eti', for: 'a-correo' }, 'Correo donde te avisamos'), correo,
-      el('p', { class: 'ayuda' }, 'Si lo dejas vacío, el aviso llega a ' + (av.destino || 'tu correo de Google') + '.'), bCorreo, bPrueba));
+      el('p', { class: 'ayuda' }, 'Ahora mismo los avisos llegan a ' + (av.destino || 'tu correo de Google') + '. Puedes poner otro.'), bCorreo, bPrueba));
     var aspecto = el('div', { class: 'segmentos', style: 'grid-template-columns:repeat(3,1fr);margin-top:0', role: 'group', 'aria-label': 'Aspecto' });
     [['claro', 'Claro'], ['oscuro', 'Oscuro'], ['', 'Según el móvil']].forEach(function (a) {
       aspecto.appendChild(el('button', { type: 'button', 'aria-pressed': (leerLocal('tema') === a[0]) ? 'true' : 'false', style: 'font-size:15px', onclick: function () {
@@ -1120,6 +1140,7 @@
     var w = document.createDocumentFragment();
     w.appendChild(cabecera('Hola, ' + S.nombre, 'Lo que mandes aparece en la tele de mamá.'));
     w.appendChild(estadoTV());
+    (S.pendientes || []).forEach(function (p) { w.appendChild(tarjetaPendiente(p)); });
     w.appendChild(tarjetaPrevia());
     var ta = el('textarea', { id: 'texto', maxlength: '200', placeholder: 'Hoy comemos juntos.', oninput: function (e) { borrador.texto = e.target.value; $('cuenta').textContent = e.target.value.length + '/200'; } });
     ta.value = borrador.texto;

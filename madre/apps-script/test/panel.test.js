@@ -14,6 +14,7 @@ const AYUDAS = `
   const escribe = (sel, v) => { const e = document.querySelector(sel); if (!e) throw new Error('no hay ' + sel); e.value = v; e.dispatchEvent(new Event('input', { bubbles: true })); e.dispatchEvent(new Event('change', { bubbles: true })); };
   const texto = () => document.getElementById('app').textContent;
   const toast = () => document.getElementById('aviso').textContent;
+  const rpc = (fn, ...args) => new Promise((ok, ko) => google.script.run.withSuccessHandler(ok).withFailureHandler(ko)[fn](...args));
 `;
 const FIN = `; document.body.setAttribute('data-resultado', JSON.stringify(R));`;
 
@@ -157,6 +158,8 @@ const PRUEBAS = {
   'admin: avisos por correo en Ajustes': `
     ir('ajustes'); await espera(100);
     t('avisa de que aún no están activados', texto().indexOf('Todavía no están activados') >= 0 && texto().indexOf('autorizar') >= 0);
+    t('enseña el correo real, ya puesto', document.querySelector('#a-correo').value === 'yo@ejemplo.com' && texto().indexOf('Ahora mismo los avisos llegan a yo@ejemplo.com') >= 0);
+    await clic('Guardar correo'); await espera(200); t('guardarlo tal cual no fija ninguno (sigue el de la cuenta)', S.datos.correoAviso === '');
     escribe('#a-correo', 'esto no es un correo'); await clic('Guardar correo'); t('rechaza un correo mal escrito', toast().indexOf('no parece válido') >= 0);
     escribe('#a-correo', 'dani@ejemplo.com'); await clic('Guardar correo'); await espera(200);
     t('guarda el correo', S.datos.correoAviso === 'dani@ejemplo.com' && toast().indexOf('Correo guardado') >= 0);
@@ -188,6 +191,15 @@ const PRUEBAS = {
     let p4 = recortarCirculo(await mk()); await espera(500);
     await clic('Cancelar', document.querySelector('[role=dialog]')); let cancelado = false; try { await p4; } catch (e) { cancelado = e.message === 'cancelado'; }
     t('cancelar no guarda nada', cancelado && !document.querySelector('[role=dialog]'));`,
+  'admin: ve quién confirmó un recordatorio': `
+    await accion('admRecordatorioGuardar', [{ texto: 'Comer con calma', hora: '17:00', dias: [], duracion: 30, confirmar: true }, null, false], null);
+    const ana = S.datos.familia.find((f) => f.nombre === 'Ana');
+    const clave = S.pendientes[0].clave;
+    await rpc('admRecordatorioConfirmar', ana.clave, clave); await cargar(false); await espera(300);
+    ir('inicio'); await espera(200);
+    t('Inicio dice quién lo confirmó y cuándo', texto().indexOf('Confirmados hoy') >= 0 && texto().indexOf('Confirmado por Ana a las 17:15') >= 0);
+    t('ya no está pendiente', S.pendientes.length === 0 && texto().indexOf('Pendiente de confirmar') < 0);
+    ir('recordatorios'); await espera(200); t('la lista también lo dice', texto().indexOf('Confirmado por Ana a las 17:15') >= 0);`,
   'miniatura: noche y bloques apagados': `
     const v = S.vista; const claseTexto = (n) => n.textContent;
     const noche = miniatura(v, 'noche', 'lavanda'); document.body.appendChild(noche);
@@ -210,6 +222,10 @@ const PRUEBAS = {
     let denegado = false; try { await llamar('admAjustes', { estiloDia: 'salvia' }); } catch (e) { denegado = true; } t('el servidor le niega los ajustes', denegado);
     t('sigue teniendo su foto tras enviar y quitar', S.tieneFoto === true && S.miId && !!document.querySelector('.avatar img'));
     t('la vista previa de la tele no se enseña hasta que se pide', !document.querySelector('.miniatura') && texto().indexOf('Ver cómo se ve la tele') >= 0);
+    await rpc('admRecordatorioGuardar', 'ADMINKEY', { texto: 'Comer con calma', hora: '17:00', dias: [], duracion: 30, confirmar: true }, null, false); await cargar(false); await espera(300);
+    t('el familiar ve lo pendiente de confirmar', texto().indexOf('Pendiente de confirmar') >= 0 && texto().indexOf('Comer con calma') >= 0);
+    await clic('Confirmar que lo ha tomado'); await espera(500);
+    t('y lo puede confirmar', S.pendientes.length === 0 && texto().indexOf('Pendiente de confirmar') < 0);
     await clic('Ver cómo se ve la tele'); await espera(600);
     t('el familiar puede previsualizar la pantalla de la tele', !!document.querySelector('#previa-tv .miniatura') && texto().indexOf('Es solo para mirar') >= 0);
     t('y ve lo que hay ahora en la tele', document.querySelector('#previa-tv .miniatura').textContent.indexOf('Hoy viene Ana a las seis.') >= 0 && document.querySelector('#previa-tv .miniatura').textContent.indexOf('Merienda con Ana') >= 0);
