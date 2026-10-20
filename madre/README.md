@@ -11,8 +11,8 @@ Se maneja desde una web app en el móvil: un panel de administrador y un enlace 
 | `mockup/` | Diseños de referencia: estilos de la TV (`estilos/`) y panel del móvil (`panel/`). |
 | `web-app/iconos/` | Iconos para poner el panel en la pantalla de inicio del móvil (se usan en la fase 4). |
 
-Estado: **fase 1 hecha** (script, datos en Drive, panel del móvil). La app de la TV todavía es la versión anterior
-y sigue funcionando con el script nuevo. Las fases 2 a 4 (diseño nuevo de la TV, recordatorios, audio y vídeo) están pendientes.
+Estado: **fases 0 y 1 hechas** (script, datos en Drive, panel del móvil). **Fase 2 lista para instalar** (app de la TV 2.0 con
+cinco estilos). Las fases 3 y 4 (recordatorios, audio y vídeo) están pendientes.
 
 ## Fase 1: qué hay de nuevo en el script
 
@@ -54,22 +54,77 @@ Quien tenga la dirección y una clave puede usar la pizarra. La clave de adminis
 las de familia solo escriben mensajes, quitan los suyos y cambian su foto. Si quitas a alguien en **Familia**, su enlace deja de funcionar al instante.
 **No pongas claves ni la dirección `/exec` en el repositorio.**
 
-## App de la TV
+## App de la TV (versión 2.0)
 
-Con la TV y el ordenador en la misma Wi-Fi y la depuración USB activada:
+Pantalla: arriba el día, la fecha, la hora en cifras (con los dos puntos parpadeando), la hora en palabras ("Son las cinco y cuarto de la tarde")
+y una etiqueta grande con la parte del día. Debajo, a la izquierda los mensajes de la familia (con su foto), a la derecha lo próximo del calendario y
+el tiempo de hoy y de mañana con qué ponerse. Si hay una cuenta atrás, sale como una franja arriba. De noche: los mensajes, "Es hora de dormir" con
+lo primero de mañana, y el teléfono. La letra crece hasta llenar cada tarjeta y solo encoge si no cabe; ningún texto baja de 36 px.
+La colocación es fija: el panel solo enciende o apaga cada bloque.
 
+Cinco estilos, cada uno de día y de noche: **Lavanda** (de día por defecto), **Cálido** (de noche por defecto), Salvia, Terracota y Alto contraste.
+Todos los textos cumplen contraste 4,5:1 (lo comprueba una prueba). La fuente es **Pizarra Sans**, una versión de Atkinson Hyperlegible con el cero
+sin tachar (licencia OFL, ver `app/src/main/assets/fonts`). Solo se mueven dos cosas: el fundido de 0,7 s entre una pantalla y la siguiente y los dos puntos del reloj.
+
+Funciona con el script de la versión 5 que ya tienes desplegado; no hace falta tocar el script. (Los estilos que elijas se guardan en el panel, en **Pantalla**:
+si no los has cambiado, el script v5 manda Cálido para día y noche.)
+
+### Instalar la 2.0 en la TV (Windows PowerShell)
+
+Descarga `PizarraTV-2.0.apk` (carpeta `madre/app-tv/release` del repositorio) a tu carpeta **Descargas**. Con la TV encendida y en la misma Wi-Fi,
+en la TV: **Ajustes › Opciones de desarrollo › Depuración USB: Sí**. Después, en PowerShell:
+
+```powershell
+# 1. Conectar con la TV (acepta el aviso que sale en la pantalla de la TV, "Permitir siempre")
+adb connect 192.168.1.83:5555
+adb devices                      # tiene que salir 192.168.1.83:5555   device
+
+# 2. Copia de seguridad de la versión actual (1.0), por si hay que volver atrás
+New-Item -ItemType Directory -Force "$HOME\Pizarra-copia" | Out-Null
+$ruta = ((adb shell pm path es.pizarra.tv) -replace 'package:','').Trim()
+adb pull $ruta "$HOME\Pizarra-copia\PizarraTV-1.0.apk"
+dir "$HOME\Pizarra-copia"        # tiene que aparecer PizarraTV-1.0.apk (unos 170 KB)
+
+# 3. Instalar la 2.0 encima (-r conserva la dirección y la clave ya guardadas)
+adb install -r "$HOME\Downloads\PizarraTV-2.0.apk"     # tiene que decir Success
+
+# 4. Abrirla (los datos de conexión se conservan; no hace falta repetir la dirección ni la clave)
+adb shell am start -n es.pizarra.tv/.MainActivity
 ```
-adb connect IP_DE_LA_TV:5555
-adb install -r PizarraTV.apk
-adb shell am start -n es.pizarra.tv/.MainActivity --es url LA_DIRECCION_EXEC --es k TU_CLAVE
+
+Si la pantalla dice **"Falta conectar la pizarra."**, vuelve a darle la dirección y la clave (las tuyas, no las pongas en ningún archivo del repositorio):
+
+```powershell
+adb shell am start -n es.pizarra.tv/.MainActivity --es url "TU_DIRECCION_EXEC" --es k "TU_CLAVE_DE_ADMINISTRADOR"
 ```
 
-Se compila con JDK 17 o superior y el SDK de Android (plataforma 34):
+Para cerrar la depuración al terminar: **Depuración USB: No** y reinicia la TV (desenchufándola unos 10 segundos).
+
+### Volver a la versión 1.0
+
+```powershell
+adb connect 192.168.1.83:5555
+adb install -r -d "$HOME\Pizarra-copia\PizarraTV-1.0.apk"
+adb shell am start -n es.pizarra.tv/.MainActivity
+```
+
+`-d` permite instalar una versión anterior y `-r` conserva los datos. Si diera `INSTALL_FAILED_VERSION_DOWNGRADE` o `UPDATE_INCOMPATIBLE`, desinstala y vuelve a instalar
+(se pierde la configuración guardada, así que después hay que darle de nuevo la dirección y la clave con el comando de arriba):
+
+```powershell
+adb uninstall es.pizarra.tv
+adb install "$HOME\Pizarra-copia\PizarraTV-1.0.apk"
+adb shell am start -n es.pizarra.tv/.MainActivity --es url "TU_DIRECCION_EXEC" --es k "TU_CLAVE_DE_ADMINISTRADOR"
+```
+
+### Compilar
+
+Con JDK 17 o superior y el SDK de Android (plataforma 34):
 
 ```
 cd app-tv
 echo "sdk.dir=/ruta/al/android-sdk" > local.properties
-gradle assembleDebug        # sale en app/build/outputs/apk/debug/app-debug.apk
+gradle assembleDebug        # sale en app/build/outputs/apk/debug/app-debug.apk (firmado v1+v2, como necesita Android 5.1)
 ```
 
 ## Pruebas
@@ -83,8 +138,15 @@ node test/panel.test.js          # el panel con clics reales en Chromium y el Co
 python3 test/todas.py /tmp/ui    # capturas de todas las vistas del panel, en claro y oscuro (requiere servidor-ui.js en el puerto 8765)
 ```
 
+Las pantallas de la TV se prueban dibujando la app real a 1920×1080 en el ordenador (Robolectric), sin TV:
+
+```
+cd app-tv
+gradle testDebugUnitTest -Dcapturas.dir=/ruta/capturas   # prueba de contraste, lectura del JSON del script v5, horas habladas y capturas de los cinco estilos
+```
+
 ## Pendiente de probar en aparatos reales
 
 - El panel dentro de Apps Script, en iPhone (Safari) y Android (Chrome).
-- La TV: que se vea bien, que la conexión con Google funcione y que arranque sola al encender.
+- La TV: que se vea bien a 3 metros, que el fundido y los dos puntos del reloj vayan fluidos en Android 5.1, que se descarguen las fotos y que arranque sola al encender.
 - El intervalo de consulta de la TV frente a las cuotas de Apps Script (fase 4).
