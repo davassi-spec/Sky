@@ -227,7 +227,7 @@ const PRUEBAS = {
     await clic('Grabar audio'); await clic('Empezar a grabar', document.querySelector('[role=dialog]')); await espera(300);
     const a = document.querySelector('[role=dialog] a');
     t('sin permiso: botón grande Abrir la app para grabar', !!a && a.textContent.indexOf('Abrir la app para grabar') >= 0);
-    t('que abre la app con mi enlace (clave tras el #)', a.target === '_blank' && /^https:\/\/davassi-spec\.github\.io\/Sky\/tele\/#u=.*&k=ADMINKEY$/.test(a.href) || /#u=.*&k=ADMINKEY/.test(a.href));
+    t('que abre la app con mi enlace (clave tras el #)', a.target === '_blank' && a.href.indexOf('github.io/Sky/tele/#u=') >= 0 && a.href.endsWith('&k=ADMINKEY'));
     cerrarDialogo(); ir('familia'); await espera(200);
     t('cada familiar tiene su botón de WhatsApp', !!boton('Enviar por WhatsApp a Ana'));
     ir('ajustes'); await espera(200);
