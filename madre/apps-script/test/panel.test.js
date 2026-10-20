@@ -7,7 +7,7 @@ const PUERTO = 8766;
 const base = `http://127.0.0.1:${PUERTO}`;
 
 const AYUDAS = `
-  const R = []; const t = (n, c) => R.push([n, !!c]);
+  const R = []; const t = (n, c) => { R.push([n, !!c]); document.body.setAttribute('data-resultado', JSON.stringify(R)); };
   const espera = (ms) => new Promise((r) => setTimeout(r, ms));
   const boton = (txt, raiz) => Array.from((raiz || document).querySelectorAll('button')).find((b) => (b.getAttribute('aria-label') || b.textContent).trim().indexOf(txt) >= 0);
   const clic = async (txt, raiz) => { const b = boton(txt, raiz); if (!b) throw new Error('no hay botón: ' + txt); b.click(); await espera(400); };
@@ -16,7 +16,7 @@ const AYUDAS = `
   const toast = () => document.getElementById('aviso').textContent;
   const rpc = (fn, ...args) => new Promise((ok, ko) => google.script.run.withSuccessHandler(ok).withFailureHandler(ko)[fn](...args));
 `;
-const FIN = `; document.body.setAttribute('data-resultado', JSON.stringify(R));`;
+const FIN = `; document.body.setAttribute('data-resultado', JSON.stringify(R)); document.body.setAttribute('data-fin', '1');`;
 
 const PRUEBAS = {
   'admin: escribir un mensaje': `
@@ -72,6 +72,106 @@ const PRUEBAS = {
     await clic('Probar 1 minuto con esta distribución', document.querySelectorAll('.tarjeta')[2]);
     t('probar 1 minuto', S.datos.prueba && S.datos.prueba.estilo === 'lavanda' && S.datos.prueba.modo === 'dia' && S.datos.prueba.distribucion === 'lista');
     ir('inicio'); await espera(100); t('Inicio avisa de que se está probando', texto().indexOf('probando un estilo') >= 0);`,
+  'admin: audios y vídeos (preparar, subir, reproducir y controlar)': { real: 30000, url: '', cuerpo: `
+    ir('medios'); await espera(100);
+    t('hay tres formas de mandar', !!boton('Grabar audio') && !!boton('Grabar vídeo') && !!boton('Elegir foto, vídeo o audio'));
+    t('está en el menú Más y en Inicio', (ir('mas'), await espera(50), texto().indexOf('Audios y vídeos') >= 0) && (ir('inicio'), await espera(50), texto().indexOf('Mandar audio, vídeo o foto') >= 0));
+    ir('medios'); await espera(50);
+    // audio: de 44,1 kHz a WAV mono de 16 kHz
+    const pcm = new Int16Array(44100 * 2); for (let i = 0; i < pcm.length; i++) pcm[i] = Math.sin(i / 20) * 3000;
+    const w = await aWav(wavDe(pcm, 44100));
+    t('el audio se pasa a WAV de 16 kHz (2 s = 64 KB)', w.type === 'audio/wav' && Math.abs(w.size - (44 + 32000 * 2)) < 100);
+    const cab = new DataView(await new Response(w).arrayBuffer());
+    t('cabecera WAV correcta: mono, 16 kHz, 16 bits', cab.getUint16(22, true) === 1 && cab.getUint32(24, true) === 16000 && cab.getUint16(34, true) === 16);
+    MAX_AUDIO_S = 1; t('un audio más largo que el máximo se rechaza', await aWav(wavDe(Int16Array.from({ length: 16000 * 4 }, (_, i) => Math.sin(i / 7) * 3000), 16000)).then(() => false, (e) => /minuto/.test(e.message))); MAX_AUDIO_S = 60;
+    // vídeo
+    const falso = (cod) => { const b = new Uint8Array(5000); [0, 0, 0, 24, 102, 116, 121, 112].forEach((x, i) => (b[i] = x)); Array.from(cod).forEach((c, i) => (b[3000 + i] = c.charCodeAt(0))); return new File([b], 'v.mov', { type: 'video/quicktime' }); };
+    t('detecta un vídeo HEVC', await esHEVC(falso('hvc1')) && await esHEVC(falso('hev1')) && !(await esHEVC(falso('avc1'))));
+    t('el HEVC se rechaza con una explicación clara', await comprobarVideo(falso('hvc1')).then(() => false, (e) => /HEVC/.test(e.message) && /Más compatible/.test(e.message)));
+    t('un formato raro se rechaza', await comprobarVideo(new File([new Uint8Array(10)], 'v.mkv', { type: 'video/x-matroska' })).then(() => false, (e) => /no lo entiende/.test(e.message)));
+    t('un vídeo demasiado grande se rechaza', await comprobarVideo({ type: 'video/mp4', name: 'v.mp4', size: 40000000 }).then(() => false, (e) => /pesa demasiado/.test(e.message)));
+    // foto
+    const cv = document.createElement('canvas'); cv.width = 3000; cv.height = 2000; cv.getContext('2d').fillRect(0, 0, 3000, 2000);
+    const jpg = await new Promise((ok) => cv.toBlob(ok, 'image/jpeg', 0.9));
+    const pf = await prepararArchivo(new File([jpg], 'f.jpg', { type: 'image/jpeg' }));
+    const im = await createImageBitmap(pf.blob);
+    t('la foto se reduce a 1920 px y es JPEG', pf.tipo === 'foto' && pf.blob.type === 'image/jpeg' && im.width === 1920 && im.height === 1280);
+    // subida por trozos (2,5 MB = 3 partes)
+    const prog = []; const grande = new Blob([new Uint8Array(2100000)], { type: 'audio/wav' });
+    borrador.de = 'Daniel';
+    const r1 = await subirMedio(grande, 'audio', '', (f) => prog.push(f));
+    S = r1;
+    t('la subida va por trozos y avisa del avance', prog.length === 3 && prog[2] === 1);
+    t('queda en Preparados', S.medios.lista.length === 1 && S.medios.lista[0].tipo === 'audio');
+    await subirMedio(new Blob([pf.blob], { type: 'image/jpeg' }), 'foto', 'Mira el jardín', () => {}).then((r) => { S = r; });
+    pintar(); await espera(100);
+    t('se ve quién lo envió y el mensaje de la foto', texto().indexOf('Mira el jardín') >= 0 && S.medios.lista.length === 2);
+    // reproducir el audio
+    await clic('Reproducir ahora'); await espera(300);
+    t('al pulsar Reproducir ahora: Esperando a la TV…', texto().indexOf('Esperando a la TV…') >= 0 && S.medios.repro.estado === 'esperando');
+    const orden = S.medios.repro.orden;
+    await rpc('medioEstadoDeLaTV_', String(orden), 'reproduciendo', '');
+    await sondearMedios(); await espera(200);
+    t('Reproduciendo, con repetir, parar y volumen', texto().indexOf('Reproduciendo') >= 0 && !!boton('Repetir') && !!boton('Parar') && !!boton('Subir el volumen') && !!boton('Bajar el volumen'));
+    await clic('Subir el volumen'); await clic('Repetir');
+    const tv = await rpc('estado_'); 
+    t('las órdenes llegan a la TV', tv.medio.cmd.c === 'subir' && tv.medio.rep === 1);
+    await clic('Parar'); await espera(300);
+    t('Parar: la tele vuelve a la pizarra', (await rpc('estado_')).medio === null);
+    await rpc('medioEstadoDeLaTV_', String(orden), 'terminado', ''); await sondearMedios(); await espera(100);
+    t('Terminado', texto().indexOf('Terminado') >= 0);
+    // foto: tiempo
+    const sel = document.querySelector('#preparados select'); sel.value = '15'; sel.dispatchEvent(new Event('change'));
+    await clic('Mostrar ahora en la TV'); await espera(300);
+    t('la foto se queda el tiempo elegido', (await rpc('estado_')).medio.segundos === 900 && (await rpc('estado_')).medio.texto === 'Mira el jardín');
+    await clic('Quitar de la tele'); await espera(200);
+    // error de la TV
+    await clic('Reproducir ahora'); await espera(200);
+    await rpc('medioEstadoDeLaTV_', String(S.medios.repro.orden), 'error', 'Esta tele no puede reproducir ese vídeo (formato no compatible).'); await sondearMedios(); await espera(150);
+    t('si la tele no puede, el móvil lo explica', texto().indexOf('No se ha podido poner') >= 0 && texto().indexOf('formato no compatible') >= 0);
+    // historial y borrar
+    ir('medios'); await espera(100);
+    t('el historial dice quién lo puso', document.getElementById('historial-medios').textContent.indexOf('Lo puso el administrador') >= 0);
+    await clic('Borrar: Audio de Daniel'); await clic('Borrar', document.querySelector('[role=dialog]')); await espera(300);
+    t('borrar pide confirmación y borra', S.medios.lista.length === 1 && S.medios.lista[0].tipo === 'foto');` },
+  'familiar: manda su audio y solo ve lo suyo': {
+    url: '&rol=familia&quien=Ana', real: 15000,
+    cuerpo: `
+    await espera(100);
+    t('en su página hay dónde mandar', !!boton('Grabar audio') && !!boton('Grabar vídeo') && texto().indexOf('Preparados') >= 0);
+    borrador.de = '';
+    S = await subirMedio(new Blob([new Uint8Array(1200000)], { type: 'audio/wav' }), 'audio', '', () => {}); pintar(); await espera(100);
+    t('lo suyo aparece con su nombre', S.medios.lista.length === 1 && S.medios.lista[0].de === 'Ana' && texto().indexOf('Audio de Ana') >= 0);
+    await clic('Reproducir ahora'); await espera(300);
+    t('lo puede poner en la tele', S.medios.repro && S.medios.repro.estado === 'esperando' && texto().indexOf('Esperando a la TV…') >= 0);
+    await clic('Parar'); await espera(200);
+    t('y pararlo', (await rpc('estado_')).medio === null);
+    t('no ve el historial de la casa', texto().indexOf('Historial') < 0);
+    await clic('Borrar: Audio de Ana'); await clic('Borrar', document.querySelector('[role=dialog]')); await espera(300);
+    t('y borrarlo', S.medios.lista.length === 0);`
+  },
+  'admin: grabar audio y vídeo con micrófono y cámara (dispositivos simulados)': { real: 40000, url: '', cuerpo: `
+    ir('medios'); await espera(100);
+    await clic('Grabar audio'); t('se abre el grabador', !!document.querySelector('[role=dialog]') && texto().indexOf('Preparados') >= 0);
+    await clic('Empezar a grabar', document.querySelector('[role=dialog]')); await espera(2600);
+    t('graba y cuenta los segundos', /Grabando: [1-9]/.test(document.querySelector('.cuenta-grab').textContent));
+    await clic('Parar y revisar', document.querySelector('[role=dialog]')); await espera(2500);
+    t('se puede escuchar antes de mandar', !!document.querySelector('[role=dialog] audio') && !!boton('Mandar a la tele'));
+    await clic('Mandar a la tele'); await espera(1500);
+    const a = S.medios.lista.find((m) => m.tipo === 'audio');
+    t('se manda ya convertido a WAV (pesa lo que 16 kHz mono)', !!a && a.bytes > 20000 && a.bytes < 200000);
+    await clic('Grabar vídeo'); await clic('Empezar a grabar', document.querySelector('[role=dialog]')); await espera(3000);
+    t('el vídeo se ve en pantalla mientras graba', !!document.querySelector('[role=dialog] video') && !document.querySelector('[role=dialog] video').hidden);
+    await clic('Parar y revisar', document.querySelector('[role=dialog]')); await espera(1500);
+    t('se puede ver antes de mandar', !!document.querySelector('[role=dialog] video[controls]'));
+    await clic('Mandar a la tele'); await espera(3000);
+    const v = S.medios.lista.find((m) => m.tipo === 'video');
+    t('el vídeo queda preparado', !!v && v.bytes > 1000);
+    // sin permiso: se explica y se ofrece otra vía
+    navigator.mediaDevices.getUserMedia = () => Promise.reject({ name: 'NotAllowedError', message: 'Permission denied' });
+    await clic('Grabar audio'); await clic('Empezar a grabar', document.querySelector('[role=dialog]')); await espera(300);
+    t('sin permiso: lo explica y ofrece elegir un audio del móvil', texto().indexOf('No hay permiso') >= 0 || document.querySelector('[role=dialog]').textContent.indexOf('No hay permiso') >= 0);
+    t('y ofrece usar lo que ya hay en el móvil', !!boton('Elegir un audio del móvil', document.querySelector('[role=dialog]')));` },
   'admin: cuentas atrás': `
     ir('cuentas'); await espera(100);
     t('lista las existentes', texto().indexOf('Todos los Santos') >= 0 && texto().indexOf('Faltan 12 días') >= 0);
@@ -255,6 +355,18 @@ function chrome(url) {
   const r = spawnSync(CHROME, ['--headless', '--no-sandbox', '--disable-gpu', '--virtual-time-budget=40000', '--dump-dom', url], { encoding: 'utf8', timeout: 90000 });
   return r.stdout || '';
 }
+// Las pruebas que usan el audio y los medios del navegador (decodeAudioData, grabar) van con Playwright y reloj real:
+// con el reloj virtual de Chromium se quedan colgadas.
+async function chromeReal(url, ms) {
+  const { chromium } = require('/opt/node-tools/node_modules/playwright');
+  const nav = await chromium.launch({ executablePath: CHROME, args: ['--no-sandbox', '--use-fake-ui-for-media-stream', '--use-fake-device-for-media-stream', '--autoplay-policy=no-user-gesture-required'] });
+  try {
+    const pag = await nav.newPage({ viewport: { width: 500, height: 900 } });
+    await pag.goto(url);
+    await pag.waitForSelector('body[data-fin]', { timeout: ms, state: 'attached' }).catch(() => {});
+    return await pag.content();
+  } finally { await nav.close(); }
+}
 async function main() {
   const srv = spawn('node', [path.join(__dirname, 'servidor-ui.js'), String(PUERTO)], { stdio: 'ignore' });
   await new Promise((r) => setTimeout(r, 1500));
@@ -263,10 +375,12 @@ async function main() {
     spawnSync('curl', ['-s', base + '/reiniciar']);
     const cuerpo = typeof def === 'string' ? def : def.cuerpo, extra = typeof def === 'string' ? '' : def.url;
     const js = `(async function(){ ${AYUDAS} try { ${cuerpo} } catch (e) { R.push(['EXCEPCIÓN: ' + e, false]); } ${FIN} })();`;
-    const dom = chrome(`${base}/admin?js=${encodeURIComponent(js)}${extra}`);
+    const direccion = `${base}/admin?js=${encodeURIComponent(js)}${extra}`;
+    const dom = typeof def !== 'string' && def.real ? await chromeReal(direccion, def.real) : chrome(direccion);
     const m = /data-resultado='([^']*)'|data-resultado="([^"]*)"/.exec(dom);
     if (!m) { mal++; console.log('FALLA (sin resultado):', nombre); continue; }
     const R = JSON.parse((m[1] || m[2]).replace(/&quot;/g, '"').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&#39;/g, "'"));
+    if (!/data-fin=/.test(dom)) R.push(['la prueba no terminó (se quedó esperando algo)', false]);
     const fallos = R.filter((x) => !x[1]);
     bien += R.length - fallos.length; mal += fallos.length;
     console.log((fallos.length ? 'X ' : 'ok ') + nombre + ' (' + (R.length - fallos.length) + '/' + R.length + ')');

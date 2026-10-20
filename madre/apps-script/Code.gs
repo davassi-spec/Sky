@@ -22,6 +22,15 @@ var ESTILOS = ['calido', 'lavanda', 'salvia', 'terracota', 'contraste'];
 var BLOQUES = ['cuentaAtras', 'mensajes', 'proximo', 'tiempo', 'parteDelDia'];
 var ICONOS_CUENTA = ['calendario', 'avion', 'corazon', 'tarta'];
 var MAX_RECORDATORIOS = 20;
+var MEDIOS = {                    // lo que se puede mandar desde el móvil
+  audio: { mimes: ['audio/wav', 'audio/x-wav'], max: 4000000 },
+  video: { mimes: ['video/mp4', 'video/webm', 'video/quicktime'], max: 35000000 },
+  foto: { mimes: ['image/jpeg'], max: 4000000 }
+};
+var MAX_MEDIOS = 40;              // envíos preparados a la vez
+var MAX_PARTES = 40;
+var ESPERA_TV_MIN = 15;           // si la TV no contesta en este tiempo, el envío deja de esperar (así nunca salta de madrugada)
+var HIST_MEDIOS = 100;
 var AVISO_MIN = 30;               // si un recordatorio que hay que confirmar sigue sin confirmar tras estos minutos, llega un correo
 var TV_CONECTADA_S = 150;         // la TV pregunta cada 60 s: pasado esto la damos por desconectada
 
@@ -48,7 +57,10 @@ function base_() {
     noche: { desde: 21, hasta: 6 },
     nocheTexto: 'Es hora de dormir.',
     contacto: { nombre: '', telefono: '' },
-    familia: []
+    familia: [],
+    medios: [],                                    // { id, tipo, de, autor, texto, t, mime, bytes, partes, listo }
+    repro: null,                                   // { orden, id, minutos, estado, quien, t, desde, cmd:{n,c}, rep, error }
+    histMedios: []                                 // { t, id, tipo, de, quien, texto }
   };
 }
 
@@ -278,6 +290,8 @@ function servir_(e) {
   if (q.rol !== 'admin') return salida_({ error: 'permiso' });   // la TV usa la clave de administrador
   if (a === 'metricas') return salida_(metricas_());
   if (a === 'foto') return salida_(fotoParaTV_(e.parameter.p));       // foto de una persona o de un recordatorio
+  if (a === 'medio') return salida_(parteMedioParaTV_(e.parameter.id, e.parameter.n));
+  if (a === 'medioEstado') return salida_(medioEstadoDeLaTV_(e.parameter.o, e.parameter.e, e.parameter.m));
   marcarTV_();
   return salida_(estado_());
 }
@@ -378,7 +392,10 @@ function estado_() {
     cuentaAtras: bloqueActivo_(d, 'cuentaAtras') ? cuentaAtras_(d) : null,
     // Novedades de la versión 3:
     recordatorio: recordatorioActivo_(d, ahora),
-    captura: capturaPedida_()
+    captura: capturaPedida_(),
+    // Novedades de la versión 5 (audios, vídeos y fotos a distancia):
+    medio: medioParaTV_(d, ahora),
+    rapido: reproPendiente_(d, ahora)
   };
 }
 
@@ -652,7 +669,8 @@ function admEstado(k) {
       tieneFoto: !!(yo && yo.foto),
       pendientes: pendientes_(d, ahora),
       mensajes: d.mensajes.filter(function (m) { return m.autor === q.id; }),
-      ciudad: d.ciudad
+      ciudad: d.ciudad,
+      medios: mediosParaPanel_(d, q, ahora)
     };
   }
   var proxima = cuentaAtras_(d);
@@ -678,6 +696,8 @@ function admEstado(k) {
       })
     },
     cuentaVista: proxima,
+    medios: mediosParaPanel_(d, q, ahora),
+    histMedios: d.histMedios.slice(0, 50),
     pendientes: pendientes_(d, ahora),
     avisos: { activos: avisosActivos_(), destino: destinoCorreo_(d), minutos: AVISO_MIN },
     calendarios: calendarios_(),
@@ -1013,4 +1033,221 @@ function admBuscarCiudad(k, q) {
   return res.map(function (x) {
     return { nombre: x.name, region: [x.admin1, x.country].filter(Boolean).join(', '), latitud: x.latitude, longitud: x.longitude };
   });
+}
+
+/* ============================================================
+ *  Audios, vídeos y fotos a distancia (versión 5)
+ *  Los envíos se guardan en trozos dentro de la carpeta "Pizarra/Medios" de tu Drive. Son privados: no hay enlaces públicos.
+ *  Nada se pone solo: alguien tiene que pulsar "Reproducir ahora" o "Mostrar ahora en la TV", y de noche no se pone nada.
+ * ============================================================ */
+
+function carpetaMedios_() {
+  var p = props_();
+  var id = p.getProperty('MEDIOS_ID');
+  if (id) { try { return DriveApp.getFolderById(id); } catch (e) { /* se recrea */ } }
+  var f = carpeta_().createFolder('Medios');
+  p.setProperty('MEDIOS_ID', f.getId());
+  return f;
+}
+
+function medioPorId_(d, id) {
+  for (var i = 0; i < d.medios.length; i++) if (d.medios[i].id === id) return d.medios[i];
+  return null;
+}
+function puedeMedio_(q, m) { return q.rol === 'admin' || m.autor === q.id; }
+
+function borrarTrozos_(id) {
+  var it = carpetaMedios_().getFiles();
+  while (it.hasNext()) { var f = it.next(); if (f.getName().indexOf(id + '.') === 0) f.setTrashed(true); }
+}
+
+/** Empieza un envío. meta: { tipo: 'audio'|'video'|'foto', mime, bytes, partes, texto, de (solo el administrador: cómo firma) }. Devuelve el id; luego se mandan las partes. */
+function admMedioNuevo(k, meta) {
+  var q = alguien_(k);
+  meta = meta || {};
+  var tipo = MEDIOS[meta.tipo] ? meta.tipo : null;
+  if (!tipo) throw new Error('Ese tipo de envío no existe');
+  var cfg = MEDIOS[tipo];
+  var mime = String(meta.mime || '').toLowerCase().split(';')[0];
+  if (cfg.mimes.indexOf(mime) < 0) throw new Error('La tele no entiende este formato (' + (mime || 'desconocido') + ')');
+  var bytes = Math.floor(Number(meta.bytes));
+  if (!(bytes > 0)) throw new Error('El archivo está vacío');
+  if (bytes > cfg.max) throw new Error('Pesa demasiado (máximo ' + Math.round(cfg.max / 1000000) + ' MB). Graba algo más corto.');
+  var partes = Math.floor(Number(meta.partes));
+  if (!(partes >= 1 && partes <= MAX_PARTES)) throw new Error('Envío no válido');
+  var id = Utilities.getUuid().replace(/-/g, '').slice(0, 16);
+  var desechar = [];
+  modificar_(function (d) {
+    var limite = Date.now() - 3600000;                        // los envíos a medias de hace más de una hora se tiran
+    d.medios = d.medios.filter(function (m) { if (!m.listo && m.t < limite) { desechar.push(m.id); return false; } return true; });
+    if (d.medios.length >= MAX_MEDIOS) throw new Error('Hay demasiados envíos preparados. Borra alguno antes de mandar otro.');
+    d.medios.unshift({ id: id, tipo: tipo, de: q.rol === 'familia' ? q.nombre : String(meta.de || '').trim().slice(0, 30), autor: q.id, texto: String(meta.texto || '').trim().slice(0, 200),
+      t: Date.now(), mime: mime, bytes: bytes, partes: partes, listo: false });
+  });
+  desechar.forEach(borrarTrozos_);
+  return { id: id };
+}
+
+/** Guarda la parte n (0..partes-1) de un envío, en base64. */
+function admMedioParte(k, id, n, b64) {
+  var q = alguien_(k);
+  var m = medioPorId_(leer_(), id);
+  if (!m || !puedeMedio_(q, m) || m.listo) throw new Error('Ese envío no existe');
+  n = Math.floor(Number(n));
+  if (!(n >= 0 && n < m.partes)) throw new Error('Parte no válida');
+  var bytes = Utilities.base64Decode(String(b64 || ''));
+  if (!bytes.length || bytes.length > 1600000) throw new Error('Parte no válida');
+  carpetaMedios_().createFile(Utilities.newBlob(bytes, 'application/octet-stream', id + '.' + n));
+  return { ok: true };
+}
+
+/** Cierra el envío: comprueba que están todas las partes y lo deja "preparado". */
+function admMedioFin(k, id) {
+  var q = alguien_(k);
+  var m0 = medioPorId_(leer_(), id);
+  if (!m0 || !puedeMedio_(q, m0)) throw new Error('Ese envío no existe');
+  var vistas = {}, total = 0;
+  var it = carpetaMedios_().getFiles();
+  while (it.hasNext()) {
+    var f = it.next(), nom = f.getName();
+    if (nom.indexOf(id + '.') === 0 && !vistas[nom]) { vistas[nom] = 1; total += f.getSize(); }
+  }
+  if (Object.keys(vistas).length !== m0.partes || total !== m0.bytes) {
+    throw new Error('Se ha cortado la subida (llegaron ' + Object.keys(vistas).length + ' de ' + m0.partes + ' partes). Prueba otra vez.');
+  }
+  modificar_(function (d) { var m = medioPorId_(d, id); if (m) m.listo = true; });
+  return admEstado(k);
+}
+
+function admMedioBorrar(k, id) {
+  var q = alguien_(k);
+  var m0 = medioPorId_(leer_(), id);
+  if (!m0 || !puedeMedio_(q, m0)) throw new Error('Ese envío no existe');
+  modificar_(function (d) {
+    d.medios = d.medios.filter(function (m) { return m.id !== id; });
+    if (d.repro && d.repro.id === id) d.repro.estado = 'terminado';
+  });
+  borrarTrozos_(id);
+  return admEstado(k);
+}
+
+/** Lo que cada persona ve de sus envíos (el administrador, todos). */
+function mediosParaPanel_(d, q, ahora) {
+  var lista = d.medios.filter(function (m) { return m.listo && puedeMedio_(q, m); }).map(function (m) {
+    return { id: m.id, tipo: m.tipo, de: m.de, autor: m.autor, texto: m.texto, t: m.t, bytes: m.bytes };
+  });
+  var rp = null, e = reproEstado_(d, ahora);
+  if (d.repro && e) {
+    var m = medioPorId_(d, d.repro.id);
+    if (m && puedeMedio_(q, m)) {
+      rp = { orden: d.repro.orden, id: d.repro.id, estado: e, tipo: m.tipo, de: m.de, texto: m.texto, minutos: d.repro.minutos, quien: d.repro.quien, error: d.repro.error || '', t: d.repro.t };
+    }
+  }
+  return { lista: lista, repro: rp };
+}
+
+/** Estado "efectivo" de la reproducción: esperando | reproduciendo | terminado | caducado | error (null si no hay). */
+function reproEstado_(d, ahora) {
+  var r = d.repro;
+  if (!r) return null;
+  if (r.estado === 'esperando') return ahora - r.t > ESPERA_TV_MIN * 60000 ? 'caducado' : 'esperando';
+  if (r.estado === 'reproduciendo') {
+    var m = medioPorId_(d, r.id);
+    var tope = m && m.tipo === 'foto' ? (r.minutos > 0 ? r.minutos * 60000 + 30000 : 12 * 3600000) : 10 * 60000;
+    return ahora - r.desde > tope ? 'terminado' : 'reproduciendo';
+  }
+  return r.estado;                                   // terminado | error
+}
+
+function reproPendiente_(d, ahora) {
+  var e = reproEstado_(d, ahora);
+  return e === 'esperando' || e === 'reproduciendo';
+}
+
+function medioParaTV_(d, ahora) {
+  if (!reproPendiente_(d, ahora)) return null;
+  if (esNocheHora_(d, new Date(ahora).getHours())) return null;      // de noche no se pone nada
+  var r = d.repro, m = medioPorId_(d, r.id);
+  if (!m || !m.listo) return null;
+  var seg = 0;
+  if (m.tipo === 'foto' && r.minutos > 0) seg = Math.max(1, Math.round(((r.desde || ahora) + r.minutos * 60000 - ahora) / 1000));
+  return { orden: r.orden, id: m.id, tipo: m.tipo, de: m.de, texto: m.texto, partes: m.partes, bytes: m.bytes, mime: m.mime,
+           segundos: seg, cmd: r.cmd || { n: 0, c: '' }, rep: r.rep || 0, sinLimite: m.tipo === 'foto' && !(r.minutos > 0) };
+}
+
+/** minutos: solo para fotos: 1, 5 o 15; 0 = hasta que se quite. */
+function admMedioReproducir(k, id, minutos) {
+  var q = alguien_(k);
+  var d0 = leer_();
+  var m0 = medioPorId_(d0, id);
+  if (!m0 || !m0.listo || !puedeMedio_(q, m0)) throw new Error('Ese envío no existe');
+  if (esNocheHora_(d0, new Date().getHours())) throw new Error('Ahora es de noche: la tele no pone nada hasta que amanezca.');
+  minutos = m0.tipo === 'foto' ? ([1, 5, 15].indexOf(Number(minutos)) >= 0 ? Number(minutos) : 0) : 0;
+  modificar_(function (d) {
+    var m = medioPorId_(d, id);
+    if (!m) return;
+    d.repro = { orden: Date.now(), id: id, minutos: minutos, estado: 'esperando', quien: { id: q.id, nombre: q.rol === 'familia' ? q.nombre : 'el administrador' },
+                t: Date.now(), desde: 0, cmd: { n: 0, c: '' }, rep: 0, error: '' };
+  });
+  return admEstado(k);
+}
+
+/** cmd: 'repetir' | 'parar' | 'subir' | 'bajar'. */
+function admMedioControl(k, orden, cmd) {
+  var q = alguien_(k);
+  if (['repetir', 'parar', 'subir', 'bajar'].indexOf(cmd) < 0) throw new Error('Esa orden no existe');
+  modificar_(function (d) {
+    var r = d.repro;
+    if (!r || String(r.orden) !== String(orden)) throw new Error('Eso ya terminó');
+    var m = medioPorId_(d, r.id);
+    if (!m || !puedeMedio_(q, m)) throw new Error('Eso no es tuyo');
+    if (!reproPendiente_(d, Date.now())) throw new Error('Eso ya terminó');
+    if (cmd === 'parar') { r.estado = 'terminado'; return; }
+    if (cmd === 'repetir') { r.rep = (r.rep || 0) + 1; r.estado = 'reproduciendo'; r.desde = Date.now(); return; }
+    r.cmd = { n: ((r.cmd && r.cmd.n) || 0) + 1, c: cmd };
+  });
+  return admEstado(k);
+}
+
+/** La TV cuenta cómo va: descargando | reproduciendo | terminado | error (con un mensaje). */
+function medioEstadoDeLaTV_(orden, e, msg) {
+  var ok = false;
+  modificar_(function (d) {
+    var r = d.repro;
+    if (!r || String(r.orden) !== String(orden)) return;
+    var m = medioPorId_(d, r.id);
+    if (e === 'reproduciendo' && r.estado !== 'terminado') {
+      if (r.estado !== 'reproduciendo') {
+        r.estado = 'reproduciendo'; r.desde = Date.now();
+        d.histMedios.unshift({ t: Date.now(), id: r.id, tipo: m ? m.tipo : '', de: m ? m.de : '', quien: r.quien ? r.quien.nombre : '', texto: m ? m.texto : '' });
+        d.histMedios = d.histMedios.slice(0, HIST_MEDIOS);
+      }
+      ok = true;
+    } else if (e === 'terminado') { if (r.estado !== 'terminado') r.estado = 'terminado'; ok = true; }
+    else if (e === 'error') { r.estado = 'error'; r.error = String(msg || 'La tele no ha podido reproducirlo').slice(0, 160); ok = true; }
+    else if (e === 'descargando') { ok = true; }
+  });
+  return { ok: ok };
+}
+
+/** La TV pide una parte del envío activo (solo el que se está poniendo ahora). */
+function parteMedioParaTV_(id, n) {
+  var d = leer_();
+  if (!reproPendiente_(d, Date.now()) || d.repro.id !== id) return { error: 'ya no toca' };
+  var m = medioPorId_(d, id);
+  n = Math.floor(Number(n));
+  if (!m || !(n >= 0 && n < m.partes)) return { error: 'parte no válida' };
+  var it = carpetaMedios_().getFilesByName(id + '.' + n);
+  if (!it.hasNext()) return { error: 'falta la parte' };
+  return { n: n, b64: Utilities.base64Encode(it.next().getBlob().getBytes()) };
+}
+
+/** Solo lo de los envíos, para ir mirando cómo va una reproducción sin cargar todo el panel. */
+function admMediosEstado(k) {
+  var q = alguien_(k);
+  var d = leer_();
+  var ahora = Date.now();
+  var r = { rol: q.rol, ahora: ahora, medios: mediosParaPanel_(d, q, ahora), tv: { ultima: tvUltima_(), conectada: (ahora / 1000 - tvUltima_()) < TV_CONECTADA_S } };
+  if (q.rol === 'admin') r.histMedios = d.histMedios.slice(0, 50);
+  return r;
 }

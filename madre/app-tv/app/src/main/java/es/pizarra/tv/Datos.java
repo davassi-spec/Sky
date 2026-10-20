@@ -41,6 +41,18 @@ final class Datos {
         long hasta;             // cuándo deja de verse, en ms (calculado al recibirlo)
     }
 
+    /** Una foto, un audio o un vídeo que alguien de la familia ha mandado poner en la tele ahora. */
+    static final class Medio {
+        String orden = "", id = "", tipo = "", de = "", texto = "", mime = "";
+        int partes, cmdN, rep;
+        long bytes;
+        int segundos;           // fotos: lo que queda de pantalla (0 = hasta que se quite)
+        boolean sinLimite;
+        String cmd = "";        // subir | bajar | parar (con su número cmdN, para no repetirlo)
+    }
+
+    Medio medio;
+    boolean rapido;                 // hay un envío pendiente: se pregunta cada pocos segundos
     Recordatorio recordatorio;
     boolean pidenCaptura;           // alguien mira la vista previa en el panel: hay que mandar una captura de la pantalla
     static final String[] DISTRIBUCIONES = {"clasica", "reloj", "lista", "sencillo"};
@@ -113,6 +125,25 @@ final class Datos {
             d.cuenta.dias = ca.optInt("dias", 0);
         }
         d.pidenCaptura = o.optBoolean("captura", false);
+        d.rapido = o.optBoolean("rapido", false);
+        JSONObject me = o.optJSONObject("medio");
+        if (me != null && !me.optString("id", "").isEmpty()) {
+            Medio x = new Medio();
+            x.orden = me.optString("orden", "");
+            x.id = me.optString("id");
+            x.tipo = me.optString("tipo", "");
+            x.de = me.optString("de", "").trim();
+            x.texto = me.optString("texto", "").trim();
+            x.mime = me.optString("mime", "");
+            x.partes = me.optInt("partes", 0);
+            x.bytes = me.optLong("bytes", 0);
+            x.segundos = me.optInt("segundos", 0);
+            x.sinLimite = me.optBoolean("sinLimite", false);
+            x.rep = me.optInt("rep", 0);
+            JSONObject c = me.optJSONObject("cmd");
+            if (c != null) { x.cmdN = c.optInt("n", 0); x.cmd = c.optString("c", ""); }
+            if (x.partes > 0 && ("audio".equals(x.tipo) || "video".equals(x.tipo) || "foto".equals(x.tipo))) d.medio = x;
+        }
         JSONObject rc = o.optJSONObject("recordatorio");
         if (rc != null && !rc.optString("texto", "").trim().isEmpty()) {
             Recordatorio r = new Recordatorio();

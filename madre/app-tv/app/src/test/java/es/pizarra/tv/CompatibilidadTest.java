@@ -164,4 +164,24 @@ public class CompatibilidadTest {
         assertEquals("reloj", q.distribucionAhora());
         assertNotEquals(d.firma(), Datos.parse("{\"distribucion\":\"reloj\"}").firma());
     }
+
+    @Test
+    public void leeUnEnvioDeLaFamiliaYLosJsonAntiguosSiguenValiendo() throws Exception {
+        Datos v = Datos.parse("{\"mensajes\":[]}");
+        assertNull(v.medio);
+        assertEquals(false, v.rapido);
+        Datos d = Datos.parse("{\"rapido\":true,\"medio\":{\"orden\":\"17\",\"id\":\"ab\",\"tipo\":\"video\",\"de\":\"Ana\",\"texto\":\"\",\"partes\":3,\"bytes\":2100000,"
+                + "\"mime\":\"video/mp4\",\"segundos\":0,\"cmd\":{\"n\":2,\"c\":\"subir\"},\"rep\":1,\"sinLimite\":false}}");
+        assertEquals(true, d.rapido);
+        assertEquals("Ana", d.medio.de);
+        assertEquals(3, d.medio.partes);
+        assertEquals(2100000L, d.medio.bytes);
+        assertEquals("subir", d.medio.cmd);
+        assertEquals(2, d.medio.cmdN);
+        assertEquals(1, d.medio.rep);
+        assertEquals("Vídeo de Ana", PantallaMedio.titulo(d.medio));
+        assertEquals("mp4", Medios.extension(d.medio));
+        assertNull(Datos.parse("{\"medio\":{\"id\":\"x\",\"tipo\":\"exe\",\"partes\":1}}").medio);   // un tipo que no existe se ignora
+        assertNull(Datos.parse("{\"medio\":{\"id\":\"x\",\"tipo\":\"audio\",\"partes\":0}}").medio);
+    }
 }
