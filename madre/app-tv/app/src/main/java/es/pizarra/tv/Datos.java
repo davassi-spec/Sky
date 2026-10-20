@@ -42,6 +42,7 @@ final class Datos {
     }
 
     Recordatorio recordatorio;
+    boolean pidenCaptura;           // alguien mira la vista previa en el panel: hay que mandar una captura de la pantalla
     String estiloDia = "lavanda";
     String estiloNoche = "calido";
     String pruebaEstilo;            // "Probar 1 minuto" desde el panel; null si no hay prueba
@@ -106,6 +107,7 @@ final class Datos {
             d.cuenta.icono = ca.optString("icono", "calendario");
             d.cuenta.dias = ca.optInt("dias", 0);
         }
+        d.pidenCaptura = o.optBoolean("captura", false);
         JSONObject rc = o.optJSONObject("recordatorio");
         if (rc != null && !rc.optString("texto", "").trim().isEmpty()) {
             Recordatorio r = new Recordatorio();
