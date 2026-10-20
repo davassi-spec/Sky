@@ -72,6 +72,8 @@ public class MainActivity extends Activity {
     private final List<LinearLayout> tarjetasMsg = new ArrayList<>();
     private LinearLayout recView;        // la pantalla del recordatorio (ocupa todo, sustituye a la pizarra)
     private TextView tvRecTop;
+    private PantallaMedio pm;            // foto, audio o vídeo a pantalla completa (null si no hay)
+    private String ordenCerrado = "";   // el último envío que ya terminó (para no ponerlo dos veces)
 
     private final Runnable tic = new Runnable() {
         @Override public void run() {
@@ -85,7 +87,7 @@ public class MainActivity extends Activity {
         @Override public void run() {
             buscar();
             // Mientras hay un recordatorio en pantalla se pregunta más a menudo, para volver a la pizarra enseguida al confirmarlo.
-            h.postDelayed(this, datos != null && datos.pidenCaptura ? 6000 : datos != null && datos.recordatorio != null ? 15000 : 60000);
+            h.postDelayed(this, datos != null && (datos.pidenCaptura || datos.rapido || datos.medio != null) ? 6000 : datos != null && datos.recordatorio != null ? 15000 : 60000);
         }
     };
 
@@ -126,6 +128,7 @@ public class MainActivity extends Activity {
     @Override
     protected void onPause() {
         super.onPause();
+        cerrarMedio(false);
         h.removeCallbacks(tic);
         h.removeCallbacks(busca);
     }
@@ -165,6 +168,8 @@ public class MainActivity extends Activity {
         try {
             datos = Datos.parse(c, t);      // el recordatorio guardado caduca contando desde que llegó
             datos.pruebaEstilo = null;      // una prueba de hace rato ya no vale
+            datos.medio = null;             // un envío de hace rato no se vuelve a poner
+            datos.rapido = false;
         } catch (Exception e) {
             Log.w(TAG, "Caché ilegible", e);
         }
@@ -191,6 +196,7 @@ public class MainActivity extends Activity {
                         @Override public void run() {
                             datos = nuevo;
                             pintarReloj();
+                            gestionarMedio();
                             if (nuevo.pidenCaptura) mandarCaptura(url, k);
                         }
                     });
@@ -201,6 +207,76 @@ public class MainActivity extends Activity {
                 }
             }
         }).start();
+    }
+
+    /* ---------- Fotos, audios y vídeos que manda la familia ---------- */
+
+    /** Pone, actualiza o quita la pantalla de un envío según lo que diga el script. De noche nunca se pone nada. */
+    private void gestionarMedio() {
+        final Datos.Medio m = datos == null ? null : datos.medio;
+        if (m == null || datos.esNocheAhora(Hora.ahora().get(Calendar.HOUR_OF_DAY))) {
+            if (pm != null) cerrarMedio(false);
+            return;
+        }
+        if (m.orden.equals(ordenCerrado)) return;
+        if (pm != null && pm.orden.equals(m.orden)) {
+            pm.actualizar(m);
+            return;
+        }
+        cerrarMedio(false);
+        final String url = prefs.getString("url", "");
+        final String k = prefs.getString("k", "");
+        pm = new PantallaMedio(this, s, negrita, normal, m, new PantallaMedio.AlFinal() {
+            @Override public void terminado() {
+                Medios.informar(url, k, m.orden, "terminado", null);
+                ordenCerrado = m.orden;
+                cerrarMedio(true);
+            }
+            @Override public void error(String mensaje) {
+                Medios.informar(url, k, m.orden, "error", mensaje);
+                ordenCerrado = m.orden;
+                cerrarMedio(true);
+            }
+        });
+        marco.addView(pm, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        Medios.informar(url, k, m.orden, "descargando", null);
+        final PantallaMedio mia = pm;
+        new Thread(new Runnable() {
+            @Override public void run() {
+                final java.io.File f = Medios.descargar(MainActivity.this, url, k, m);
+                final Bitmap poster = f != null && "video".equals(m.tipo) ? PantallaMedio.fotogramaDe(f) : null;
+                h.post(new Runnable() {
+                    @Override public void run() {
+                        if (pm != mia) return;                       // mientras tanto se quitó o llegó otro
+                        if (f == null) {
+                            Medios.informar(url, k, m.orden, "error", "La tele no ha podido bajar el envío. Comprueba que tiene internet.");
+                            ordenCerrado = m.orden;
+                            cerrarMedio(true);
+                            return;
+                        }
+                        mia.reproducir(f, poster);
+                        Medios.informar(url, k, m.orden, "reproduciendo", null);
+                    }
+                });
+            }
+        }).start();
+    }
+
+    /** Solo para pruebas: como si el script hubiera mandado este estado. */
+    void mostrarMedioDePrueba(String json) throws Exception {
+        datos = Datos.parse(json);
+        gestionarMedio();
+    }
+
+    private void cerrarMedio(boolean buscarEnseguida) {
+        if (pm == null) return;
+        pm.cerrar();
+        marco.removeView(pm);
+        pm = null;
+        if (buscarEnseguida) {
+            h.removeCallbacks(busca);
+            h.postDelayed(busca, 1500);
+        }
     }
 
     private long ultimaCaptura;

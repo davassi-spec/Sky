@@ -474,5 +474,108 @@ const JPEG = 'data:image/jpeg;base64,' + Buffer.from('foto-de-prueba').toString(
   t('un familiar no puede cambiarla', falla(() => s.run(`admAjustes(${J(kf)}, {distribucion:'lista'})`)) && s.run('estado_()').distribucion === 'reloj');
 }
 
+/* ---------- 16. Audios, vídeos y fotos a distancia ---------- */
+{
+  const s = crear({ ahora: new Date(2026, 9, 20, 17, 15).getTime() });
+  s.run("admFamiliaAnadir('ADMINKEY','Ana')"); s.run("admFamiliaAnadir('ADMINKEY','María')");
+  const [ana, maria] = s.run('leer_().familia').map((f) => f.clave);
+  const b64 = (n, v = 7) => Buffer.alloc(n, v).toString('base64');
+  const subir = (k, tipo, mime, trozos, texto = '') => {
+    const bytes = trozos.reduce((a, n) => a + n, 0);
+    const { id } = s.run(`admMedioNuevo(${J(k)}, ${J({ tipo, mime, bytes, partes: trozos.length, texto, de: 'Daniel' })})`);
+    trozos.forEach((n, i) => s.run(`admMedioParte(${J(k)}, ${J(id)}, ${i}, ${J(b64(n, i + 1))})`));
+    s.run(`admMedioFin(${J(k)}, ${J(id)})`);
+    return id;
+  };
+  const tv = () => JSON.parse(s.run("servir_({parameter:{a:'estado',k:'ADMINKEY'}}).s"));
+  const estadoPanel = (k) => s.run(`admEstado(${J(k)})`);
+  t('al principio la TV no tiene nada que poner y va despacio', tv().medio === null && tv().rapido === false);
+
+  const audio = subir(ana, 'audio', 'audio/wav', [1000, 1000]);
+  const foto = subir(maria, 'foto', 'image/jpeg', [500], 'Mira qué bonito');
+  const video = subir('ADMINKEY', 'video', 'video/mp4', [900, 900, 300]);
+  t('cada familiar ve solo lo suyo y el administrador, todo', estadoPanel(ana).medios.lista.length === 1 && estadoPanel(maria).medios.lista[0].texto === 'Mira qué bonito' && estadoPanel('ADMINKEY').medios.lista.length === 3);
+  t('se ve quién lo envió', estadoPanel('ADMINKEY').medios.lista.map((m) => m.de).sort().join() === 'Ana,Daniel,María');
+  t('no se pone nada solo', tv().medio === null && tv().rapido === false);
+  t('formato que la tele no entiende', falla(() => s.run(`admMedioNuevo(${J(ana)}, ${J({ tipo: 'video', mime: 'video/x-matroska', bytes: 10, partes: 1 })})`)));
+  t('demasiado grande', falla(() => s.run(`admMedioNuevo(${J(ana)}, ${J({ tipo: 'audio', mime: 'audio/wav', bytes: 5000000, partes: 4 })})`)));
+  const incompleto = s.run(`admMedioNuevo(${J(ana)}, ${J({ tipo: 'audio', mime: 'audio/wav', bytes: 2000, partes: 2 })})`).id;
+  s.run(`admMedioParte(${J(ana)}, ${J(incompleto)}, 0, ${J(b64(1000))})`);
+  t('una subida cortada no queda como preparada', falla(() => s.run(`admMedioFin(${J(ana)}, ${J(incompleto)})`)) && estadoPanel(ana).medios.lista.length === 1);
+  t('un familiar no sube trozos a lo de otro', falla(() => s.run(`admMedioParte(${J(maria)}, ${J(incompleto)}, 1, ${J(b64(1000))})`)));
+
+  // reproducir
+  t('un familiar no reproduce lo de otro', falla(() => s.run(`admMedioReproducir(${J(maria)}, ${J(audio)}, 0)`)));
+  s.run(`admMedioReproducir(${J(ana)}, ${J(audio)}, 0)`);
+  let m = tv().medio;
+  t('al pulsar, la TV recibe el envío y va deprisa', m.id === audio && m.tipo === 'audio' && m.de === 'Ana' && m.partes === 2 && m.bytes === 2000 && tv().rapido === true);
+  t('el panel dice Esperando a la TV', estadoPanel(ana).medios.repro.estado === 'esperando' && estadoPanel(maria).medios.repro === null);
+  const parte = JSON.parse(s.run(`servir_({parameter:{a:'medio',k:'ADMINKEY',id:${J(audio)},n:'1'}}).s`));
+  t('la TV descarga las partes', parte.n === 1 && Buffer.from(parte.b64, 'base64').length === 1000 && Buffer.from(parte.b64, 'base64')[0] === 2);
+  t('solo el que toca ahora', JSON.parse(s.run(`servir_({parameter:{a:'medio',k:'ADMINKEY',id:${J(foto)},n:'0'}}).s`)).error === 'ya no toca');
+  t('la familia no descarga (solo la TV)', JSON.parse(s.run(`servir_({parameter:{a:'medio',k:${J(ana)},id:${J(audio)},n:'0'}}).s`)).error === 'permiso');
+  const o = m.orden;
+  const tvDice = (e, msg = '') => s.run(`servir_({parameter:{a:'medioEstado',k:'ADMINKEY',o:${J(String(o))},e:${J(e)},m:${J(msg)}}}).s`);
+  tvDice('reproduciendo');
+  t('Reproduciendo', estadoPanel(ana).medios.repro.estado === 'reproduciendo' && estadoPanel('ADMINKEY').histMedios.length === 1);
+  t('y queda en el historial con quién lo puso', estadoPanel('ADMINKEY').histMedios[0].quien === 'Ana' && estadoPanel('ADMINKEY').histMedios[0].tipo === 'audio');
+  // controles
+  s.run(`admMedioControl(${J(ana)}, ${J(String(o))}, 'subir')`); s.run(`admMedioControl(${J(ana)}, ${J(String(o))}, 'subir')`);
+  t('subir el volumen llega a la TV con un número nuevo cada vez', tv().medio.cmd.c === 'subir' && tv().medio.cmd.n === 2);
+  s.run(`admMedioControl('ADMINKEY', ${J(String(o))}, 'repetir')`);
+  t('repetir', tv().medio.rep === 1);
+  t('un familiar no controla lo de otro', falla(() => s.run(`admMedioControl(${J(maria)}, ${J(String(o))}, 'parar')`)));
+  t('una orden inventada', falla(() => s.run(`admMedioControl(${J(ana)}, ${J(String(o))}, 'borrar')`)));
+  tvDice('terminado');
+  t('Terminado: la TV vuelve a la pizarra y a ir despacio', estadoPanel(ana).medios.repro.estado === 'terminado' && tv().medio === null && tv().rapido === false);
+  t('lo que ya terminó no se puede controlar', falla(() => s.run(`admMedioControl(${J(ana)}, ${J(String(o))}, 'subir')`)));
+
+  // foto con tiempo
+  s.run(`admMedioReproducir(${J(maria)}, ${J(foto)}, 5)`);
+  m = tv().medio;
+  t('la foto manda su texto y se queda 5 minutos', m.tipo === 'foto' && m.texto === 'Mira qué bonito' && m.segundos === 300 && m.sinLimite === false);
+  const o2 = m.orden;
+  s.run(`servir_({parameter:{a:'medioEstado',k:'ADMINKEY',o:${J(String(o2))},e:'reproduciendo'}})`);
+  s.fijar(new Date(2026, 9, 20, 17, 17).getTime());
+  t('el tiempo de la foto va bajando', tv().medio.segundos > 170 && tv().medio.segundos <= 180);
+  s.fijar(new Date(2026, 9, 20, 17, 21).getTime());
+  t('al acabar el tiempo, la foto se quita sola', tv().medio === null && estadoPanel(maria).medios.repro.estado === 'terminado');
+  s.fijar(new Date(2026, 9, 20, 17, 15).getTime());
+  s.run(`admMedioReproducir(${J(maria)}, ${J(foto)}, 0)`);
+  t('la foto "hasta que se quite" no tiene límite', tv().medio.sinLimite === true && tv().medio.segundos === 0);
+  s.run(`admMedioControl(${J(maria)}, ${J(String(tv().medio.orden))}, 'parar')`);
+  t('y se quita al pulsar Parar', tv().medio === null);
+
+  // error de la TV
+  s.run(`admMedioReproducir('ADMINKEY', ${J(video)}, 0)`);
+  const o3 = String(tv().medio.orden);
+  s.run(`servir_({parameter:{a:'medioEstado',k:'ADMINKEY',o:${J(o3)},e:'error',m:'Este vídeo no se puede reproducir en la tele (formato HEVC)'}})`);
+  t('si la TV no puede, el móvil lo dice claro', /HEVC/.test(estadoPanel('ADMINKEY').medios.repro.error) && estadoPanel('ADMINKEY').medios.repro.estado === 'error' && tv().medio === null);
+
+  // la TV no contesta
+  s.run(`admMedioReproducir(${J(ana)}, ${J(audio)}, 0)`);
+  s.fijar(new Date(2026, 9, 20, 17, 40).getTime());
+  t('si la TV no contesta en 15 minutos, deja de esperar', tv().medio === null && estadoPanel(ana).medios.repro.estado === 'caducado');
+  s.fijar(new Date(2026, 9, 20, 17, 15).getTime());
+
+  // noche
+  s.fijar(new Date(2026, 9, 20, 22, 30).getTime());
+  t('de noche no se puede mandar a la TV', falla(() => s.run(`admMedioReproducir(${J(ana)}, ${J(audio)}, 0)`)));
+  s.fijar(new Date(2026, 9, 20, 20, 59).getTime());
+  s.run(`admMedioReproducir(${J(ana)}, ${J(audio)}, 0)`);
+  s.fijar(new Date(2026, 9, 20, 21, 5).getTime());
+  t('si se hace de noche mientras espera, la TV no recibe nada', tv().medio === null);
+  s.fijar(new Date(2026, 9, 20, 17, 15).getTime());
+
+  // borrar
+  t('un familiar no borra lo de otro', falla(() => s.run(`admMedioBorrar(${J(maria)}, ${J(audio)})`)));
+  const antes = Object.values(s.archivos).filter((a) => /^[0-9a-f]{16}\./.test(a.nombre) && !a.papelera).length;
+  s.run(`admMedioBorrar(${J(ana)}, ${J(audio)})`);
+  const despues = Object.values(s.archivos).filter((a) => /^[0-9a-f]{16}\./.test(a.nombre) && !a.papelera).length;
+  t('al borrar se tiran sus trozos de Drive', antes - despues === 2 && estadoPanel(ana).medios.lista.length === 0);
+  t('el administrador borra lo de cualquiera', (s.run(`admMedioBorrar('ADMINKEY', ${J(foto)})`), estadoPanel('ADMINKEY').medios.lista.length === 1));
+  t('los trozos se quedan privados (sin compartir)', Object.values(s.archivos).every((a) => !a.compartido));
+}
+
 console.log(bien + ' bien, ' + mal + ' fallos');
 process.exit(mal ? 1 : 0);

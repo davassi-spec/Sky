@@ -22,17 +22,23 @@ function crear(opciones = {}) {
       getBlob: () => blobDe(a),
       setContent: (s) => { a.bytes = Buffer.from(s, 'utf8'); },
       setTrashed: (v) => { a.papelera = v; },
+      getName: () => a.nombre,
+      getSize: () => a.bytes.length,
     };
   };
   const folderApi = (id) => ({
     getId: () => id,
     createFile: (x, contenido) => {
       const nid = crypto.randomUUID();
-      if (typeof x === 'string') archivos[nid] = { nombre: x, bytes: Buffer.from(contenido, 'utf8') };
-      else archivos[nid] = { nombre: x.nombre, bytes: Buffer.from(x.bytes) };
+      if (typeof x === 'string') archivos[nid] = { nombre: x, bytes: Buffer.from(contenido, 'utf8'), carpeta: id };
+      else archivos[nid] = { nombre: x.nombre, bytes: Buffer.from(x.bytes), carpeta: id };
       return fileApi(nid);
     },
+    createFolder: () => { const c = crypto.randomUUID(); carpetas[c] = 1; return folderApi(c); },
+    getFiles: () => lista(Object.keys(archivos).filter((f) => archivos[f].carpeta === id && !archivos[f].papelera)),
+    getFilesByName: (n) => lista(Object.keys(archivos).filter((f) => archivos[f].carpeta === id && !archivos[f].papelera && archivos[f].nombre === n)),
   });
+  const lista = (ids) => { let i = 0; return { hasNext: () => i < ids.length, next: () => fileApi(ids[i++]) }; };
 
   const eventosFalsos = opciones.eventos || [];
   const ctx = {

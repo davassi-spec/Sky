@@ -5,6 +5,7 @@ import static org.junit.Assert.assertTrue;
 import android.app.Activity;
 import android.content.Context;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
@@ -228,5 +229,66 @@ public class CapturasTest {
                 captura(n + "recordatorio", conDistribucion(json(e, DANIEL + "," + ANA, EV_DIA, TIEMPO, "null", REC), d), 20, 17, 15);
             }
         }
+    }
+
+    private static String conMedio(String json, String medio) {
+        return json.replace("\"version\":2", "\"version\":2,\"rapido\":true,\"medio\":" + medio);
+    }
+
+    private static String medio(String tipo, String de, String texto, String mime, int segundos) {
+        return "{\"orden\":\"1\",\"id\":\"m1\",\"tipo\":\"" + tipo + "\",\"de\":\"" + de + "\",\"texto\":\"" + texto + "\",\"partes\":1,\"bytes\":100,\"mime\":\"" + mime
+                + "\",\"segundos\":" + segundos + ",\"cmd\":{\"n\":0,\"c\":\"\"},\"rep\":0,\"sinLimite\":false}";
+    }
+
+    private void capturaMedio(String nombre, String medio, boolean esperando) throws Exception {
+        Context ctx = RuntimeEnvironment.getApplication();
+        File f = new File(ctx.getCacheDir(), "envio.jpg");
+        copia("/foto-recordatorio.jpg", f);
+        Medios.archivoDePrueba = f;
+        Medios.sinReproducir = true;
+        Medios.congelarDescarga = esperando;
+        Bitmap pos = BitmapFactory.decodeFile(f.getPath());
+        Medios.posterDePrueba = pos;
+        try {
+            Calendar c = Calendar.getInstance(TimeZone.getTimeZone("Europe/Madrid"));
+            c.clear();
+            c.set(2026, Calendar.OCTOBER, 20, 17, 15, 0);
+            Hora.fijar(c);
+            String json = conMedio(json("lavanda", DANIEL + "," + ANA, EV_DIA, TIEMPO, "null"), medio);
+            ctx.getSharedPreferences("pizarra", Context.MODE_PRIVATE).edit().putString("url", "http://127.0.0.1:1/x").putString("k", "k")
+                    .putString("cache", json).putLong("cacheT", System.currentTimeMillis()).commit();
+            MainActivity a = Robolectric.buildActivity(MainActivity.class).setup().get();
+            a.mostrarMedioDePrueba(json);
+            for (int i = 0; i < 5; i++) {
+                Thread.sleep(120);
+                ShadowLooper.idleMainLooper();
+                View raiz = a.getWindow().getDecorView();
+                raiz.measure(View.MeasureSpec.makeMeasureSpec(1920, View.MeasureSpec.EXACTLY), View.MeasureSpec.makeMeasureSpec(1080, View.MeasureSpec.EXACTLY));
+                raiz.layout(0, 0, 1920, 1080);
+            }
+            Bitmap b = Bitmap.createBitmap(1920, 1080, Bitmap.Config.ARGB_8888);
+            a.getWindow().getDecorView().draw(new Canvas(b));
+            File dir = new File(System.getProperty("capturas.dir"));
+            dir.mkdirs();
+            try (FileOutputStream o = new FileOutputStream(new File(dir, nombre + ".png"))) {
+                b.compress(Bitmap.CompressFormat.PNG, 100, o);
+            }
+        } finally {
+            Medios.congelarDescarga = false;
+            Medios.archivoDePrueba = null;
+            Medios.sinReproducir = false;
+            Medios.posterDePrueba = null;
+        }
+    }
+
+    /** Las pantallas de una foto, un vídeo y un audio que manda la familia. */
+    @Test
+    public void fotosAudiosYVideos() throws Exception {
+        foto();
+        capturaMedio("d5-foto-con-texto", medio("foto", "Ana", "Mira qué bonito está el jardín", "image/jpeg", 300), false);
+        capturaMedio("d5-foto-sin-texto", medio("foto", "María", "", "image/jpeg", 0), false);
+        capturaMedio("d5-video", medio("video", "Ana", "", "video/mp4", 0), false);
+        capturaMedio("d5-audio", medio("audio", "Daniel", "", "audio/wav", 0), false);
+        capturaMedio("d5-llegando-video", medio("video", "Ana", "", "video/mp4", 0), true);
     }
 }

@@ -130,6 +130,11 @@
   .estilo .mini i { display: block; height: 22px; border-radius: 6px; margin-bottom: 5px; }
   .estilo .mini b { position: absolute; left: 10px; bottom: 6px; font-size: 18px; line-height: 1; }
   .estilo .mini u { position: absolute; right: 10px; bottom: 9px; width: 24px; height: 8px; border-radius: 4px; }
+  .barra-subida { height: 10px; border-radius: 5px; background: var(--borde); overflow: hidden; margin-top: 10px; --pct: 0%; }
+  .barra-subida::after { content: ''; display: block; height: 100%; width: var(--pct); background: var(--primario); transition: width .3s; }
+  .cuenta-grab { font-size: 22px; font-weight: 800; text-align: center; margin: 12px 0 4px; }
+  .estado-repro { display: flex; align-items: center; gap: 10px; font-size: 20px; }
+  .punto.esp { background: #E0A100; }
   .dists { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
   .dist { border: 3px solid transparent; border-radius: 16px; padding: 0; background: var(--tarjeta2); cursor: pointer; text-align: center; font-weight: 700; overflow: hidden; }
   .dist[aria-pressed="true"] { border-color: var(--primario); }
@@ -260,6 +265,14 @@
     taza: '<path d="M4 8h13v5a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5zM17 10h1.5a2.5 2.5 0 0 1 0 5H17M8 3v2M12 3v2"/>',
     campana: '<path d="M6 17h12l-1.5-2.2V10a4.5 4.5 0 0 0-9 0v4.8zM10 20a2 2 0 0 0 4 0"/>',
     papelera: '<path d="M5 7h14M10 7V4h4v3M7 7l1 13h8l1-13"/>',
+    video: '<rect x="2" y="6" width="14" height="12" rx="2"/><path d="M16 10.5l6-3.5v10l-6-3.5"/>',
+    sonido: '<path d="M4 9.5v5h3.5L12 18.5v-13L7.5 9.5zM15.5 9a4 4 0 0 1 0 6M18 6.5a8 8 0 0 1 0 11"/>',
+    micro: '<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/>',
+    play: '<path d="M7 4.5v15l12-7.5z"/>',
+    parar: '<rect x="6" y="6" width="12" height="12" rx="2"/>',
+    repetir: '<path d="M4 12a8 8 0 0 1 14-5.3L20 9M20 4v5h-5M20 12a8 8 0 0 1-14 5.3L4 15M4 20v-5h5"/>',
+    menos: '<path d="M5 12h14"/>',
+    masv: '<path d="M12 5v14M5 12h14"/>',
     ciudad: '<path d="M12 21s-6-5.5-6-11a6 6 0 0 1 12 0c0 5.5-6 11-6 11z"/><circle cx="12" cy="10" r="2.2"/>'
   };
   function icono(nombre, cls) {
@@ -618,7 +631,7 @@
 
   /* ============================== navegación ============================== */
   var PESTANAS = [['inicio', 'Inicio', 'inicio'], ['mensajes', 'Mensajes', 'mensajes'], ['mas', 'Más', 'mas']];
-  var PADRE = { pantalla: 'mas', recordatorios: 'mas', recordatorio: 'mas', cuentas: 'mas', cuenta: 'mas', familia: 'mas', ajustes: 'mas' };
+  var PADRE = { medios: 'mas', pantalla: 'mas', recordatorios: 'mas', recordatorio: 'mas', cuentas: 'mas', cuenta: 'mas', familia: 'mas', ajustes: 'mas' };
   function ir(v) {
     if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
     vista = v; if (PESTANAS.some(function (p) { return p[0] === v; })) guardarLocal('vista', v);
@@ -640,7 +653,7 @@
     MINIS = [];
     app.innerHTML = '';
     var fn = ROL === 'familia' ? vistaFamiliar : ({ inicio: vistaInicio, mensajes: vistaMensajes, mas: vistaMas, pantalla: vistaPantalla,
-      cuentas: vistaCuentas, cuenta: vistaCuenta, recordatorios: vistaRecordatorios, recordatorio: vistaRecordatorio, familia: vistaFamilia, ajustes: vistaAjustes })[vista] || vistaInicio;
+      cuentas: vistaCuentas, cuenta: vistaCuenta, medios: vistaMedios, recordatorios: vistaRecordatorios, recordatorio: vistaRecordatorio, familia: vistaFamilia, ajustes: vistaAjustes })[vista] || vistaInicio;
     app.appendChild(fn());
     pintarNav();
     window.scrollTo(0, anterior);
@@ -668,6 +681,7 @@
       el('button', { class: 'btn suave', type: 'button', style: 'margin-top:12px', onclick: function () { ir('pantalla'); } }, icono('pantalla'), 'Cambiar lo que se ve'));
     w.appendChild(t);
     w.appendChild(el('button', { class: 'btn', type: 'button', style: 'margin-top:16px', onclick: function () { ir('mensajes'); } }, icono('enviar'), 'Escribir un mensaje'));
+    w.appendChild(el('button', { class: 'btn suave', type: 'button', style: 'margin-top:10px', onclick: function () { ir('medios'); } }, icono('video'), 'Mandar audio, vídeo o foto'));
     var prox = (v.eventos || []).filter(function (e) { return e.dia === 0; })[0];
     var hh = prox && prox.hora ? prox.hora.split(':') : null;
     w.appendChild(el('div', { class: 'tarjeta' }, el('h2', {}, 'Lo próximo'),
@@ -761,7 +775,7 @@
   function vistaMas() {
     var w = document.createDocumentFragment();
     w.appendChild(cabecera('Más'));
-    var items = [['pantalla', 'pantalla', 'Pantalla', 'Qué se ve y con qué estilo'], ['recordatorios', 'campana', 'Recordatorios', 'Con foto, a su hora'], ['cuentas', 'reloj', 'Cuentas atrás', 'Días que faltan para una fecha'],
+    var items = [['medios', 'video', 'Audios y vídeos', 'Mandar y poner en la tele'], ['pantalla', 'pantalla', 'Pantalla', 'Qué se ve y con qué estilo'], ['recordatorios', 'campana', 'Recordatorios', 'Con foto, a su hora'], ['cuentas', 'reloj', 'Cuentas atrás', 'Días que faltan para una fecha'],
       ['familia', 'familia', 'Familia', 'Enlaces y fotos'], ['ajustes', 'ajustes', 'Ajustes', 'Noche, contacto, ciudad y calendarios']];
     var menu = el('div', { class: 'tarjeta menu' });
     items.forEach(function (i) {
@@ -1216,6 +1230,7 @@
     } }, icono('enviar'), 'Enviar a la TV');
     w.appendChild(el('div', { class: 'tarjeta' }, el('h2', {}, 'Tu mensaje'), el('label', { class: 'eti', for: 'texto' }, 'Mensaje'), ta, el('div', { class: 'contador', id: 'cuenta' }, borrador.texto.length + '/200'),
       chips, el('label', { class: 'eti', for: 'duracion' }, '¿Cuánto tiempo se ve?'), dur, enviar));
+    w.appendChild(bloqueMedios());
     var miId = S.miId;
     w.appendChild(el('div', { class: 'tarjeta' }, el('h2', {}, 'Tu foto para la tele de mamá'),
       el('div', { class: 'item', style: 'padding:0;border:0;align-items:center' }, avatar(miId, S.nombre, S.tieneFoto, true),
@@ -1236,6 +1251,353 @@
     return w;
   }
 
+  /* ============================== Audios, vídeos y fotos a distancia ============================== */
+  var MAX_AUDIO_S = 60, MAX_VIDEO_S = 30, TROZO = 1000000, MAX_VIDEO_BYTES = 35000000;
+  var subida = null;                    // { txt, pct } mientras se sube algo
+  var minFoto = 5;                      // cuánto se queda una foto en la tele: 1, 5, 15 o 0 (hasta que se quite)
+  var mediosTimer = null, mediosFirma = '';
+
+  function nombreMedio(m) {
+    var q = m.tipo === 'video' ? 'Vídeo' : m.tipo === 'audio' ? 'Audio' : 'Foto';
+    return m.de ? q + ' de ' + m.de : q;
+  }
+  function pesoMedio(b) { return b >= 1000000 ? (b / 1000000).toFixed(1).replace('.', ',') + ' MB' : Math.max(1, Math.round(b / 1000)) + ' KB'; }
+  function iconoMedio(t) { return t === 'video' ? 'video' : t === 'audio' ? 'sonido' : 'camara'; }
+  function errorLegible(e) { return mensajeError(e); }
+
+  /* ---- audio: se pasa siempre a WAV mono de 16 kHz, que cualquier Android entiende ---- */
+  function wavDe(pcm, hz) {
+    var buf = new ArrayBuffer(44 + pcm.length * 2), v = new DataView(buf);
+    var txt = function (o, s) { for (var i = 0; i < s.length; i++) v.setUint8(o + i, s.charCodeAt(i)); };
+    txt(0, 'RIFF'); v.setUint32(4, 36 + pcm.length * 2, true); txt(8, 'WAVE'); txt(12, 'fmt '); v.setUint32(16, 16, true);
+    v.setUint16(20, 1, true); v.setUint16(22, 1, true); v.setUint32(24, hz, true); v.setUint32(28, hz * 2, true); v.setUint16(32, 2, true); v.setUint16(34, 16, true);
+    txt(36, 'data'); v.setUint32(40, pcm.length * 2, true);
+    for (var i = 0; i < pcm.length; i++) v.setInt16(44 + i * 2, pcm[i], true);
+    return new Blob([buf], { type: 'audio/wav' });
+  }
+  /** Pasa un audio grabado (o de la galería) a WAV: mono, 16 kHz y con el volumen subido si se grabó flojo. */
+  function aWav(blob) {
+    return new Promise(function (ok, ko) {
+      var AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) { ko(new Error('Este navegador no sabe preparar el audio. Prueba con Safari o Chrome.')); return; }
+      var r = new FileReader(), plazo = setTimeout(function () { ko(new Error('El audio tarda demasiado en prepararse. Prueba con uno más corto.')); }, 30000);
+      var ok0 = ok, ko0 = ko;
+      ok = function (v) { clearTimeout(plazo); ok0(v); };
+      ko = function (e) { clearTimeout(plazo); ko0(e); };
+      r.onerror = function () { ko(new Error('No se ha podido leer el audio')); };
+      r.onload = function () {
+        var ctx = new AC();
+        ctx.decodeAudioData(r.result, function (buf) {
+          try { ctx.close(); } catch (e) {}
+          if (buf.duration > MAX_AUDIO_S + 2) { ko(new Error('Dura más de un minuto. Graba algo más corto.')); return; }
+          var sr = buf.sampleRate, n = buf.length, nc = buf.numberOfChannels, mono = new Float32Array(n);
+          for (var c = 0; c < nc; c++) { var d = buf.getChannelData(c); for (var i = 0; i < n; i++) mono[i] += d[i] / nc; }
+          var HZ = 16000, razon = sr / HZ, m = Math.floor(n / razon), voz = new Float32Array(m), pico = 0;
+          for (var j = 0; j < m; j++) {
+            var a = Math.floor(j * razon), b = Math.min(n, Math.floor((j + 1) * razon)), suma = 0;
+            for (var k = a; k < b; k++) suma += mono[k];
+            voz[j] = suma / Math.max(1, b - a);
+            if (Math.abs(voz[j]) > pico) pico = Math.abs(voz[j]);
+          }
+          var ganancia = pico > 0.001 ? Math.min(4, 0.9 / pico) : 1, pcm = new Int16Array(m);
+          for (var q = 0; q < m; q++) pcm[q] = Math.max(-1, Math.min(1, voz[q] * ganancia)) * 32767;
+          ok(wavDe(pcm, HZ));
+        }, function () { ko(new Error('No se ha podido leer ese audio')); });
+      };
+      r.readAsArrayBuffer(blob);
+    });
+  }
+
+  /* ---- vídeo: lo que la tele no entiende se avisa antes de mandarlo ---- */
+  function tipoVideo(archivo) {
+    var t = String(archivo.type || '').toLowerCase().split(';')[0], n = String(archivo.name || '').toLowerCase();
+    if (t === 'video/mp4' || t === 'video/webm' || t === 'video/quicktime') return t;
+    if (/\.(mp4|m4v)$/.test(n)) return 'video/mp4';
+    if (/\.mov$/.test(n)) return 'video/quicktime';
+    if (/\.webm$/.test(n)) return 'video/webm';
+    return '';
+  }
+  /** ¿El vídeo es HEVC (el de los iPhone recientes)? La tele de 2015 no lo reproduce. Busca su código dentro del archivo. */
+  function esHEVC(archivo) {
+    return new Promise(function (ok) {
+      var r = new FileReader();
+      r.onerror = function () { ok(false); };
+      r.onload = function () {
+        var b = new Uint8Array(r.result), n = b.length - 3;
+        for (var i = 0; i < n; i++) {
+          if ((b[i] === 0x68 || b[i] === 0x64) && ((b[i + 1] === 0x76 && b[i + 2] === 0x63 && b[i + 3] === 0x31) ||        // hvc1, dvc1
+              (b[i + 1] === 0x65 && b[i + 2] === 0x76 && b[i + 3] === 0x31) ||                                               // hev1
+              (b[i + 1] === 0x76 && b[i + 2] === 0x68 && (b[i + 3] === 0x31 || b[i + 3] === 0x65)))) { ok(true); return; }   // dvh1, dvhe
+        }
+        ok(false);
+      };
+      r.readAsArrayBuffer(archivo);
+    });
+  }
+  function duracionVideo(archivo) {
+    return new Promise(function (ok, ko) {
+      var url = URL.createObjectURL(archivo), v = document.createElement('video');
+      v.preload = 'metadata'; v.muted = true; v.setAttribute('playsinline', '');
+      var fin = function (f) { URL.revokeObjectURL(url); f(); };
+      v.onloadedmetadata = function () { var d = v.duration; fin(function () { ok(d); }); };
+      v.onerror = function () { fin(function () { ko(new Error('x')); }); };
+      v.src = url;
+      setTimeout(function () { fin(function () { ko(new Error('x')); }); }, 8000);
+    });
+  }
+  var AYUDA_HEVC = 'Ese vídeo está en formato HEVC (el de los iPhone recientes) y la tele no lo entiende. En el iPhone: Ajustes › Cámara › Formatos › "Más compatible", y vuelve a grabarlo. O grábalo desde aquí con "Grabar vídeo".';
+  function comprobarVideo(archivo) {
+    var tipo = tipoVideo(archivo);
+    if (!tipo) return Promise.reject(new Error('Ese tipo de vídeo no lo entiende la tele. Graba uno desde aquí con "Grabar vídeo".'));
+    if (archivo.size > MAX_VIDEO_BYTES) return Promise.reject(new Error('Ese vídeo pesa demasiado (' + pesoMedio(archivo.size) + '). Que dure menos de 30 segundos.'));
+    return esHEVC(archivo).then(function (hevc) {
+      if (hevc) throw new Error(AYUDA_HEVC);
+      return duracionVideo(archivo).then(function (d) {
+        if (d > MAX_VIDEO_S + 2) throw new Error('Ese vídeo dura ' + Math.round(d) + ' segundos. Que dure menos de 30.');
+        return new Blob([archivo], { type: tipo });
+      }, function () { throw new Error('No se puede leer ese vídeo. Puede que sea de un formato que la tele no entiende; graba uno desde aquí con "Grabar vídeo".'); });
+    });
+  }
+  function dataUrlABlob(du) {
+    var m = /^data:([^;]+);base64,(.*)$/.exec(du), bin = atob(m[2]), a = new Uint8Array(bin.length);
+    for (var i = 0; i < bin.length; i++) a[i] = bin.charCodeAt(i);
+    return new Blob([a], { type: m[1] });
+  }
+  /** Lo que se elige de la galería: foto (se reduce), audio (se pasa a WAV) o vídeo (se comprueba). Devuelve { blob, tipo }. */
+  function prepararArchivo(archivo) {
+    var t = String(archivo.type || '').toLowerCase();
+    if (t.indexOf('image/') === 0 || /\.(jpe?g|png|heic|heif|webp)$/i.test(archivo.name || '')) {
+      return reducirFotoLibre(archivo, 1920).then(function (du) { return { blob: dataUrlABlob(du), tipo: 'foto' }; });
+    }
+    if (t.indexOf('audio/') === 0 || /\.(m4a|mp3|wav|aac|ogg|opus|caf)$/i.test(archivo.name || '')) {
+      return aWav(archivo).then(function (b) { return { blob: b, tipo: 'audio' }; });
+    }
+    if (t.indexOf('video/') === 0 || tipoVideo(archivo)) return comprobarVideo(archivo).then(function (b) { return { blob: b, tipo: 'video' }; });
+    return Promise.reject(new Error('Eso no es una foto, un audio ni un vídeo'));
+  }
+
+  /* ---- subida por trozos ---- */
+  function trozoB64(blob) {
+    return new Promise(function (ok, ko) {
+      var r = new FileReader();
+      r.onload = function () { ok(String(r.result).split(',')[1] || ''); };
+      r.onerror = function () { ko(new Error('No se ha podido leer el archivo')); };
+      r.readAsDataURL(blob);
+    });
+  }
+  function conReintentos(fn, veces) {
+    return fn().catch(function (e) { if (veces <= 0) throw e; return new Promise(function (r) { setTimeout(r, 800); }).then(function () { return conReintentos(fn, veces - 1); }); });
+  }
+  function subirMedio(blob, tipo, texto, alAvanzar) {
+    var mime = String(blob.type || '').split(';')[0], partes = Math.max(1, Math.ceil(blob.size / TROZO));
+    return llamar('admMedioNuevo', { tipo: tipo, mime: mime, bytes: blob.size, partes: partes, texto: texto || '', de: borrador.de || leerLocal('de') }).then(function (r) {
+      var id = r.id, n = 0;
+      var siguiente = function () {
+        if (n >= partes) return llamar('admMedioFin', id);
+        return trozoB64(blob.slice(n * TROZO, (n + 1) * TROZO)).then(function (b64) {
+          return conReintentos(function () { return llamar('admMedioParte', id, n, b64); }, 2);
+        }).then(function () { n++; alAvanzar(n / partes); return siguiente(); });
+      };
+      return siguiente();
+    });
+  }
+
+  /* ---- diálogos ---- */
+  function abrirDialogo(contenido) {
+    var capa = $('capa');
+    capa.innerHTML = '';
+    capa.appendChild(el('div', { class: 'velo' }, el.apply(null, ['div', { class: 'dialogo', role: 'dialog', 'aria-modal': 'true' }].concat(contenido))));
+  }
+  function cerrarDialogo() { $('capa').innerHTML = ''; }
+
+  /** Ver y escuchar lo que se va a mandar, y mandarlo. */
+  function dialogoRevisar(blob, tipo) {
+    var url = URL.createObjectURL(blob), vista;
+    if (tipo === 'foto') vista = el('img', { src: url, alt: 'La foto que vas a mandar', style: 'width:100%;border-radius:14px;max-height:50vh;object-fit:contain;background:#000' });
+    else if (tipo === 'video') vista = el('video', { src: url, controls: true, playsinline: true, style: 'width:100%;border-radius:14px;max-height:50vh;background:#000' });
+    else vista = el('audio', { src: url, controls: true, style: 'width:100%' });
+    var texto = tipo === 'foto' ? el('input', { type: 'text', id: 'medio-texto', maxlength: '200', placeholder: 'Un mensaje con la foto (si quieres)', 'aria-label': 'Mensaje con la foto' }) : null;
+    var barra = el('div', { class: 'barra-subida', hidden: true, 'aria-live': 'polite' });
+    var estado = el('p', { class: 'sub', id: 'medio-estado' }, 'Mírala' + (tipo === 'foto' ? '' : ' o escúchala') + ' antes de mandarla.');
+    var enviar = el('button', { class: 'btn', type: 'button' }, icono('enviar'), 'Mandar a la tele');
+    var cancelar = el('button', { class: 'btn suave', type: 'button', onclick: function () { URL.revokeObjectURL(url); cerrarDialogo(); } }, 'Cancelar');
+    enviar.onclick = function () {
+      enviar.disabled = cancelar.disabled = true; barra.hidden = false;
+      estado.textContent = 'Subiendo… no cierres esta pantalla.';
+      subirMedio(blob, tipo, texto ? texto.value : '', function (f) { barra.style.setProperty('--pct', Math.round(f * 100) + '%'); estado.textContent = 'Subiendo… ' + Math.round(f * 100) + ' %'; }).then(function (r) {
+        URL.revokeObjectURL(url); cerrarDialogo();
+        if (r && r.rol) { S = r; pintar(); }
+        aviso('Listo. Está preparado: tú decides cuándo se ve en la tele.', 'ok');
+      }, function (e) {
+        enviar.disabled = cancelar.disabled = false; barra.hidden = true;
+        estado.textContent = errorLegible(e);
+        aviso(errorLegible(e), 'error');
+      });
+    };
+    abrirDialogo([el('h2', {}, tipo === 'foto' ? 'Mandar esta foto' : tipo === 'video' ? 'Mandar este vídeo' : 'Mandar este audio'), vista, texto, estado, barra,
+      el('div', { class: 'fila', style: 'margin-top:12px' }, cancelar, enviar)]);
+  }
+
+  function mimeGrabacion(tipo) {
+    if (!window.MediaRecorder) return null;
+    var cand = tipo === 'video' ? ['video/mp4;codecs=avc1.42E01E,mp4a.40.2', 'video/mp4', 'video/webm;codecs=vp8,opus', 'video/webm;codecs=vp8', 'video/webm']
+      : ['audio/mp4', 'audio/webm;codecs=opus', 'audio/webm', 'audio/ogg;codecs=opus'];
+    for (var i = 0; i < cand.length; i++) { try { if (MediaRecorder.isTypeSupported(cand[i])) return cand[i]; } catch (e) {} }
+    return '';
+  }
+  /** Elegir un archivo de la galería (o abrir la cámara del móvil con capture). */
+  function pedirArchivo(accept, capture) {
+    return new Promise(function (ok) {
+      var i = el('input', { type: 'file', accept: accept, capture: capture || null, style: 'position:fixed;left:-999px' });
+      i.onchange = function () { var f = i.files && i.files[0]; i.remove(); ok(f || null); };
+      document.body.appendChild(i); i.click();
+    });
+  }
+  function procesarArchivo(f) {
+    if (!f) return;
+    aviso('Preparando…', 'ok');
+    prepararArchivo(f).then(function (r) { dialogoRevisar(r.blob, r.tipo); }, function (e) { aviso(errorLegible(e), 'error'); });
+  }
+
+  /** Grabar con el micrófono o la cámara del móvil, con cuenta atrás hasta el máximo. */
+  function dialogoGrabar(tipo) {
+    var max = tipo === 'video' ? MAX_VIDEO_S : MAX_AUDIO_S, flujo = null, rec = null, trozos = [], reloj = null, seg = 0, mime = mimeGrabacion(tipo);
+    var titulo = el('h2', {}, tipo === 'video' ? 'Grabar un vídeo' : 'Grabar un audio');
+    var vista = tipo === 'video' ? el('video', { muted: true, playsinline: true, autoplay: true, style: 'width:100%;border-radius:14px;background:#000;max-height:45vh', hidden: true }) : null;
+    if (vista) vista.muted = true;
+    var cuenta = el('div', { class: 'cuenta-grab', 'aria-live': 'polite' }, 'Máximo ' + (tipo === 'video' ? '30 segundos' : '1 minuto'));
+    var msg = el('p', { class: 'sub' }, '');
+    var empezar = el('button', { class: 'btn', type: 'button' }, icono(tipo === 'video' ? 'video' : 'micro'), 'Empezar a grabar');
+    var parar = el('button', { class: 'btn peligro', type: 'button', hidden: true }, 'Parar y revisar');
+    var cancelar = el('button', { class: 'btn suave', type: 'button' }, 'Cancelar');
+    var soltar = function () { clearInterval(reloj); if (flujo) flujo.getTracks().forEach(function (t) { t.stop(); }); flujo = null; };
+    cancelar.onclick = function () { if (rec && rec.state === 'recording') { rec.onstop = null; try { rec.stop(); } catch (e) {} } soltar(); cerrarDialogo(); };
+    var alternativa = function (txt) {
+      msg.textContent = txt;
+      var galeria = el('button', { class: 'btn suave', type: 'button', onclick: function () { soltar(); cerrarDialogo(); pedirArchivo(tipo === 'video' ? 'video/*' : 'audio/*', tipo === 'video' ? 'user' : null).then(procesarArchivo); } },
+        icono('camara'), tipo === 'video' ? 'Usar la cámara del móvil' : 'Elegir un audio del móvil');
+      empezar.replaceWith(galeria);
+    };
+    empezar.onclick = function () {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || mime === null) { alternativa('Este navegador no deja grabar desde aquí. Puedes usar lo que ya tengas en el móvil.'); return; }
+      empezar.disabled = true;
+      navigator.mediaDevices.getUserMedia(tipo === 'video' ? { audio: true, video: { facingMode: 'user', width: { ideal: 960 }, height: { ideal: 540 } } } : { audio: true }).then(function (f) {
+        flujo = f;
+        if (vista) { vista.hidden = false; vista.srcObject = f; try { vista.play(); } catch (e) {} }
+        var op = mime ? { mimeType: mime } : {};
+        if (tipo === 'video') op.videoBitsPerSecond = 2000000;
+        rec = new MediaRecorder(f, op);
+        rec.ondataavailable = function (ev) { if (ev.data && ev.data.size) trozos.push(ev.data); };
+        rec.onstop = function () {
+          soltar();
+          var tipoReal = (rec.mimeType || mime || (tipo === 'video' ? 'video/mp4' : 'audio/mp4')).split(';')[0];
+          var blob = new Blob(trozos, { type: tipoReal });
+          cerrarDialogo();
+          if (!blob.size) { aviso('No se ha grabado nada. Prueba otra vez.', 'error'); return; }
+          if (tipo === 'audio') { aviso('Preparando el audio…', 'ok'); aWav(blob).then(function (w) { dialogoRevisar(w, 'audio'); }, function (e) { aviso(errorLegible(e), 'error'); }); }
+          else dialogoRevisar(blob, 'video');
+        };
+        rec.start(1000);
+        empezar.hidden = true; parar.hidden = false; msg.textContent = tipo === 'video' ? 'Grabando… habla a la cámara.' : 'Grabando… habla cerca del micrófono.';
+        reloj = setInterval(function () {
+          seg++; cuenta.textContent = 'Grabando: ' + seg + ' s de ' + max;
+          if (seg >= max && rec.state === 'recording') rec.stop();
+        }, 1000);
+      }, function (e) {
+        alternativa(e && /Denied|NotAllowed|Permission/i.test(e.name + e.message)
+          ? 'No hay permiso para el ' + (tipo === 'video' ? 'cámara y micrófono' : 'micrófono') + '. Actívalo en los ajustes del navegador, o usa lo que ya tengas en el móvil.'
+          : 'No se ha podido usar el ' + (tipo === 'video' ? 'cámara y micrófono' : 'micrófono') + ' desde aquí. Puedes usar lo que ya tengas en el móvil.');
+      });
+    };
+    parar.onclick = function () { if (rec && rec.state === 'recording') rec.stop(); };
+    abrirDialogo([titulo, vista, cuenta, msg, el('div', { class: 'fila', style: 'margin-top:12px' }, cancelar, empezar, parar)]);
+  }
+
+  /* ---- la tarjeta que usan el administrador y la familia ---- */
+  function textoEstadoRepro(r) {
+    return r.estado === 'esperando' ? 'Esperando a la TV…' : r.estado === 'reproduciendo' ? (r.tipo === 'foto' ? 'En la tele ahora' : 'Reproduciendo') :
+      r.estado === 'terminado' ? 'Terminado' : r.estado === 'caducado' ? 'La tele no ha contestado a tiempo' : 'No se ha podido poner';
+  }
+  function pendienteRepro(r) { return r && (r.estado === 'esperando' || r.estado === 'reproduciendo'); }
+  function tarjetaRepro(r) {
+    var t = el('div', { class: 'tarjeta repro', id: 'repro', 'aria-live': 'polite' }, el('h2', {}, nombreMedio(r)),
+      el('div', { class: 'estado-repro ' + r.estado }, el('span', { class: 'punto ' + (r.estado === 'reproduciendo' ? 'on' : r.estado === 'esperando' ? 'esp' : 'off'), 'aria-hidden': 'true' }), el('b', {}, textoEstadoRepro(r))));
+    if (r.estado === 'error' && r.error) t.appendChild(el('p', { class: 'sub', style: 'color:var(--peligro)' }, r.error));
+    if (r.estado === 'esperando') t.appendChild(el('p', { class: 'ayuda' }, 'La tele lo recoge en unos segundos. Si está apagada, esto caduca en 15 minutos.'));
+    if (pendienteRepro(r)) {
+      var orden = r.orden, ctl = function (c, ok) { return function (e) { accion('admMedioControl', [orden, c], ok || null, e.currentTarget).then(function () { sondearMedios(); }, function () { sondearMedios(); }); }; };
+      if (r.tipo !== 'foto') {
+        t.appendChild(el('div', { class: 'fila', style: 'margin-top:10px' },
+          el('button', { class: 'btn suave', type: 'button', onclick: ctl('bajar'), 'aria-label': 'Bajar el volumen' }, icono('menos'), 'Volumen'),
+          el('button', { class: 'btn suave', type: 'button', onclick: ctl('subir'), 'aria-label': 'Subir el volumen' }, icono('masv'), 'Volumen')));
+        t.appendChild(el('div', { class: 'fila', style: 'margin-top:10px' }, el('button', { class: 'btn suave', type: 'button', onclick: ctl('repetir', 'Se repite') }, icono('repetir'), 'Repetir')));
+      }
+      t.appendChild(el('button', { class: 'btn peligro', type: 'button', style: 'margin-top:10px', onclick: ctl('parar', 'La tele vuelve a la pizarra') }, icono('parar'), r.tipo === 'foto' ? 'Quitar de la tele' : 'Parar'));
+    }
+    return t;
+  }
+  function bloqueMedios() {
+    var w = document.createDocumentFragment(), M = S.medios || { lista: [], repro: null };
+    var env = el('div', { class: 'tarjeta' }, el('h2', {}, 'Mandar a la tele'),
+      el('p', { class: 'ayuda', style: 'margin-top:0' }, 'Un audio de hasta 1 minuto, un vídeo de hasta 30 segundos o una foto. Queda guardado y privado; nada se pone solo.'),
+      el('div', { class: 'fila' },
+        el('button', { class: 'btn', type: 'button', onclick: function () { dialogoGrabar('audio'); } }, icono('micro'), 'Grabar audio'),
+        el('button', { class: 'btn', type: 'button', onclick: function () { dialogoGrabar('video'); } }, icono('video'), 'Grabar vídeo')),
+      el('button', { class: 'btn suave', type: 'button', style: 'margin-top:10px', onclick: function () { pedirArchivo('image/*,video/*,audio/*').then(procesarArchivo); } }, icono('camara'), 'Elegir foto, vídeo o audio del móvil'));
+    w.appendChild(env);
+    var r = M.repro;
+    if (r && (pendienteRepro(r) || Date.now() - r.t < 600000)) w.appendChild(tarjetaRepro(r));
+    var t = el('div', { class: 'tarjeta', id: 'preparados' }, el('h2', {}, 'Preparados'));
+    if (!M.lista.length) t.appendChild(el('p', { class: 'vacio' }, 'Todavía no hay nada preparado.'));
+    M.lista.forEach(function (m) {
+      var sel = m.tipo === 'foto' ? el('select', { 'aria-label': 'Cuánto tiempo se ve la foto', onchange: function (e) { minFoto = Number(e.target.value); } },
+        el('option', { value: '1' }, 'Se ve 1 minuto'), el('option', { value: '5' }, 'Se ve 5 minutos'), el('option', { value: '15' }, 'Se ve 15 minutos'), el('option', { value: '0' }, 'Hasta que la quite')) : null;
+      if (sel) sel.value = String(minFoto);
+      t.appendChild(el('div', { class: 'item' }, el('span', { class: 'avatar' }, icono(iconoMedio(m.tipo))),
+        el('div', { class: 'cuerpo' }, el('div', { class: 'quien' }, nombreMedio(m)), m.texto ? el('div', { class: 'texto' }, m.texto) : null,
+          el('div', { class: 'meta' }, cuando(Math.floor(m.t / 1000)) + ' · ' + pesoMedio(m.bytes)),
+          sel ? el('div', { style: 'margin-top:8px' }, sel) : null,
+          el('div', { class: 'fila', style: 'margin-top:10px' },
+            el('button', { class: 'btn', type: 'button', onclick: function (e) { accion('admMedioReproducir', [m.id, m.tipo === 'foto' ? minFoto : 0], m.tipo === 'foto' ? 'Mandada a la tele' : 'Mandado a la tele', e.currentTarget).then(sondearMedios); } },
+              icono(m.tipo === 'foto' ? 'pantalla' : 'play'), m.tipo === 'foto' ? 'Mostrar ahora en la TV' : 'Reproducir ahora'),
+            el('button', { class: 'btn suave', type: 'button', 'aria-label': 'Borrar: ' + nombreMedio(m), onclick: function (e) {
+              var b = e.currentTarget;
+              confirmar('¿Borrar este envío?', nombreMedio(m) + ' se borra de tu Drive y no se podrá volver a poner.', 'Borrar', true).then(function (si) { if (si) accion('admMedioBorrar', [m.id], 'Borrado', b); });
+            } }, icono('papelera'))))));
+    });
+    w.appendChild(t);
+    return w;
+  }
+  function vistaMedios() {
+    var w = document.createDocumentFragment();
+    w.appendChild(cabecera('Audios y vídeos', 'Manda algo para que mamá lo vea o lo escuche en la tele.', 'mas'));
+    w.appendChild(estadoTV());
+    w.appendChild(bloqueMedios());
+    var h = S.histMedios || [];
+    var t = el('div', { class: 'tarjeta', id: 'historial-medios' }, el('h2', {}, 'Historial'));
+    if (!h.length) t.appendChild(el('p', { class: 'vacio' }, 'Todavía no se ha puesto nada en la tele.'));
+    h.forEach(function (x) {
+      t.appendChild(el('div', { class: 'item' }, el('span', { class: 'avatar' }, icono(iconoMedio(x.tipo))),
+        el('div', { class: 'cuerpo' }, el('div', { class: 'quien' }, nombreMedio(x)), el('div', { class: 'meta' }, 'Lo puso ' + (x.quien || 'alguien') + ' · ' + cuando(Math.floor(x.t / 1000))))));
+    });
+    w.appendChild(t);
+    return w;
+  }
+
+  /** Mientras algo se pone en la tele, el estado se mira cada 3 segundos (y solo eso: es una llamada ligera). */
+  function sondearMedios() {
+    return llamar('admMediosEstado').then(function (r) {
+      var f = JSON.stringify(r.medios);
+      S.medios = r.medios; if (r.histMedios) S.histMedios = r.histMedios; S.tv = r.tv;
+      if (f !== mediosFirma) { mediosFirma = f; pintar(); }
+      programarSondeo();
+    }, function () { programarSondeo(); });
+  }
+  function programarSondeo() {
+    clearTimeout(mediosTimer);
+    if (S && S.medios && pendienteRepro(S.medios.repro)) mediosTimer = setTimeout(function () { if (!document.hidden) sondearMedios(); else programarSondeo(); }, 3000);
+  }
+
   /* ============================== arranque ============================== */
   function aplicarTema() {
     var t = leerLocal('tema');
@@ -1247,6 +1609,7 @@
       if (ROL === 'familia' && !S.miId) S.miId = 'yo';
       if (r.rol === 'admin' && !r.datos.mensajes) r.datos.mensajes = [];
       pintar();
+      programarSondeo();
     }, function (e) { if (!silencioso) $('app').innerHTML = '<p class="vacio" style="padding-top:40px"></p>', $('app').firstChild.textContent = 'No se ha podido cargar: ' + mensajeError(e); });
   }
   /** Se actualiza solo cada 25 s, salvo que estés escribiendo. */
