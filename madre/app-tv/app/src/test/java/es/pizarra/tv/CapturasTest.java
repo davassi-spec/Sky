@@ -126,4 +126,26 @@ public class CapturasTest {
             captura(e + "-noche", json(e, DANIEL + "," + ANA, EV_DIA, TIEMPO, "null"), 20, 22, 10);
         }
     }
+
+    private static final String EV_MUCHOS = "[{\"dia\":0,\"titulo\":\"Merienda con Ana\",\"hora\":\"18:30\",\"orden\":1},{\"dia\":0,\"titulo\":\"Llamada de Javier\",\"hora\":\"19:15\",\"orden\":2},"
+            + "{\"dia\":0,\"titulo\":\"Cena\",\"hora\":\"21:00\",\"orden\":3},{\"dia\":0,\"titulo\":\"Ver el programa\",\"hora\":\"21:30\",\"orden\":4},"
+            + "{\"dia\":0,\"titulo\":\"Regar las plantas\",\"hora\":\"21:45\",\"orden\":5},{\"dia\":1,\"titulo\":\"Viene Ana\",\"hora\":\"09:00\",\"orden\":6}]";
+    private static final String EV_SOLO_MANANA = "[{\"dia\":1,\"titulo\":\"Viene Ana\",\"hora\":\"09:00\",\"orden\":1}]";
+
+    /** Los casos de la última tanda de cambios, en Lavanda y Cálido, de día y de noche. */
+    @Test
+    public void casosDeLaUltimaTanda() throws Exception {
+        foto();
+        for (String e : new String[]{"lavanda", "calido"}) {
+            captura(e + "-p-dos-mensajes", json(e, DANIEL + "," + ANA, EV_DIA, TIEMPO, "null"), 20, 17, 15);
+            captura(e + "-p-un-mensaje", json(e, DANIEL, EV_DIA, TIEMPO, "null"), 20, 17, 15);
+            captura(e + "-p-sin-eventos", json(e, DANIEL + "," + ANA, EV_SOLO_MANANA, TIEMPO, "null"), 20, 17, 15);
+            captura(e + "-p-sin-eventos-ni-tiempo", json(e, DANIEL, "[]", "null", "null"), 20, 17, 15);
+            captura(e + "-p-sin-mensajes-ni-eventos", json(e, "", "[]", TIEMPO, "null"), 20, 17, 15);
+            captura(e + "-p-muchos-eventos", json(e, DANIEL + "," + ANA, EV_MUCHOS, TIEMPO, "null"), 20, 17, 15);
+            captura(e + "-p-noche-con-mensajes", json(e, DANIEL + "," + ANA, EV_DIA, TIEMPO, "null"), 20, 22, 10);
+            captura(e + "-p-noche-sin-eventos", json(e, DANIEL + "," + ANA, "[]", TIEMPO, "null"), 20, 22, 10);
+            captura(e + "-p-noche-sin-mensajes-ni-eventos", json(e, "", "[]", TIEMPO, "null"), 20, 22, 10);
+        }
+    }
 }

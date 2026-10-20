@@ -315,12 +315,27 @@ public class MainActivity extends Activity {
             escalar(t, k);
             t.measure(View.MeasureSpec.makeMeasureSpec(ancho, View.MeasureSpec.EXACTLY),
                     View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED));
-            if (t.getMeasuredHeight() <= alto) {
+            if (t.getMeasuredHeight() <= alto && !desbordaAncho(t)) {
                 t.post(new Runnable() { @Override public void run() { t.requestLayout(); } });
                 return true;
             }
         }
         escalar(t, 1f);
+        return false;
+    }
+
+    /** ¿Alguna línea de una sola línea se sale por el lado al agrandarla? (ya medido) */
+    private boolean desbordaAncho(View v) {
+        if (v instanceof TextView) {
+            TextView tv = (TextView) v;
+            if (tv.getMaxLines() == 1 && tv.getVisibility() == View.VISIBLE) {
+                float ancho = tv.getMeasuredWidth() - tv.getPaddingLeft() - tv.getPaddingRight();
+                if (ancho > 0 && tv.getPaint().measureText(tv.getText().toString()) > ancho) return true;
+            }
+        } else if (v instanceof ViewGroup) {
+            ViewGroup g = (ViewGroup) v;
+            for (int i = 0; i < g.getChildCount(); i++) if (desbordaAncho(g.getChildAt(i))) return true;
+        }
         return false;
     }
 
@@ -614,6 +629,9 @@ public class MainActivity extends Activity {
             }
         }
 
+        izq.removeAll(java.util.Collections.singleton(null));        // las tarjetas vacías no se enseñan
+        der.removeAll(java.util.Collections.singleton(null));
+        if (izq.isEmpty() && der.size() > 1) izq.add(der.remove(0));  // sin nada a la izquierda, la primera pasa allí y las demás crecen
         if (izq.isEmpty()) { izq = der; der = new ArrayList<>(); }
         for (View v : izq) anadir(colIzq, v, 1f);
         for (View v : der) anadir(colDer, v, v.getTag() instanceof String && "tiempo".equals(v.getTag()) ? pesoTiempo : "dormir".equals(v.getTag()) ? 1.3f : 1f);
@@ -839,7 +857,7 @@ public class MainActivity extends Activity {
     private View tarjetaMensaje(final Datos.Mensaje m, Calendar ahora, boolean dos) {
         final LinearLayout t = tarjeta(false);
         t.setGravity(Gravity.CENTER_VERTICAL);
-        int lado = dos ? 72 : 96;
+        int lado = dos ? 64 : 84;
         LinearLayout cab = new LinearLayout(this);
         cab.setOrientation(LinearLayout.HORIZONTAL);
         cab.setGravity(Gravity.CENTER_VERTICAL);
@@ -862,16 +880,10 @@ public class MainActivity extends Activity {
         }
         LinearLayout col = new LinearLayout(this);
         col.setOrientation(LinearLayout.VERTICAL);
-        TextView quien = texto(dos ? 40 : 48, true);
+        TextView quien = texto(dos ? 48 : 56, true);
         quien.setTextColor(p.acentoTexto);
         quien.setText(m.de.isEmpty() ? "Mensaje" : m.de + " dice");
         col.addView(quien);
-        if (m.t > 0) {
-            TextView cuando = texto(36, false);
-            cuando.setTextColor(p.sub);
-            cuando.setText(Texto.cuandoEscribio(m.t, ahora));
-            col.addView(cuando);
-        }
         cab.addView(col);
         t.addView(cab);
 
@@ -880,10 +892,10 @@ public class MainActivity extends Activity {
         tx.setTextColor(p.texto);
         tx.setText(m.texto);
         LinearLayout.LayoutParams lpT = lp(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        lpT.topMargin = px(dos ? 12 : 20);
+        lpT.topMargin = px(dos ? 8 : 14);
         t.addView(tx, lpT);
         // Se prueba de mayor a menor: la letra crece hasta llenar la tarjeta (hasta 96 px) y solo encoge si no cabe.
-        final int[] tamanos = dos ? new int[]{80, 72, 64, 56, 50, 44, 40, 36} : new int[]{96, 88, 80, 72, 64, 56, 50, 44, 40, 36};
+        final int[] tamanos = dos ? new int[]{92, 84, 76, 68, 60, 54, 48, 44, 40, 36} : new int[]{116, 108, 100, 92, 84, 76, 68, 60, 54, 48, 44, 40, 36};
         final View cabeza = cab;
         t.addOnLayoutChangeListener(new View.OnLayoutChangeListener() {
             @Override public void onLayoutChange(View v, int l, int tp, int r, int b, int ol, int ot, int or, int ob) {
@@ -898,10 +910,11 @@ public class MainActivity extends Activity {
     }
 
     /** Lo próximo del calendario; de noche, lo de mañana (o lo de hoy si ya pasó la medianoche). */
-    private View tarjetaEventos(Calendar ahora, boolean deNoche, boolean deManana) {
+    private View tarjetaEventos(Calendar ahora, final boolean deNoche, boolean deManana) {
         final LinearLayout t = tarjeta(false);
         List<Datos.Evento> lista = new ArrayList<>();
         for (Datos.Evento e : datos.eventos) if (e.manana == deManana) lista.add(e);
+        if (lista.isEmpty()) return null;               // una tarjeta vacía no se enseña: las demás ocupan su sitio
 
         final TextView titulo = texto(44, true);
         titulo.setTextColor(p.acentoTexto);
@@ -910,7 +923,7 @@ public class MainActivity extends Activity {
             if (deManana) dia.add(Calendar.DAY_OF_YEAR, 1);
             titulo.setText((deManana ? "Mañana, " : "Hoy, ") + Texto.nombreDia(dia).toLowerCase(new Locale("es")));
         } else {
-            titulo.setText(lista.isEmpty() ? "Hoy" : "Lo próximo");
+            titulo.setText("Lo próximo");
         }
         t.addView(titulo);
 
@@ -920,18 +933,12 @@ public class MainActivity extends Activity {
         lpLista.topMargin = px(14);
         t.addView(listaEv, lpLista);
 
-        if (lista.isEmpty()) {
-            TextView vacio = texto(48, true);
-            vacio.setTextColor(p.sub);
-            vacio.setText((deManana ? "Mañana" : "Hoy") + " no hay nada apuntado.");
-            listaEv.addView(vacio);
-        }
         for (int i = 0; i < lista.size(); i++) listaEv.addView(itemEvento(lista.get(i), i == 0 && !deNoche, i > 0, deNoche));
 
         t.addOnLayoutChangeListener(new View.OnLayoutChangeListener() {
             @Override public void onLayoutChange(View v, int l, int tp, int r, int b, int ol, int ot, int or, int ob) {
                 if (r - l == or - ol && b - tp == ob - ot) return;
-                if (!llenar(t, 1.7f)) recortarEventos(t, titulo, listaEv);
+                if (!llenar(t, 1.7f)) recortarEventos(t, titulo, listaEv, deNoche);
             }
         });
         return t;
@@ -979,7 +986,7 @@ public class MainActivity extends Activity {
     }
 
     /** Si hay más eventos de los que caben, deja los primeros y avisa de cuántos faltan. */
-    private void recortarEventos(LinearLayout t, TextView titulo, LinearLayout lista) {
+    private void recortarEventos(LinearLayout t, TextView titulo, LinearLayout lista, boolean conAviso) {
         int ancho = t.getWidth() - t.getPaddingLeft() - t.getPaddingRight();
         int alto = t.getHeight() - t.getPaddingTop() - t.getPaddingBottom() - titulo.getHeight() - px(14);
         if (ancho <= 0 || alto <= 0) return;
@@ -991,7 +998,7 @@ public class MainActivity extends Activity {
             lista.removeViewAt(lista.getChildCount() - 1);
             quitados++;
         }
-        if (quitados == 0) return;
+        if (quitados == 0 || !conAviso) return;          // de día se enseñan los que caben, sin "…y N más"
         // El aviso "…y N más" solo se pone si cabe; si no, mejor dejar el hueco limpio que una letra cortada.
         lista.measure(View.MeasureSpec.makeMeasureSpec(ancho, View.MeasureSpec.EXACTLY),
                 View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED));
@@ -1091,7 +1098,7 @@ public class MainActivity extends Activity {
         }
         fila.addView(col, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
         t.addView(fila);
-        if (conAgenda) {
+        if (conAgenda && !lista.isEmpty()) {         // sin nada apuntado, no se enseña la línea
             String dia = deManana ? "Mañana" : "Hoy";
             View raya = new View(this);
             raya.setBackgroundColor(p.borde);
@@ -1105,20 +1112,25 @@ public class MainActivity extends Activity {
             que.setTextColor(p.texto);
             que.setSingleLine(true);
             que.setEllipsize(TextUtils.TruncateAt.END);
-            if (lista.isEmpty()) {
-                cuando.setText(dia);
-                que.setText("No hay nada apuntado.");
-                que.setTextColor(p.sub);
-            } else {
-                Datos.Evento e = lista.get(0);
-                String cuandoTxt = e.hora.isEmpty() ? "todo el día" : Texto.aLas(e.hora);
-                cuando.setText(dia + " " + (cuandoTxt.isEmpty() ? "todo el día" : cuandoTxt));      // "Mañana a las nueve"
-                que.setText(Texto.mayus(e.titulo));
-            }
+            Datos.Evento e = lista.get(0);
+            String cuandoTxt = e.hora.isEmpty() ? "todo el día" : Texto.aLas(e.hora);
+            cuando.setText(dia + " " + (cuandoTxt.isEmpty() ? "todo el día" : cuandoTxt));      // "Mañana a las nueve"
+            que.setText(Texto.mayus(e.titulo));
             t.addView(cuando);
             t.addView(que);
         }
+        agrandarAlHueco(t, 1.8f);
         return t;
+    }
+
+    /** Cuando la tarjeta tiene sitio de sobra, letra e iconos crecen hasta llenarlo (como mucho kmax veces). */
+    private void agrandarAlHueco(final LinearLayout t, final float kmax) {
+        t.addOnLayoutChangeListener(new View.OnLayoutChangeListener() {
+            @Override public void onLayoutChange(View v, int l, int tp, int r, int b, int ol, int ot, int or, int ob) {
+                if (r - l == or - ol && b - tp == ob - ot) return;
+                llenar(t, kmax);
+            }
+        });
     }
 
     /** "Si necesitas algo, llama a Daniel" con su teléfono. */
@@ -1149,6 +1161,7 @@ public class MainActivity extends Activity {
             col.addView(n);
         }
         t.addView(col, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+        agrandarAlHueco(t, 1.6f);
         return t;
     }
 }
