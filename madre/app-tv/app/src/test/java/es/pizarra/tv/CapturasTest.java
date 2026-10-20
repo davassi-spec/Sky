@@ -201,4 +201,32 @@ public class CapturasTest {
             o.write(android.util.Base64.decode(b64, android.util.Base64.DEFAULT));
         }
     }
+
+    private static String conDistribucion(String json, String dist) {
+        return json.replace("\"version\":2", "\"version\":2,\"distribucion\":\"" + dist + "\"");
+    }
+
+    /** Las cuatro distribuciones, con dos estilos, de día y de noche, y con todos los casos (vacíos, cuenta atrás, recordatorio…). */
+    @Test
+    public void distribuciones() throws Exception {
+        foto();
+        for (String d : new String[]{"clasica", "reloj", "lista", "sencillo"}) {
+            for (String e : new String[]{"lavanda", "calido"}) {
+                String n = "d4-" + d + "-" + e + "-";
+                captura(n + "dia-completo", conDistribucion(json(e, DANIEL + "," + ANA, EV_DIA, TIEMPO, "null"), d), 20, 17, 15);
+                captura(n + "dia-un-mensaje", conDistribucion(json(e, DANIEL, EV_DIA, TIEMPO, "null"), d), 20, 17, 15);
+                captura(n + "dia-mensaje-largo", conDistribucion(json(e, LARGO + "," + ANA, EV_DIA, TIEMPO, "null"), d), 20, 11, 40);
+                captura(n + "dia-cuenta-atras", conDistribucion(json(e, DANIEL + "," + ANA, EV_DIA, TIEMPO, CUENTA), d), 20, 17, 15);
+                captura(n + "dia-sin-mensajes", conDistribucion(json(e, "", EV_DIA, TIEMPO, "null"), d), 20, 17, 15);
+                captura(n + "dia-sin-eventos", conDistribucion(json(e, DANIEL + "," + ANA, EV_SOLO_MANANA, TIEMPO, "null"), d), 20, 17, 15);
+                captura(n + "dia-sin-tiempo", conDistribucion(json(e, DANIEL + "," + ANA, EV_DIA, "null", "null"), d), 20, 17, 15);
+                captura(n + "dia-solo-mensajes", conDistribucion(json(e, DANIEL + "," + ANA, "[]", "null", "null"), d), 20, 17, 15);
+                captura(n + "dia-nada", conDistribucion(json(e, "", "[]", "null", "null"), d), 20, 17, 15);
+                captura(n + "noche", conDistribucion(json(e, DANIEL + "," + ANA, EV_DIA, TIEMPO, "null"), d), 20, 22, 10);
+                captura(n + "noche-sin-mensajes", conDistribucion(json(e, "", EV_DIA, TIEMPO, "null"), d), 20, 22, 10);
+                captura(n + "noche-nada", conDistribucion(json(e, "", "[]", "null", "null"), d), 20, 22, 10);
+                captura(n + "recordatorio", conDistribucion(json(e, DANIEL + "," + ANA, EV_DIA, TIEMPO, "null", REC), d), 20, 17, 15);
+            }
+        }
+    }
 }

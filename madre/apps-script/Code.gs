@@ -17,6 +17,7 @@ var NOMBRE_CARPETA = 'Pizarra';
 var NOMBRE_DATOS = 'pizarra-datos.json';
 var MAX_CADUCADOS = 100;          // mensajes ya caducados que se guardan en el historial
 var MAX_ACTIVOS = 50;
+var DISTRIBUCIONES = ['clasica', 'reloj', 'lista', 'sencillo'];
 var ESTILOS = ['calido', 'lavanda', 'salvia', 'terracota', 'contraste'];
 var BLOQUES = ['cuentaAtras', 'mensajes', 'proximo', 'tiempo', 'parteDelDia'];
 var ICONOS_CUENTA = ['calendario', 'avion', 'corazon', 'tarta'];
@@ -37,6 +38,7 @@ function base_() {
     calendarios: [],
     bloques: BLOQUES.map(function (id) { return { id: id, activo: true }; }),
     estiloDia: 'lavanda', estiloNoche: 'calido',
+    distribucion: 'clasica',                       // clasica | reloj | lista | sencillo
     prueba: null,                                  // { estilo, modo, hasta } mientras dura "Probar 1 minuto"
     cuentasAtras: [],
     recordatorios: [],                             // { id, hora 'HH:MM', dias [0..6, 0=domingo], texto, texto2, foto {id,v}, duracion (min), confirmar, activo }
@@ -74,6 +76,7 @@ function normalizar_(d) {
   d.bloques = orden;
   if (ESTILOS.indexOf(d.estiloDia) < 0) d.estiloDia = 'lavanda';
   if (ESTILOS.indexOf(d.estiloNoche) < 0) d.estiloNoche = 'calido';
+  if (DISTRIBUCIONES.indexOf(d.distribucion) < 0) d.distribucion = 'clasica';
   d.version = VERSION;
   return d;
 }
@@ -354,7 +357,7 @@ function estado_() {
   var ahora = Date.now();
   var vivos = d.mensajes.filter(function (m) { return esVivo_(m, ahora); }).sort(function (a, b) { return b.t - a.t; });
   var verMsg = bloqueActivo_(d, 'mensajes'), verEv = bloqueActivo_(d, 'proximo'), verT = bloqueActivo_(d, 'tiempo');
-  var prueba = d.prueba && d.prueba.hasta > ahora ? { estilo: d.prueba.estilo, modo: d.prueba.modo, segundos: Math.round((d.prueba.hasta - ahora) / 1000) } : null;
+  var prueba = d.prueba && d.prueba.hasta > ahora ? { estilo: d.prueba.estilo, distribucion: d.prueba.distribucion || null, modo: d.prueba.modo, segundos: Math.round((d.prueba.hasta - ahora) / 1000) } : null;
   return {
     ahora: new Date(ahora).toISOString(),
     version: VERSION,
@@ -370,6 +373,7 @@ function estado_() {
     bloques: d.bloques,
     estiloDia: d.estiloDia,
     estiloNoche: d.estiloNoche,
+    distribucion: d.distribucion,
     prueba: prueba,
     cuentaAtras: bloqueActivo_(d, 'cuentaAtras') ? cuentaAtras_(d) : null,
     // Novedades de la versión 3:
@@ -655,7 +659,7 @@ function admEstado(k) {
   return {
     rol: 'admin', tv: tv, ahora: ahora,
     datos: {
-      mensajes: d.mensajes, bloques: d.bloques, estiloDia: d.estiloDia, estiloNoche: d.estiloNoche,
+      mensajes: d.mensajes, bloques: d.bloques, estiloDia: d.estiloDia, estiloNoche: d.estiloNoche, distribucion: d.distribucion,
       prueba: d.prueba && d.prueba.hasta > ahora ? d.prueba : null,
       cuentasAtras: d.cuentasAtras.map(function (c) {
         var dias = diasHasta_(c.fecha);
@@ -686,7 +690,7 @@ function admEstado(k) {
 function vistaPreviaTV_(d) {
   var e = estado_();
   return { mensajes: e.mensajes, eventos: e.eventos, tiempo: e.tiempo, cuentaAtras: e.cuentaAtras, bloques: e.bloques,
-           estiloDia: e.estiloDia, estiloNoche: e.estiloNoche, noche: e.noche, nocheTexto: e.nocheTexto, contacto: e.contacto };
+           estiloDia: e.estiloDia, estiloNoche: e.estiloNoche, distribucion: e.distribucion, noche: e.noche, nocheTexto: e.nocheTexto, contacto: e.contacto };
 }
 
 /**
@@ -780,6 +784,7 @@ function admAjustes(k, aj) {
     }
     if (aj.estiloDia && ESTILOS.indexOf(aj.estiloDia) >= 0) d.estiloDia = aj.estiloDia;
     if (aj.estiloNoche && ESTILOS.indexOf(aj.estiloNoche) >= 0) d.estiloNoche = aj.estiloNoche;
+    if (aj.distribucion && DISTRIBUCIONES.indexOf(aj.distribucion) >= 0) d.distribucion = aj.distribucion;
     if (aj.calendarios) d.calendarios = aj.calendarios.map(String);
     if (aj.ciudad) {
       d.ciudad = String(aj.ciudad).slice(0, 60);
@@ -798,12 +803,13 @@ function admAjustes(k, aj) {
   return admEstado(k);
 }
 
-/** "Probar estilo 1 minuto": la TV usa ese estilo en modo día o noche durante un minuto. */
-function admProbarEstilo(k, estilo, modo) {
+/** "Probar 1 minuto": la TV usa ese estilo (y, si se pide, esa distribución) en modo día o noche durante un minuto. */
+function admProbarEstilo(k, estilo, modo, distribucion) {
   admin_(k);
   if (ESTILOS.indexOf(estilo) < 0) throw new Error('Ese estilo no existe');
+  var dist = DISTRIBUCIONES.indexOf(distribucion) >= 0 ? distribucion : null;
   modificar_(function (d) {
-    d.prueba = { estilo: estilo, modo: modo === 'noche' ? 'noche' : 'dia', hasta: Date.now() + 60000 };
+    d.prueba = { estilo: estilo, distribucion: dist, modo: modo === 'noche' ? 'noche' : 'dia', hasta: Date.now() + 60000 };
   });
   return admEstado(k);
 }

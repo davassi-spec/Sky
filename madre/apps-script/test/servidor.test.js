@@ -454,5 +454,25 @@ const JPEG = 'data:image/jpeg;base64,' + Buffer.from('foto-de-prueba').toString(
   t('mirar no cuenta como TV conectada', s.run('tvUltima_()') === 0);
 }
 
+/* ---------- 15. Distribución de la pantalla ---------- */
+{
+  const s = crear({ ahora: new Date(2026, 9, 20, 17, 15).getTime() });
+  t('por defecto, la clásica', s.run('estado_()').distribucion === 'clasica');
+  s.run("admAjustes('ADMINKEY', {distribucion:'reloj'})");
+  t('se guarda la distribución', s.run('estado_()').distribucion === 'reloj' && s.run("admEstado('ADMINKEY')").datos.distribucion === 'reloj');
+  s.run("admAjustes('ADMINKEY', {distribucion:'inventada'})");
+  t('una distribución que no existe se ignora', s.run('estado_()').distribucion === 'reloj');
+  s.run("admAjustes('ADMINKEY', {estiloDia:'salvia'})");
+  t('cambiar el estilo no toca la distribución', s.run('estado_()').distribucion === 'reloj');
+  s.run("admProbarEstilo('ADMINKEY','calido','noche','sencillo')");
+  const p = s.run('estado_()').prueba;
+  t('la prueba lleva estilo, modo y distribución', p.estilo === 'calido' && p.modo === 'noche' && p.distribucion === 'sencillo' && s.run('estado_()').distribucion === 'reloj');
+  s.run("admProbarEstilo('ADMINKEY','calido','dia')");
+  t('una prueba sin distribución deja la elegida', s.run('estado_()').prueba.distribucion === null);
+  t('la vista previa de la familia trae la distribución', s.run("vistaPreviaTV_(leer_())").distribucion === 'reloj');
+  s.run("admFamiliaAnadir('ADMINKEY','Ana')"); const kf = s.run('leer_()').familia[0].clave;
+  t('un familiar no puede cambiarla', falla(() => s.run(`admAjustes(${J(kf)}, {distribucion:'lista'})`)) && s.run('estado_()').distribucion === 'reloj');
+}
+
 console.log(bien + ' bien, ' + mal + ' fallos');
 process.exit(mal ? 1 : 0);

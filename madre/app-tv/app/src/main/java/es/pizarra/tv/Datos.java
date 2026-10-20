@@ -43,6 +43,9 @@ final class Datos {
 
     Recordatorio recordatorio;
     boolean pidenCaptura;           // alguien mira la vista previa en el panel: hay que mandar una captura de la pantalla
+    static final String[] DISTRIBUCIONES = {"clasica", "reloj", "lista", "sencillo"};
+    String distribucion = "clasica";
+    String pruebaDistribucion;
     String estiloDia = "lavanda";
     String estiloNoche = "calido";
     String pruebaEstilo;            // "Probar 1 minuto" desde el panel; null si no hay prueba
@@ -92,11 +95,13 @@ final class Datos {
             else if (id.equals("cuentaAtras")) d.verCuenta = on;
             else if (id.equals("parteDelDia")) d.verParte = on;
         }
+        d.distribucion = valida(o.optString("distribucion", "clasica"));
         d.estiloDia = o.optString("estiloDia", "lavanda");
         d.estiloNoche = o.optString("estiloNoche", "calido");
         JSONObject pr = o.optJSONObject("prueba");
         if (pr != null) {
             d.pruebaEstilo = pr.optString("estilo", null);
+            d.pruebaDistribucion = pr.isNull("distribucion") ? null : valida(pr.optString("distribucion", d.distribucion));
             d.pruebaNoche = "noche".equals(pr.optString("modo"));
             d.pruebaSegundos = pr.optInt("segundos", 0);
         }
@@ -167,7 +172,7 @@ final class Datos {
     String firma() {
         StringBuilder b = new StringBuilder();
         b.append(verMensajes).append(verEventos).append(verTiempo).append(verCuenta).append(verParte);
-        b.append('|').append(nocheTexto).append('|').append(contactoNombre).append(contactoTelefono);
+        b.append(distribucionAhora()).append('|').append(nocheTexto).append('|').append(contactoNombre).append(contactoTelefono);
         for (Mensaje m : mensajes) b.append('|').append(m.de).append(m.texto).append(m.t).append(m.autor).append(m.foto);
         for (Evento e : eventos) b.append('|').append(e.manana).append(e.hora).append(e.titulo);
         if (hayTiempo) b.append('|').append(temperatura).append(codigoTiempo);
@@ -191,6 +196,16 @@ final class Datos {
     /** Estilo y modo que se ven ahora, teniendo en cuenta "Probar 1 minuto". */
     boolean esNocheAhora(int hora) {
         return pruebaEstilo != null ? pruebaNoche : esNoche(hora);
+    }
+
+    static String valida(String d) {
+        for (String x : DISTRIBUCIONES) if (x.equals(d)) return d;
+        return "clasica";
+    }
+
+    /** La distribución que se ve ahora (la de "Probar 1 minuto" si hay una prueba en marcha). */
+    String distribucionAhora() {
+        return pruebaEstilo != null && pruebaDistribucion != null ? pruebaDistribucion : distribucion;
     }
 
     String estiloAhora(boolean noche) {
