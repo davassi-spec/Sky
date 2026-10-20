@@ -100,10 +100,12 @@ Todo está en tres PR en borrador encadenados (#8 distribuciones → #9 audios y
 
 ### Publicar la app del móvil (GitHub Pages)
 
-La rama `gh-pages` contiene solo `index.html` e `iconos/` (sin claves ni direcciones del script). En GitHub: **Settings › Pages › Source: Deploy from a branch › `gh-pages` / root.** Queda en `https://davassi-spec.github.io/Sky/`. Cada vez que cambie `Admin.html` hay que ejecutar `python3 web-app/construir.py` y volver a publicar `index.html` en esa rama.
+La app vive en la subcarpeta **`tele/`** de la rama que ya sirve GitHub Pages (`claude/api-install-test-u8px6b`), porque la raíz de `https://davassi-spec.github.io/Sky/` es la web de la Torre d'en Galmés y no se toca. Queda en **`https://davassi-spec.github.io/Sky/tele/`** (ya publicada). No hay que cambiar nada en Settings › Pages.
+
+Cada vez que cambie `Admin.html`: `python3 madre/web-app/construir.py` y `sh madre/web-app/publicar.sh` (copia solo `tele/` a esa rama).
 
 Después:
-1. Abre en el móvil `https://davassi-spec.github.io/Sky/#u=IDENTIFICADOR&k=TU_CLAVE`. `IDENTIFICADOR` es la parte de tu dirección `/exec` entre `/s/` y `/exec`. Más cómodo: en el panel de Google, **Más › Ajustes › Icono en la pantalla de inicio**, pega `https://davassi-spec.github.io/Sky/` en "Dirección de la app" y toca "Copiar mi enlace de la app".
+1. Abre en el móvil `https://davassi-spec.github.io/Sky/tele/#u=IDENTIFICADOR&k=TU_CLAVE`. `IDENTIFICADOR` es la parte de tu dirección `/exec` entre `/s/` y `/exec`. Más cómodo: en el panel de Google, **Más › Ajustes › Icono en la pantalla de inicio**, la dirección de la app ya viene puesta; toca "Copiar mi enlace de la app" (o "Enviármelo por WhatsApp").
 2. A partir de ahí, **Familia** da a cada persona un enlace de la app (con su clave tras el `#`, que el navegador nunca envía).
 3. **Añadir a pantalla de inicio:** *iPhone (Safari)*: Compartir (cuadrado con flecha) › Añadir a pantalla de inicio › Añadir. *Samsung (Chrome)*: ⋮ › Añadir a pantalla de inicio (o Instalar aplicación) › Añadir.
 4. Si el icono se abre sin el enlace, la app pide pegarlo una vez (también vale el enlace antiguo de Google).
