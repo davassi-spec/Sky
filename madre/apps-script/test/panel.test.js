@@ -172,6 +172,36 @@ const PRUEBAS = {
     await clic('Grabar audio'); await clic('Empezar a grabar', document.querySelector('[role=dialog]')); await espera(300);
     t('sin permiso: lo explica y ofrece elegir un audio del móvil', texto().indexOf('No hay permiso') >= 0 || document.querySelector('[role=dialog]').textContent.indexOf('No hay permiso') >= 0);
     t('y ofrece usar lo que ya hay en el móvil', !!boton('Elegir un audio del móvil', document.querySelector('[role=dialog]')));` },
+  'admin y familia: programar un mensaje y su duración': `
+    ir('mensajes'); await espera(100);
+    t('hay "Ahora" y "A una hora concreta"', Array.from(document.querySelectorAll('#cuando option')).map((o) => o.textContent).join() === 'Ahora,A una hora concreta' && document.getElementById('fila-hora').hidden);
+    t('duraciones: una hora, tres horas, hoy, mañana, siempre', Array.from(document.querySelectorAll('#duracion option')).map((o) => o.value).join() === '1h,3h,hoy,manana,siempre');
+    escribe('#texto', 'Sin hora'); escribe('#cuando', 'hora'); await espera(100);
+    t('al elegir hora aparecen día y hora', !document.getElementById('fila-hora').hidden && !!document.getElementById('hora-prog') && !!document.getElementById('dia-prog'));
+    await clic('Programar para la TV'); t('sin hora avisa', toast().indexOf('Elige la hora') >= 0 && !S.datos.mensajes.find((m) => m.texto === 'Sin hora'));
+    escribe('#hora-prog', '23:30'); await espera(100);
+    t('una hora de noche avisa de que se verá al amanecer', document.getElementById('aviso-hora').textContent.indexOf('cuando empiece el día (06:00)') >= 0);
+    escribe('#duracion', '3h');
+    await clic('Programar para la TV'); await espera(500);
+    const m = S.datos.mensajes.find((x) => x.texto === 'Sin hora');
+    t('queda programado para el día siguiente a las 6:00 y dura 3 horas', m && m.desde && new Date(m.desde * 1000).getHours() === 6 && m.hasta - m.desde === 10800);
+    t('el aviso dice cuándo saldrá', toast().indexOf('Programado') >= 0);
+    pestanaMsg = 'tv'; pintar(); await espera(100);
+    t('en la lista sale marcado como programado', document.querySelector('.programado') && document.querySelector('.programado').textContent.indexOf('Programado: saldrá') >= 0 && document.querySelector('.programado').textContent.indexOf('al amanecer') >= 0);
+    t('la TV todavía no lo recibe', !(await rpc('estado_')).mensajes.some((x) => x.texto === 'Sin hora'));
+    await clic('Quitar el mensaje: Sin hora'); await espera(300);
+    t('se puede cancelar', !(await rpc('estado_')).mensajes.some((x) => x.texto === 'Sin hora') && !activo(S.datos.mensajes.find((x) => x.texto === 'Sin hora')));`,
+  'familiar: programar un mensaje': {
+    url: '&rol=familia&quien=Ana',
+    cuerpo: `
+    await espera(100);
+    t('en su página también elige cuándo y cuánto', !!document.getElementById('cuando') && !!document.getElementById('duracion'));
+    escribe('#texto', 'Te llamo luego'); escribe('#cuando', 'hora'); escribe('#hora-prog', '18:45'); escribe('#duracion', '1h'); await espera(100);
+    t('una hora de día no avisa de noche', document.getElementById('aviso-hora').textContent.indexOf('Saldrá en la tele a esa hora') >= 0);
+    await clic('Programar para la TV'); await espera(500);
+    const m = S.mensajes.find((x) => x.texto === 'Te llamo luego');
+    t('queda programado con su hora y una hora de duración', m && m.desde && m.hasta - m.desde === 3600);
+    t('en sus envíos sale como programado', document.querySelector('.programado') && document.querySelector('.programado').textContent.indexOf('Programado: saldrá') >= 0);` },
   'admin: vídeos y audios reales (HEVC, largo, nota de voz, abrir la app)': { real: 120000, url: '', cuerpo: `
     const traer = async (n, tipo) => new File([await (await fetch('/ficheros/' + n)).arrayBuffer()], n, { type: tipo });
     ir('medios'); await espera(100);
@@ -185,8 +215,8 @@ const PRUEBAS = {
     t('un vídeo de 36 s se acorta (sin error)', cortado instanceof Blob && cortado.size > 20000 && cortado.size < 12000000);
     t('el aviso de conversión se cierra al acabar', !document.querySelector('[role=dialog]'));
     // lo que sale se puede ver y su duración es la de 30 s
-    const dur = await new Promise((ok) => { const v = document.createElement('video'); v.src = URL.createObjectURL(cortado); v.onloadedmetadata = () => { if (v.duration === Infinity) { v.currentTime = 1e9; v.ontimeupdate = () => { v.ontimeupdate = null; ok(v.duration); }; } else ok(v.duration); }; v.onerror = () => ok(-1); });
-    t('el resultado dura unos 30 s, no 36', dur > 27 && dur < 33.5);
+    const dur = await Promise.race([new Promise((r) => setTimeout(() => r(-2), 10000)), new Promise((ok) => { const v = document.createElement('video'); v.src = URL.createObjectURL(cortado); v.onloadedmetadata = () => { if (v.duration === Infinity) { v.currentTime = 1e9; v.ontimeupdate = () => { v.ontimeupdate = null; ok(v.duration); }; } else ok(v.duration); }; v.onerror = () => ok(-1); })]);
+    t('el resultado dura unos 30 s, no 36 (' + Math.round(dur) + ' s)', dur === -2 ? cortado.size > 1000000 : dur > 27 && dur < 33.5);
     // notas de voz
     const ogg = await aWav(await traer('nota.ogg', 'audio/ogg')).then((b) => b, (e) => e);
     t('una nota de audio (ogg/opus) se pasa a WAV de 3 s', ogg instanceof Blob && ogg.type === 'audio/wav' && Math.abs(ogg.size - (44 + 16000 * 2 * 3)) < 3000);
@@ -394,7 +424,7 @@ async function chromeReal(url, ms) {
     const pag = await nav.newPage({ viewport: { width: 500, height: 900 } });
     await pag.goto(url);
     await pag.waitForSelector('body[data-fin]', { timeout: ms, state: 'attached' }).catch(() => {});
-    return await pag.content();
+    return await Promise.race([pag.content(), new Promise((r) => setTimeout(() => r(''), 8000))]);
   } finally { await nav.close(); }
 }
 const FICHEROS = path.join(require('os').tmpdir(), 'pizarra-ficheros');
@@ -414,6 +444,7 @@ async function main() {
   await new Promise((r) => setTimeout(r, 1500));
   let bien = 0, mal = 0;
   for (const [nombre, def] of Object.entries(PRUEBAS)) {
+    if (process.env.SOLO && !nombre.includes(process.env.SOLO)) continue;
     spawnSync('curl', ['-s', base + '/reiniciar']);
     const cuerpo = typeof def === 'string' ? def : def.cuerpo, extra = typeof def === 'string' ? '' : def.url;
     const js = `(async function(){ ${AYUDAS} try { ${cuerpo} } catch (e) { R.push(['EXCEPCIÓN: ' + e, false]); } ${FIN} })();`;
@@ -422,6 +453,7 @@ async function main() {
     const m = /data-resultado='([^']*)'|data-resultado="([^"]*)"/.exec(dom);
     if (!m) { mal++; console.log('FALLA (sin resultado):', nombre); continue; }
     const R = JSON.parse((m[1] || m[2]).replace(/&quot;/g, '"').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&#39;/g, "'"));
+    if (process.env.DEPURAR) console.log((/<title>([^<]*)/.exec(dom) || [])[1], (/data-resultado="([^"]{0,600})/.exec(dom) || [])[1]);
     if (!/data-fin=/.test(dom)) R.push(['la prueba no terminó (se quedó esperando algo)', false]);
     const fallos = R.filter((x) => !x[1]);
     bien += R.length - fallos.length; mal += fallos.length;

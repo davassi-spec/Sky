@@ -134,6 +134,7 @@
   .ayuda-icono { margin-top: 12px; font-size: 16px; }
   .ayuda-icono summary { cursor: pointer; font-weight: 700; color: var(--suave-texto); min-height: 44px; display: flex; align-items: center; }
   .ayuda-icono p { margin: 8px 0 0; }
+  .programado { color: var(--suave-texto); font-weight: 700; }
   .barra-subida { height: 10px; border-radius: 5px; background: var(--borde); overflow: hidden; margin-top: 10px; --pct: 0%; }
   .barra-subida::after { content: ''; display: block; height: 100%; width: var(--pct); background: var(--primario); transition: width .3s; }
   .cuenta-grab { font-size: 22px; font-weight: 800; text-align: center; margin: 12px 0 4px; }
@@ -212,7 +213,7 @@
   /* ============================== utilidades ============================== */
   var S = null;                         // último estado del servidor
   var vista = 'inicio';
-  var borrador = { texto: '', duracion: 'hoy', de: '' };
+  var borrador = { texto: '', duracion: 'hoy', de: '', cuando: 'ahora', dia: 'hoy', hora: '' };
   var filtroPersona = 'todas', pestanaMsg = 'tv';
   var fotos = {};                       // personaId -> dataURL | null (null: sin foto)
   var fotosPidiendo = {};
@@ -379,6 +380,11 @@
     if (mismoDia(f, n)) return 'Hasta esta noche';
     if (mismoDia(f, new Date(n.getTime() + 86400000))) return 'Hasta mañana';
     return 'Hasta el ' + f.getDate() + ' de ' + MESES[f.getMonth()];
+  }
+  function programado(m) { return !!m.desde && m.desde * 1000 > Date.now() && activo(m); }
+  function textoProgramado(m) {
+    var t = 'Programado: saldrá ' + cuando(m.desde).toLowerCase().replace(/^hoy, /, 'hoy a las ').replace(/^ayer, /, 'ayer a las ');
+    return m.prog && m.prog !== m.desde ? t + ' (se verá al amanecer; la hora elegida era de noche)' : t;
   }
   function activo(m) { return !m.hasta || m.hasta * 1000 > Date.now(); }
   function esNoche(h, noche) {
@@ -726,6 +732,39 @@
     return w;
   }
   var FRASES = ['Te queremos mucho.', 'Hoy comemos juntos.', 'Hoy viene alguien a verte.', 'Te llamamos a las seis.'];
+  /** "¿Cuándo se ve?" (ahora o a una hora) y "¿Cuánto tiempo?" (de una hora a hasta que se quite). Lo usan el administrador y la familia. */
+  function selectorCuando() {
+    var noche = (S && (S.datos ? S.datos.noche : S.noche)) || { desde: 21, hasta: 6 };
+    var aviso_ = el('p', { class: 'ayuda', id: 'aviso-hora', style: 'margin-top:6px' });
+    var esDeNoche = function (h) { return noche.desde === noche.hasta ? false : noche.desde < noche.hasta ? (h >= noche.desde && h < noche.hasta) : (h >= noche.desde || h < noche.hasta); };
+    var pinta = function () {
+      var hora = $('hora-prog'), dia = $('dia-prog');
+      $('fila-hora').hidden = borrador.cuando !== 'hora';
+      var eb = $('enviar-msg'); if (eb && eb.lastChild) eb.lastChild.textContent = borrador.cuando === 'hora' ? 'Programar para la TV' : 'Enviar a la TV';
+      var h = hora && hora.value ? Number(hora.value.split(':')[0]) : null;
+      aviso_.textContent = borrador.cuando !== 'hora' ? '' : h !== null && esDeNoche(h)
+        ? 'Esa hora es de noche: la tele duerme. Se verá cuando empiece el día (' + dos(noche.hasta) + ':00).' : 'Saldrá en la tele a esa hora (la tele mira cada minuto).';
+    };
+    var cuando = el('select', { id: 'cuando', onchange: function (e) { borrador.cuando = e.target.value; pinta(); } },
+      el('option', { value: 'ahora' }, 'Ahora'), el('option', { value: 'hora' }, 'A una hora concreta'));
+    cuando.value = borrador.cuando;
+    var dia = el('select', { id: 'dia-prog', 'aria-label': 'Día', onchange: function (e) { borrador.dia = e.target.value; } }, el('option', { value: 'hoy' }, 'Hoy'), el('option', { value: 'manana' }, 'Mañana'));
+    dia.value = borrador.dia;
+    var hora = el('input', { type: 'time', id: 'hora-prog', 'aria-label': 'Hora', value: borrador.hora, oninput: function (e) { borrador.hora = e.target.value; pinta(); }, onchange: function (e) { borrador.hora = e.target.value; pinta(); } });
+    var fila = el('div', { class: 'fila', id: 'fila-hora', style: 'margin-top:8px' }, dia, hora);
+    var dur = el('select', { id: 'duracion', onchange: function (e) { borrador.duracion = e.target.value; } },
+      el('option', { value: '1h' }, 'Una hora'), el('option', { value: '3h' }, 'Tres horas'), el('option', { value: 'hoy' }, 'Solo hoy (se quita a medianoche)'),
+      el('option', { value: 'manana' }, 'Hoy y mañana'), el('option', { value: 'siempre' }, 'Hasta que yo lo quite'));
+    dur.value = borrador.duracion;
+    setTimeout(pinta, 0);
+    return [el('label', { class: 'eti', for: 'cuando' }, '¿Cuándo se ve?'), cuando, fila, aviso_, el('label', { class: 'eti', for: 'duracion' }, '¿Cuánto tiempo se ve?'), dur];
+  }
+  /** Lo que se manda al script para "cuando" (null = ahora) y el texto de confirmación. */
+  function cuandoElegido() {
+    if (borrador.cuando !== 'hora') return { valor: null, ok: 'Enviado. Saldrá en la tele en menos de un minuto.' };
+    if (!borrador.hora) return { error: 'Elige la hora a la que quieres que salga' };
+    return { valor: { dia: borrador.dia, hora: borrador.hora }, ok: 'Programado: saldrá ' + (borrador.dia === 'manana' ? 'mañana' : 'hoy') + ' a las ' + borrador.hora + '.' };
+  }
   function componerMensaje() {
     var firma = ROL === 'admin' ? [el('label', { class: 'eti', for: 'de' }, 'Firmas como'),
       el('input', { type: 'text', id: 'de', maxlength: '30', autocomplete: 'off', placeholder: 'Daniel', value: borrador.de || leerLocal('de'),
@@ -735,15 +774,14 @@
     ta.value = borrador.texto;
     var chips = el('div', { class: 'chips' });
     FRASES.forEach(function (f) { chips.appendChild(el('button', { class: 'chip', type: 'button', onclick: function () { ta.value = f; borrador.texto = f; $('cuenta').textContent = f.length + '/200'; ta.focus(); } }, f)); });
-    var dur = el('select', { id: 'duracion', onchange: function (e) { borrador.duracion = e.target.value; } },
-      el('option', { value: 'hoy' }, 'Solo hoy (se quita a medianoche)'), el('option', { value: 'manana' }, 'Hoy y mañana'), el('option', { value: 'siempre' }, 'Hasta que yo lo quite'));
-    dur.value = borrador.duracion;
-    var enviar = el('button', { class: 'btn', type: 'button', style: 'margin-top:16px', onclick: function () {
+    var sel = selectorCuando();
+    var enviar = el('button', { class: 'btn', type: 'button', id: 'enviar-msg', style: 'margin-top:16px', onclick: function () {
       var t = borrador.texto.trim(); if (!t) { aviso('Escribe un mensaje', 'error'); return; }
-      accion('admEnviar', [borrador.de || leerLocal('de'), t, borrador.duracion], 'Enviado. Saldrá en la tele en menos de un minuto.', enviar).then(function () { borrador.texto = ''; pestanaMsg = 'tv'; pintar(); });
-    } }, icono('enviar'), 'Enviar a la TV');
+      var c = cuandoElegido(); if (c.error) { aviso(c.error, 'error'); return; }
+      accion('admEnviar', [borrador.de || leerLocal('de'), t, borrador.duracion, c.valor], c.ok, enviar).then(function () { borrador.texto = ''; pestanaMsg = 'tv'; pintar(); });
+    } }, icono('enviar'), borrador.cuando === 'hora' ? 'Programar para la TV' : 'Enviar a la TV');
     return el('div', { class: 'tarjeta' }, el('h2', {}, 'Tu mensaje'), firma[0], firma[1], el('label', { class: 'eti', for: 'texto' }, 'Mensaje'), ta,
-      el('div', { class: 'contador', id: 'cuenta' }, borrador.texto.length + '/200'), chips, el('label', { class: 'eti', for: 'duracion' }, '¿Cuánto tiempo se ve?'), dur, enviar);
+      el('div', { class: 'contador', id: 'cuenta' }, borrador.texto.length + '/200'), chips, sel[0], sel[1], sel[2], sel[3], sel[4], sel[5], enviar);
   }
   function pintarListaMensajes() {
     var cont = $('lista-mensajes'); if (!cont || !S || !S.datos) return;
@@ -765,7 +803,7 @@
       }
       l.appendChild(el('div', { class: 'item' }, avatar(a.id, m.de, a.tieneFoto),
         el('div', { class: 'cuerpo' }, el('div', { class: 'quien' }, (m.de || 'Mensaje') + ' dice'), el('div', { class: 'texto' }, m.texto),
-          el('div', { class: 'meta' }, cuando(m.t) + (pestanaMsg === 'tv' ? ' · ' + hasta(m.hasta) : '')), acc)));
+          el('div', { class: 'meta' }, programado(m) ? el('span', { class: 'programado' }, textoProgramado(m)) : cuando(m.t) + (pestanaMsg === 'tv' ? ' · ' + hasta(m.hasta) : '')), programado(m) ? el('div', { class: 'meta' }, hasta(m.hasta)) : null, acc)));
     });
     t.appendChild(l);
     if (pestanaMsg === 'tv' && lista.length > 1 && ROL === 'admin' && filtroPersona === 'todas') {
@@ -1263,15 +1301,14 @@
     ta.value = borrador.texto;
     var chips = el('div', { class: 'chips' });
     FRASES.forEach(function (f) { chips.appendChild(el('button', { class: 'chip', type: 'button', onclick: function () { ta.value = f; borrador.texto = f; $('cuenta').textContent = f.length + '/200'; ta.focus(); } }, f)); });
-    var dur = el('select', { id: 'duracion', onchange: function (e) { borrador.duracion = e.target.value; } },
-      el('option', { value: 'hoy' }, 'Solo hoy (se quita a medianoche)'), el('option', { value: 'manana' }, 'Hoy y mañana'), el('option', { value: 'siempre' }, 'Hasta que yo lo quite'));
-    dur.value = borrador.duracion;
-    var enviar = el('button', { class: 'btn', type: 'button', style: 'margin-top:16px', onclick: function () {
+    var sel = selectorCuando();
+    var enviar = el('button', { class: 'btn', type: 'button', id: 'enviar-msg', style: 'margin-top:16px', onclick: function () {
       var t = borrador.texto.trim(); if (!t) { aviso('Escribe un mensaje', 'error'); return; }
-      accion('admEnviar', [S.nombre, t, borrador.duracion], 'Enviado a la TV. Saldrá en menos de un minuto.', enviar).then(function () { borrador.texto = ''; pintar(); });
-    } }, icono('enviar'), 'Enviar a la TV');
+      var c = cuandoElegido(); if (c.error) { aviso(c.error, 'error'); return; }
+      accion('admEnviar', [S.nombre, t, borrador.duracion, c.valor], c.ok, enviar).then(function () { borrador.texto = ''; pintar(); });
+    } }, icono('enviar'), borrador.cuando === 'hora' ? 'Programar para la TV' : 'Enviar a la TV');
     w.appendChild(el('div', { class: 'tarjeta' }, el('h2', {}, 'Tu mensaje'), el('label', { class: 'eti', for: 'texto' }, 'Mensaje'), ta, el('div', { class: 'contador', id: 'cuenta' }, borrador.texto.length + '/200'),
-      chips, el('label', { class: 'eti', for: 'duracion' }, '¿Cuánto tiempo se ve?'), dur, enviar));
+      chips, sel[0], sel[1], sel[2], sel[3], sel[4], sel[5], enviar));
     w.appendChild(bloqueMedios());
     var miId = S.miId;
     w.appendChild(el('div', { class: 'tarjeta' }, el('h2', {}, 'Tu foto para la tele de mamá'),
@@ -1286,7 +1323,7 @@
     var l = el('div', { class: 'lista' });
     mios.forEach(function (m) {
       l.appendChild(el('div', { class: 'item' }, el('div', { class: 'cuerpo' }, el('div', { class: 'texto' }, m.texto),
-        el('div', { class: 'meta' }, cuando(m.t) + (activo(m) ? ' · En la TV · ' + hasta(m.hasta) : ' · Ya caducó')),
+        el('div', { class: 'meta' }, programado(m) ? el('span', { class: 'programado' }, textoProgramado(m)) : cuando(m.t) + (activo(m) ? ' · En la TV · ' + hasta(m.hasta) : ' · Ya caducó')),
         activo(m) ? el('div', { class: 'acciones' }, el('button', { class: 'enlace peligro', type: 'button', 'aria-label': 'Quitar el mensaje: ' + m.texto, onclick: function () { accion('admBorrar', [m.id], 'Mensaje quitado de la tele'); } }, 'Quitar')) : null)));
     });
     t.appendChild(l); w.appendChild(t);

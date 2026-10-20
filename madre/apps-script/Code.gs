@@ -174,6 +174,8 @@ function podar_(d) {
   for (var c in d.recEstado) if (c.split('|')[1] < limite) delete d.recEstado[c];
 }
 function esVivo_(m, ahora) { return !m.hasta || m.hasta * 1000 > (ahora || Date.now()); }
+/** Un mensaje programado todavía no se ve hasta que llegue su hora (m.desde, en segundos). */
+function yaSeVe_(m, ahora) { return !m.desde || m.desde * 1000 <= (ahora || Date.now()); }
 
 /* ============================================================
  *  Claves y permisos
@@ -396,7 +398,7 @@ function bloqueActivo_(d, id) {
 function estado_() {
   var d = leer_();
   var ahora = Date.now();
-  var vivos = d.mensajes.filter(function (m) { return esVivo_(m, ahora); }).sort(function (a, b) { return b.t - a.t; });
+  var vivos = d.mensajes.filter(function (m) { return esVivo_(m, ahora) && yaSeVe_(m, ahora); }).sort(function (a, b) { return (b.desde || b.t) - (a.desde || a.t); });
   var verMsg = bloqueActivo_(d, 'mensajes'), verEv = bloqueActivo_(d, 'proximo'), verT = bloqueActivo_(d, 'tiempo');
   var prueba = d.prueba && d.prueba.hasta > ahora ? { estilo: d.prueba.estilo, distribucion: d.prueba.distribucion || null, modo: d.prueba.modo, segundos: Math.round((d.prueba.hasta - ahora) / 1000) } : null;
   return {
@@ -696,7 +698,7 @@ function admEstado(k) {
       tieneFoto: !!(yo && yo.foto),
       pendientes: pendientes_(d, ahora),
       mensajes: d.mensajes.filter(function (m) { return m.autor === q.id; }),
-      ciudad: d.ciudad,
+      ciudad: d.ciudad, noche: d.noche,
       medios: mediosParaPanel_(d, q, ahora)
     };
   }
@@ -774,20 +776,53 @@ function finDelDia_(dias) {
   return Math.floor(new Date(n.getFullYear(), n.getMonth(), n.getDate() + dias, 23, 59, 59).getTime() / 1000);
 }
 
-/** duracion: 'hoy' (hasta las 23:59), 'manana' (también mañana) o 'siempre' (hasta que lo quites). */
-function admEnviar(k, de, texto, duracion) {
+/** Fin del día (23:59:59) de la fecha de f, sumando `dias` días. En segundos. */
+function finDeDiaDe_(f, dias) {
+  return Math.floor(new Date(f.getFullYear(), f.getMonth(), f.getDate() + dias, 23, 59, 59).getTime() / 1000);
+}
+
+/** Si esa hora cae en horario de noche, el mensaje se verá cuando amanezca (cuando termina la noche). */
+function despuesDeLaNoche_(d, f) {
+  var t = f.getTime();
+  for (var i = 0; i < 96 && esNocheHora_(d, new Date(t).getHours()); i++) t += 15 * 60000;
+  return new Date(t);
+}
+
+/**
+ * duracion: '1h', '3h', 'hoy' (hasta las 23:59), 'manana' (también mañana) o 'siempre' (hasta que lo quites).
+ * cuando: null (ahora) o { dia: 'hoy'|'manana', hora: 'HH:MM' }. Si esa hora es de noche, se verá al empezar el día.
+ * La duración cuenta desde que el mensaje se ve.
+ */
+function admEnviar(k, de, texto, duracion, cuando) {
   var q = alguien_(k);
   texto = String(texto || '').trim().slice(0, 200);
   if (!texto) throw new Error('El mensaje está vacío');
+  var ahora = new Date();
+  var prog = null, visible = ahora;
+  if (cuando && cuando.hora) {
+    var hh = horaValida_(cuando.hora);
+    if (!hh) throw new Error('Esa hora no vale');
+    var dia = cuando.dia === 'manana' ? 1 : 0;
+    prog = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate() + dia, Number(hh.slice(0, 2)), Number(hh.slice(3)), 0);
+    if (prog.getTime() < ahora.getTime() - 60000) throw new Error('Esa hora ya ha pasado. Elige una hora de más tarde o mañana.');
+    if (prog.getTime() > ahora.getTime() + 60000) visible = despuesDeLaNoche_(leer_(), prog); else prog = null;
+  }
+  var programado = !!prog && visible.getTime() > ahora.getTime() + 60000;
+  var hasta = null;
+  if (duracion === '1h' || duracion === '3h') hasta = Math.floor(visible.getTime() / 1000) + (duracion === '1h' ? 3600 : 10800);
+  else if (duracion === 'hoy') hasta = finDeDiaDe_(visible, 0);
+  else if (duracion === 'manana') hasta = finDeDiaDe_(visible, 1);
   modificar_(function (d) {
-    d.mensajes.unshift({
+    var m = {
       id: Utilities.getUuid(),
       de: q.rol === 'familia' ? q.nombre : String(de || '').trim().slice(0, 30),   // un familiar no firma con otro nombre
       autor: q.id,
       texto: texto,
       t: Math.floor(Date.now() / 1000),
-      hasta: duracion === 'siempre' ? null : finDelDia_(duracion === 'manana' ? 1 : 0)
-    });
+      hasta: hasta
+    };
+    if (programado) { m.desde = Math.floor(visible.getTime() / 1000); m.prog = Math.floor(prog.getTime() / 1000); }
+    d.mensajes.unshift(m);
   });
   return admEstado(k);
 }

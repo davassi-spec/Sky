@@ -607,5 +607,62 @@ const JPEG = 'data:image/jpeg;base64,' + Buffer.from('foto-de-prueba').toString(
   t('un trozo de 1 MB entra por RPC', rpc('admMedioParte', [ka, id, 0, trozo]).valor.ok === true && rpc('admMedioFin', [ka, id]).valor.medios.lista.length === 1);
 }
 
+/* ---------- 18. Mensajes programados y duración ---------- */
+{
+  const hoy = (h, m = 0) => new Date(2026, 9, 20, h, m).getTime();
+  const s = crear({ ahora: hoy(17, 15) });
+  s.run("admFamiliaAnadir('ADMINKEY','Ana')"); const ka = s.run('leer_().familia[0].clave');
+  const tv = () => JSON.parse(s.run("servir_({parameter:{a:'estado',k:'ADMINKEY'}}).s")).mensajes.map((m) => m.texto);
+  const todos = () => s.run("leer_().mensajes");
+  const env = (k, texto, dur, cuando) => s.run(`admEnviar(${J(k)}, 'Daniel', ${J(texto)}, ${J(dur)}, ${J(cuando)})`);
+  env('ADMINKEY', 'Ahora mismo', 'hoy', null);
+  t('sin hora, sale ya', tv().includes('Ahora mismo') && !todos().find((m) => m.texto === 'Ahora mismo').desde);
+  env('ADMINKEY', 'A las seis', 'hoy', { dia: 'hoy', hora: '18:00' });
+  t('con hora, todavía no sale', !tv().includes('A las seis'));
+  t('queda programado con su hora', todos().find((m) => m.texto === 'A las seis').desde * 1000 === hoy(18));
+  s.fijar(hoy(18, 1));
+  t('llegada la hora, sale', tv().includes('A las seis'));
+  s.fijar(hoy(17, 15));
+  t('una hora que ya pasó se rechaza con un aviso claro', falla(() => env('ADMINKEY', 'Tarde', 'hoy', { dia: 'hoy', hora: '09:00' })));
+  t('una hora que no vale', falla(() => env('ADMINKEY', 'X', 'hoy', { dia: 'hoy', hora: '25:99' })));
+  env('ADMINKEY', 'Mañana temprano', 'hoy', { dia: 'manana', hora: '09:00' });
+  const mt = todos().find((m) => m.texto === 'Mañana temprano');
+  t('para mañana: sale mañana, no hoy', mt.desde * 1000 === hoy(33) && !tv().includes('Mañana temprano'));
+  t('"solo hoy" cuenta desde que se ve: se quita a medianoche de mañana', mt.hasta === Math.floor(new Date(2026, 9, 21, 23, 59, 59).getTime() / 1000));
+  // noche: de 21 a 6
+  env('ADMINKEY', 'De madrugada', 'hoy', { dia: 'manana', hora: '03:00' });
+  const dm = todos().find((m) => m.texto === 'De madrugada');
+  t('si la hora es de noche, se verá cuando amanezca (6:00)', dm.desde * 1000 === hoy(24 + 6) && dm.prog * 1000 === hoy(24 + 3));
+  env('ADMINKEY', 'A las diez', 'hoy', { dia: 'hoy', hora: '22:00' });
+  t('las 22:00 también esperan al día siguiente', todos().find((m) => m.texto === 'A las diez').desde * 1000 === hoy(24 + 6));
+  // se puede mandar de noche
+  s.fijar(hoy(23, 0));
+  env('ADMINKEY', 'Buenas noches', 'manana', null);
+  t('de noche se puede mandar (sale ya, como siempre)', tv().includes('Buenas noches'));
+  s.fijar(hoy(17, 15));
+  // duración
+  env('ADMINKEY', 'Una hora', '1h', null); env('ADMINKEY', 'Tres horas', '3h', null);
+  const h1 = todos().find((m) => m.texto === 'Una hora'), h3 = todos().find((m) => m.texto === 'Tres horas');
+  t('una hora y tres horas', h1.hasta - h1.t === 3600 && h3.hasta - h3.t === 10800);
+  s.fijar(hoy(18, 30));
+  t('pasada la hora, se quita sola (y las tres horas siguen)', !tv().includes('Una hora') && tv().includes('Tres horas'));
+  s.fijar(hoy(17, 15));
+  env('ADMINKEY', 'Programado con duración', '1h', { dia: 'hoy', hora: '19:00' });
+  const pd = todos().find((m) => m.texto === 'Programado con duración');
+  t('la duración cuenta desde la hora programada', pd.hasta === pd.desde + 3600);
+  s.fijar(hoy(20, 30));
+  t('y se quita una hora después de salir', !tv().includes('Programado con duración'));
+  s.fijar(hoy(17, 15));
+  // familia
+  env(ka, 'De Ana a las siete', 'hoy', { dia: 'hoy', hora: '19:00' });
+  t('un familiar también programa y se ve como suyo', s.run(`admEstado(${J(ka)})`).mensajes.some((m) => m.texto === 'De Ana a las siete' && m.desde) && s.run(`admEstado(${J(ka)})`).noche.desde === 21);
+  const id = todos().find((m) => m.texto === 'De Ana a las siete').id;
+  s.run(`admBorrar(${J(ka)}, ${J(id)})`);
+  s.fijar(hoy(19, 5));
+  t('quitar uno programado lo cancela', !tv().includes('De Ana a las siete'));
+  s.fijar(hoy(17, 15));
+  t('lo programado cuenta en la lista de la TV hasta que salga (el panel lo marca)', todos().filter((m) => m.desde && m.desde * 1000 > hoy(17, 15)).length >= 3);
+}
+
 console.log(bien + ' bien, ' + mal + ' fallos');
 process.exit(mal ? 1 : 0);
