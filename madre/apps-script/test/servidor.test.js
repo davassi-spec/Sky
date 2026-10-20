@@ -81,7 +81,7 @@ const JPEG = 'data:image/jpeg;base64,' + Buffer.from('foto-de-prueba').toString(
   t('tiempo (v1)', e.tiempo.temp === 20.4 && e.tiempo.codigo === 2);
   t('noche y contacto (v1)', e.noche.desde === 21 && e.noche.hasta === 6 && e.nocheTexto && e.contacto);
   t('tiempo de hoy y mañana', e.tiempo.hoy.max === 23 && e.tiempo.manana.temp === 19 && e.tiempo.manana.codigo === 61);
-  t('versión y estilos', e.version === 2 && e.estiloDia === 'lavanda' && e.estiloNoche === 'calido' && e.bloques.length === 5);
+  t('versión y estilos', e.version === 3 && e.estiloDia === 'lavanda' && e.estiloNoche === 'calido' && e.bloques.length === 5);
   const antes = s.contarFetch(); s.run('estado_()'); s.run('estado_()');
   t('el tiempo se guarda en caché', s.contarFetch() === antes);
 }
@@ -247,6 +247,144 @@ const JPEG = 'data:image/jpeg;base64,' + Buffer.from('foto-de-prueba').toString(
   t('escribir con una caché antigua no pierde nada', (s.vaciarCache(), s.run('leer_()').mensajes.length === 2 && s.run('leer_()').familia[0].clave === 'KANA' && s.run('leer_()').bloques.length === 5));
   const viejo = crear(); viejo.run('leer_()'); viejo.cacheMapa.datos = J({ mensajes: [], familia: [] });
   t('incluso con una caché casi vacía', (() => { try { return viejo.run('estado_()').bloques.length === 5; } catch (e) { return false; } })());
+}
+
+/* ---------- 9. Recordatorios con foto ---------- */
+{
+  const a = (y, m, d, h, mi) => new Date(y, m - 1, d, h, mi).getTime();     // 2026-10-20 es martes (getDay() = 2)
+  const s = crear({ ahora: a(2026, 10, 20, 16, 0) });
+  const rec = (o = {}) => J(Object.assign({ hora: '17:00', dias: [], texto: 'Hacer los ejercicios', texto2: 'Con calma', duracion: 15, confirmar: true }, o));
+  const guardar = (o, foto, quitar) => s.run(`admRecordatorioGuardar('ADMINKEY', ${rec(o)}, ${foto ? J(foto) : 'null'}, ${!!quitar})`);
+  const tv = () => s.run('estado_()').recordatorio;
+
+  t('sin recordatorios, la TV no recibe nada', tv() === null && s.run('estado_()').version === 3);
+  t('no se guarda sin texto', falla(() => guardar({ texto: '  ' })));
+  t('no se guarda sin hora válida', falla(() => guardar({ hora: '25:00' })) && falla(() => guardar({ hora: '' })));
+  t('un familiar no puede crear recordatorios', (() => { s.run("admFamiliaAnadir('ADMINKEY','Ana')"); const kf = s.run('leer_()').familia[0].clave; return falla(() => s.run(`admRecordatorioGuardar(${J(kf)}, ${rec()}, null, false)`)); })());
+  let e = guardar({});
+  const r1 = e.datos.recordatorios[0];
+  t('se guarda con la hora normalizada y todos los días', r1.hora === '17:00' && r1.dias.length === 7 && r1.duracion === 15 && r1.confirmar === true && r1.activo === true);
+  t('la hora de una cifra se normaliza', guardar({ id: r1.id, hora: '9:05' }).datos.recordatorios[0].hora === '09:05');
+  guardar({ id: r1.id, hora: '17:00' });
+
+  s.fijar(a(2026, 10, 20, 16, 59)); t('antes de la hora, nada', tv() === null);
+  s.fijar(a(2026, 10, 20, 17, 0));
+  const v = tv();
+  t('a su hora sale en la TV con sus textos', v && v.texto === 'Hacer los ejercicios' && v.texto2 === 'Con calma' && v.confirmar === true && v.foto === null && !v.prueba);
+  t('dice cuánto falta para que termine', v && v.segundos === 900);
+  s.fijar(a(2026, 10, 20, 17, 14)); t('sigue durante su duración', tv() !== null);
+  s.fijar(a(2026, 10, 20, 17, 15)); t('pasada la duración, vuelve la pizarra', tv() === null);
+
+  guardar({ id: r1.id, dias: [3, 4] }); s.fijar(a(2026, 10, 20, 17, 5)); t('si hoy (martes) no toca, no sale', tv() === null);
+  guardar({ id: r1.id, dias: [2] });    t('si hoy toca, sale', tv() !== null);
+
+  s.fijar(a(2026, 10, 20, 17, 5));
+  const p = s.run("admEstado('ADMINKEY')").pendientes;
+  t('el móvil ve el recordatorio pendiente', p.length === 1 && p[0].texto === 'Hacer los ejercicios' && p[0].enMarcha === true);
+  e = s.run(`admRecordatorioConfirmar('ADMINKEY', ${J(p[0].clave)})`);
+  t('al confirmarlo, la TV vuelve a la pizarra', tv() === null && e.pendientes.length === 0);
+  t('y queda anotada la hora de confirmación', e.datos.recordatorios[0].confirmadoHoy !== null);
+  t('no se puede confirmar dos veces', falla(() => s.run(`admRecordatorioConfirmar('ADMINKEY', ${J(p[0].clave)})`)));
+  s.fijar(a(2026, 10, 21, 17, 5)); guardar({ id: r1.id, dias: [] }); t('al día siguiente vuelve a tocar', tv() !== null);
+
+  // Noche: no salta ninguno
+  guardar({ id: r1.id, hora: '22:00', dias: [] }); s.fijar(a(2026, 10, 21, 22, 5));
+  t('de noche no salta ningún recordatorio', tv() === null);
+  guardar({ id: r1.id, hora: '05:50', dias: [] }); s.fijar(a(2026, 10, 22, 5, 55));
+  t('tampoco de madrugada', tv() === null);
+  s.run("admAjustes('ADMINKEY', {nocheDesde: 23, nocheHasta: 23})");
+  t('sin horario de noche sí sale', tv() !== null);
+  guardar({ id: r1.id, hora: '23:50', duracion: 30, dias: [] }); s.fijar(a(2026, 10, 23, 0, 5));
+  t('un recordatorio que cruza la medianoche sigue activo', tv() !== null);
+  s.run("admAjustes('ADMINKEY', {nocheDesde: 21, nocheHasta: 6})");
+
+  // Probar 1 minuto
+  s.fijar(a(2026, 10, 21, 22, 30));
+  e = s.run(`admRecordatorioProbar('ADMINKEY', ${J(r1.id)})`);
+  const pr = tv();
+  t('probar 1 minuto lo enseña aunque sea de noche', pr && pr.prueba === true && pr.segundos === 60);
+  s.fijar(a(2026, 10, 21, 22, 31, 1)); t('y se acaba solo', tv() === null);
+  s.run(`admRecordatorioProbar('ADMINKEY', ${J(r1.id)})`);
+  s.run(`admRecordatorioConfirmar('ADMINKEY', ${J(tv().clave)})`); t('confirmar una prueba la termina', tv() === null);
+  t('probar un recordatorio que no existe falla', falla(() => s.run("admRecordatorioProbar('ADMINKEY','no-existe')")));
+}
+
+/* ---------- 10. Aviso por correo si nadie confirma ---------- */
+{
+  const a = (h, mi) => new Date(2026, 9, 20, h, mi).getTime();
+  const s = crear({ ahora: a(16, 0) });
+  const guardar = (o) => s.run(`admRecordatorioGuardar('ADMINKEY', ${J(Object.assign({ hora: '17:00', dias: [], texto: 'Hacer los ejercicios', duracion: 10, confirmar: true }, o))}, null, false)`);
+  const id = guardar({}).datos.recordatorios[0].id;
+  guardar({ hora: '17:00', texto: 'Solo mirar', confirmar: false });
+  s.fijar(a(17, 29)); t('a los 29 minutos todavía no avisa', s.run('revisarAvisos()') === 0 && s.correos.length === 0);
+  s.fijar(a(17, 31));
+  t('a los 31 minutos avisa de lo que hay que confirmar', s.run('revisarAvisos()') === 1 && s.correos.length === 1);
+  t('el correo va al correo de la cuenta y dice qué falta', s.correos[0].para === 'yo@ejemplo.com' && s.correos[0].asunto.indexOf('Hacer los ejercicios') >= 0 && s.correos[0].cuerpo.indexOf('17:00') >= 0);
+  t('no manda dos veces el mismo aviso', s.run('revisarAvisos()') === 0 && s.correos.length === 1);
+  t('el recordatorio que no hay que confirmar nunca avisa', !s.correos.some((c) => c.asunto.indexOf('Solo mirar') >= 0));
+  t('y el panel sabe que ya se avisó', s.run("admEstado('ADMINKEY')").pendientes[0].avisado === true);
+
+  const s2 = crear({ ahora: a(16, 0) });
+  const g2 = (o) => s2.run(`admRecordatorioGuardar('ADMINKEY', ${J(Object.assign({ hora: '17:00', dias: [], texto: 'Hacer los ejercicios', duracion: 10, confirmar: true }, o))}, null, false)`);
+  g2({}); s2.fijar(a(17, 20));
+  const clave = s2.run("admEstado('ADMINKEY')").pendientes[0].clave;
+  s2.run(`admRecordatorioConfirmar('ADMINKEY', ${J(clave)})`);
+  s2.fijar(a(17, 40)); t('si se confirmó a tiempo, no hay correo', s2.run('revisarAvisos()') === 0 && s2.correos.length === 0);
+
+  const s3 = crear({ ahora: a(16, 0) });
+  s3.run(`admRecordatorioGuardar('ADMINKEY', ${J({ hora: '17:00', dias: [], texto: 'Cosa', duracion: 10, confirmar: true })}, null, false)`);
+  s3.run("admCorreoAviso('ADMINKEY', 'dani@ejemplo.com')");
+  s3.fijar(a(17, 35)); s3.run('revisarAvisos()');
+  t('se puede cambiar el correo de destino', s3.correos[0].para === 'dani@ejemplo.com');
+  t('un correo mal escrito se rechaza', falla(() => s3.run("admCorreoAviso('ADMINKEY', 'esto no es un correo')")));
+  s3.run("admCorreoPrueba('ADMINKEY')"); t('el correo de prueba llega', s3.correos.length === 2 && s3.correos[1].asunto.indexOf('prueba') >= 0);
+
+  const s4 = crear({ ahora: a(16, 0), correoFalla: true });
+  s4.run(`admRecordatorioGuardar('ADMINKEY', ${J({ hora: '17:00', dias: [], texto: 'Cosa', duracion: 10, confirmar: true })}, null, false)`);
+  s4.fijar(a(17, 35));
+  t('si el correo falla, no se da por avisado (se reintenta)', s4.run('revisarAvisos()') === 0 && !Object.keys(s4.run('leer_()').recEstado).some((c) => s4.run('leer_()').recEstado[c].aviso));
+  const s5 = crear({ ahora: a(16, 0) });
+  s5.run(`admRecordatorioGuardar('ADMINKEY', ${J({ hora: '10:00', dias: [], texto: 'Viejo', duracion: 10, confirmar: true })}, null, false)`);
+  s5.fijar(a(17, 5)); t('no avisa de algo de hace más de 6 horas', s5.run('revisarAvisos()') === 0);
+
+  const s6 = crear();
+  s6.run('autorizar()'); s6.run('autorizar()');
+  t('autorizar crea una sola comprobación automática', s6.disparadores.filter((f) => f === 'revisarAvisos').length === 1);
+  t('el panel sabe que los avisos están activos', s6.run("admEstado('ADMINKEY')").avisos.activos === true && s6.run("admEstado('ADMINKEY')").avisos.minutos === 30);
+  t('antes de autorizar, el panel avisa de que no están activos', crear().run("admEstado('ADMINKEY')").avisos.activos === false);
+}
+
+/* ---------- 11. Fotos privadas de recordatorios ---------- */
+{
+  const s = crear();
+  const JPG = 'data:image/jpeg;base64,' + Buffer.from('foto-del-recordatorio').toString('base64');
+  const JPG2 = 'data:image/jpeg;base64,' + Buffer.from('otra-foto-distinta').toString('base64');
+  const g = (o, f, q) => s.run(`admRecordatorioGuardar('ADMINKEY', ${J(Object.assign({ hora: '12:00', dias: [], texto: 'Salir a pasear', duracion: 10, confirmar: false }, o))}, ${f ? J(f) : 'null'}, ${!!q})`);
+  let e = g({}, JPG);
+  const id = e.datos.recordatorios[0].id;
+  t('el recordatorio guarda su foto', e.datos.recordatorios[0].tieneFoto === true);
+  const nArch = Object.keys(s.archivos).length;
+  const f1 = s.run(`fotoParaTV_(${J(id)})`);
+  t('la TV recibe la foto del recordatorio', Buffer.from(f1.b64, 'base64').toString() === 'foto-del-recordatorio' && f1.v > 0 && f1.tipo === 'image/jpeg');
+  t('la foto va en la TV por ?a=foto con la clave de administrador', JSON.parse(s.run(`doGet({parameter:{k:'ADMINKEY',a:'foto',p:${J(id)}}}).s`)).b64 === f1.b64);
+  s.run("admFamiliaAnadir('ADMINKEY','Ana')"); const kf = s.run('leer_()').familia[0].clave;
+  t('un enlace de familia no puede pedir esa foto', JSON.parse(s.run(`doGet({parameter:{k:${J(kf)},a:'foto',p:${J(id)}}}).s`)).error === 'permiso');
+  t('ni un enlace sin clave', JSON.parse(s.run(`doGet({parameter:{k:'',a:'foto',p:${J(id)}}}).s`)).error === 'clave');
+  t('un identificador inventado no sirve para leer archivos', s.run("fotoParaTV_('cualquier-id-de-drive')").error === 'sin foto');
+  t('el panel puede ver la miniatura', s.run(`admRecordatorioFoto('ADMINKEY', ${J(id)})`) === JPG);
+  e = g({ id }, JPG2);
+  t('al cambiar la foto sube la versión y se borra la antigua', Object.keys(s.archivos).filter((x) => !s.archivos[x].papelera).length === nArch && Object.keys(s.archivos).some((x) => s.archivos[x].papelera));
+  t('la foto nueva es la que sale', Buffer.from(s.run(`fotoParaTV_(${J(id)})`).b64, 'base64').toString() === 'otra-foto-distinta');
+  e = g({ id }, null, true);
+  t('se puede quitar la foto', e.datos.recordatorios[0].tieneFoto === false && s.run(`fotoParaTV_(${J(id)})`).error === 'sin foto');
+  t('una foto que no es JPEG se rechaza', falla(() => g({ id }, 'data:text/html;base64,AAAA')));
+  t('una foto demasiado grande se rechaza', falla(() => g({ id }, 'data:image/jpeg;base64,' + 'A'.repeat(450001))));
+  g({ id }, JPG); s.run(`admRecordatorioBorrar('ADMINKEY', ${J(id)})`);
+  t('borrar el recordatorio borra su foto', Object.keys(s.archivos).filter((x) => /foto/.test(s.archivos[x].nombre || '') && !s.archivos[x].papelera).length === 0 && s.run('leer_()').recordatorios.length === 0);
+  const codigo = require('fs').readFileSync(require('path').join(__dirname, '..', 'Code.gs'), 'utf8');
+  t('el código no comparte nada con enlace público', !/setSharing|Access\.ANYONE|addViewer|setPermission/.test(codigo));
+  for (let i = 0; i < 20; i++) g({ texto: 'R' + i });
+  t('hay un máximo de 20 recordatorios', falla(() => g({ texto: 'uno más' })));
 }
 
 console.log(bien + ' bien, ' + mal + ' fallos');

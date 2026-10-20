@@ -1,7 +1,8 @@
 /**
- * Cerebro de la pizarra (versión 2). Corre en tu cuenta de Google (script.google.com).
+ * Cerebro de la pizarra (versión 3). Corre en tu cuenta de Google (script.google.com).
  *
- *  - Guarda mensajes, ajustes, cuentas atrás y fotos en un archivo JSON de tu Drive (carpeta "Pizarra").
+ *  - Guarda mensajes, ajustes, cuentas atrás, recordatorios y fotos en un archivo JSON de tu Drive (carpeta "Pizarra").
+ *    Las fotos se guardan en esa misma carpeta, privadas: nunca se comparten con un enlace.
  *  - Lee los calendarios que elijas y consulta el tiempo (hoy y mañana).
  *  - Sirve los datos a la TV (?a=estado) y la app del móvil (?a=admin).
  *
@@ -11,7 +12,7 @@
  *
  * Los mensajes de la familia se muestran directamente, sin aprobación.
  */
-var VERSION = 2;
+var VERSION = 3;
 var NOMBRE_CARPETA = 'Pizarra';
 var NOMBRE_DATOS = 'pizarra-datos.json';
 var MAX_CADUCADOS = 100;          // mensajes ya caducados que se guardan en el historial
@@ -19,6 +20,8 @@ var MAX_ACTIVOS = 50;
 var ESTILOS = ['calido', 'lavanda', 'salvia', 'terracota', 'contraste'];
 var BLOQUES = ['cuentaAtras', 'mensajes', 'proximo', 'tiempo', 'parteDelDia'];
 var ICONOS_CUENTA = ['calendario', 'avion', 'corazon', 'tarta'];
+var MAX_RECORDATORIOS = 20;
+var AVISO_MIN = 30;               // si un recordatorio que hay que confirmar sigue sin confirmar tras estos minutos, llega un correo
 var TV_CONECTADA_S = 150;         // la TV pregunta cada 60 s: pasado esto la damos por desconectada
 
 /* ============================================================
@@ -36,6 +39,10 @@ function base_() {
     estiloDia: 'lavanda', estiloNoche: 'calido',
     prueba: null,                                  // { estilo, modo, hasta } mientras dura "Probar 1 minuto"
     cuentasAtras: [],
+    recordatorios: [],                             // { id, hora 'HH:MM', dias [0..6, 0=domingo], texto, texto2, foto {id,v}, duracion (min), confirmar, activo }
+    recEstado: {},                                 // 'idRecordatorio|AAAA-MM-DD' -> { conf: ms, aviso: ms }
+    pruebaRec: null,                               // { id, hasta } mientras dura "Probar 1 minuto"
+    correoAviso: '',                               // vacío = el correo de tu cuenta de Google
     noche: { desde: 21, hasta: 6 },
     nocheTexto: 'Es hora de dormir.',
     contacto: { nombre: '', telefono: '' },
@@ -147,6 +154,8 @@ function podar_(d) {
   vivos.sort(function (a, b) { return b.t - a.t; });
   muertos.sort(function (a, b) { return b.t - a.t; });
   d.mensajes = vivos.slice(0, MAX_ACTIVOS).concat(muertos.slice(0, MAX_CADUCADOS));
+  var limite = fechaClave_(new Date(ahora - 4 * 86400000));        // del estado de los recordatorios solo se guardan los últimos días
+  for (var c in d.recEstado) if (c.split('|')[1] < limite) delete d.recEstado[c];
 }
 function esVivo_(m, ahora) { return !m.hasta || m.hasta * 1000 > (ahora || Date.now()); }
 
@@ -185,6 +194,24 @@ function autorizar() {
   var d = leer_();
   Logger.log('Datos en Drive, carpeta "' + NOMBRE_CARPETA + '". Mensajes guardados: ' + d.mensajes.length +
     '. Personas de la familia: ' + d.familia.length + '.');
+  MailApp.getRemainingDailyQuota();                // pide el permiso de enviar correos
+  Logger.log('Avisos por correo: ' + (activarAvisos_() ? 'activados (se comprueba cada 5 minutos).' : 'NO se pudieron activar.'));
+}
+
+/** Crea (una sola vez) la comprobación automática de recordatorios sin confirmar. */
+function activarAvisos_() {
+  var ts = ScriptApp.getProjectTriggers();
+  for (var i = 0; i < ts.length; i++) if (ts[i].getHandlerFunction() === 'revisarAvisos') return true;
+  ScriptApp.newTrigger('revisarAvisos').timeBased().everyMinutes(5).create();
+  return true;
+}
+
+function avisosActivos_() {
+  try {
+    var ts = ScriptApp.getProjectTriggers();
+    for (var i = 0; i < ts.length; i++) if (ts[i].getHandlerFunction() === 'revisarAvisos') return true;
+  } catch (e) { /* sin permiso todavía */ }
+  return false;
 }
 
 /* ============================================================
@@ -220,7 +247,7 @@ function servir_(e) {
   }
   if (q.rol !== 'admin') return salida_({ error: 'permiso' });   // la TV usa la clave de administrador
   if (a === 'metricas') return salida_(metricas_());
-  if (a === 'foto') return salida_(fotoParaTV_(e.parameter.p));
+  if (a === 'foto') return salida_(fotoParaTV_(e.parameter.p));       // foto de una persona o de un recordatorio
   marcarTV_();
   return salida_(estado_());
 }
@@ -317,7 +344,9 @@ function estado_() {
     estiloDia: d.estiloDia,
     estiloNoche: d.estiloNoche,
     prueba: prueba,
-    cuentaAtras: bloqueActivo_(d, 'cuentaAtras') ? cuentaAtras_(d) : null
+    cuentaAtras: bloqueActivo_(d, 'cuentaAtras') ? cuentaAtras_(d) : null,
+    // Novedades de la versión 3:
+    recordatorio: recordatorioActivo_(d, ahora)
   };
 }
 
@@ -418,6 +447,114 @@ function textoCuenta_(c, dias) {
   return 'Faltan ' + dias + ' días para ' + c.texto;
 }
 
+/* ---------- Recordatorios ---------- */
+
+function pad2_(n) { return (n < 10 ? '0' : '') + n; }
+function fechaClave_(dt) { return dt.getFullYear() + '-' + pad2_(dt.getMonth() + 1) + '-' + pad2_(dt.getDate()); }
+
+/** "9:5" no vale; "9:05" y "09:05" sí. Devuelve 'HH:MM' o null. */
+function horaValida_(h) {
+  var m = /^(\d{1,2}):(\d{2})$/.exec(String(h || '').trim());
+  if (!m || Number(m[1]) > 23 || Number(m[2]) > 59) return null;
+  return pad2_(Number(m[1])) + ':' + m[2];
+}
+
+/** ¿Es de noche a esa hora? Mismo criterio que la TV (admite tramos que cruzan la medianoche). */
+function esNocheHora_(d, h) {
+  var n = d.noche;
+  if (n.desde === n.hasta) return false;
+  if (n.desde < n.hasta) return h >= n.desde && h < n.hasta;
+  return h >= n.desde || h < n.hasta;
+}
+
+function recordatorioPorId_(d, id) {
+  for (var i = 0; i < d.recordatorios.length; i++) if (d.recordatorios[i].id === id) return d.recordatorios[i];
+  return null;
+}
+
+/** Las veces que toca cada recordatorio hoy y ayer (ayer, por si uno cruza la medianoche). */
+function ocurrencias_(d, ahora) {
+  var out = [];
+  var hoy = new Date(ahora);
+  for (var atras = 0; atras <= 1; atras++) {
+    var dia = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate() - atras);
+    d.recordatorios.forEach(function (r) {
+      if (r.activo === false || r.dias.indexOf(dia.getDay()) < 0) return;
+      var p = r.hora.split(':');
+      var ini = new Date(dia.getFullYear(), dia.getMonth(), dia.getDate(), Number(p[0]), Number(p[1])).getTime();
+      out.push({ rec: r, clave: r.id + '|' + fechaClave_(dia), ini: ini, fin: ini + r.duracion * 60000 });
+    });
+  }
+  out.sort(function (a, b) { return a.ini - b.ini; });
+  return out;
+}
+
+/** El recordatorio que la TV debe mostrar ahora, o null. De noche no salta ninguno. */
+function recordatorioActivo_(d, ahora) {
+  if (d.pruebaRec && d.pruebaRec.hasta > ahora) {
+    var rp = recordatorioPorId_(d, d.pruebaRec.id);
+    if (rp) return paraTV_(rp, d.pruebaRec.id + '|prueba', Math.ceil((d.pruebaRec.hasta - ahora) / 1000), true);
+  }
+  if (esNocheHora_(d, new Date(ahora).getHours())) return null;
+  var oc = ocurrencias_(d, ahora);
+  for (var i = 0; i < oc.length; i++) {
+    var o = oc[i], est = d.recEstado[o.clave];
+    if (o.ini <= ahora && ahora < o.fin && !(est && est.conf)) return paraTV_(o.rec, o.clave, Math.ceil((o.fin - ahora) / 1000), false);
+  }
+  return null;
+}
+
+function paraTV_(r, clave, segundos, prueba) {
+  return { id: r.id, clave: clave, texto: r.texto, texto2: r.texto2, foto: r.foto ? r.foto.v : null,
+           confirmar: !!r.confirmar, segundos: segundos, prueba: !!prueba };
+}
+
+/** Los que esperan que alguien los confirme (el móvil enseña el botón "Confirmar que lo ha tomado"). */
+function pendientes_(d, ahora) {
+  var out = [];
+  ocurrencias_(d, ahora).forEach(function (o) {
+    var est = d.recEstado[o.clave];
+    if (!o.rec.confirmar || (est && est.conf) || o.ini > ahora) return;
+    if (ahora > o.ini + Math.max(o.rec.duracion, 180) * 60000) return;      // pasadas 3 h se da por perdido
+    out.push({ id: o.rec.id, clave: o.clave, texto: o.rec.texto, hora: o.rec.hora, ini: o.ini,
+               avisado: !!(est && est.aviso), enMarcha: ahora < o.fin });
+  });
+  return out;
+}
+
+/** Se ejecuta sola cada 5 minutos (la crea `autorizar`). Manda un correo si algo sigue sin confirmar tras 30 minutos. */
+function revisarAvisos() {
+  var d = leer_();
+  var ahora = Date.now();
+  var debidos = ocurrencias_(d, ahora).filter(function (o) {
+    var est = d.recEstado[o.clave];
+    return o.rec.confirmar && !(est && est.conf) && !(est && est.aviso) &&
+           ahora >= o.ini + AVISO_MIN * 60000 && ahora <= o.ini + 6 * 3600000;
+  });
+  var enviados = [];
+  debidos.forEach(function (o) {
+    try {
+      enviarCorreo_(d, 'Pizarra: sin confirmar «' + o.rec.texto + '»',
+        'El recordatorio «' + o.rec.texto + '» de las ' + o.rec.hora + ' no se ha confirmado en ' + AVISO_MIN + ' minutos.\n\n' +
+        'Abre la pizarra en el móvil para confirmarlo cuando esté hecho.');
+      enviados.push(o.clave);
+    } catch (e) { Logger.log('No se pudo enviar el aviso: ' + e); }
+  });
+  if (enviados.length) {
+    modificar_(function (x) {
+      enviados.forEach(function (c) { x.recEstado[c] = Object.assign({}, x.recEstado[c], { aviso: Date.now() }); });
+    });
+  }
+  return enviados.length;
+}
+
+function destinoCorreo_(d) {
+  return d.correoAviso || Session.getEffectiveUser().getEmail();
+}
+function enviarCorreo_(d, asunto, cuerpo) {
+  MailApp.sendEmail(destinoCorreo_(d), asunto, cuerpo);
+}
+
 /* ---------- Fotos de la familia ---------- */
 
 function fotoDePersona_(d, id) {
@@ -426,8 +563,9 @@ function fotoDePersona_(d, id) {
 }
 
 /** La TV pide la foto de una persona con la clave de administrador. Solo se sirven fotos registradas. */
-function fotoParaTV_(personaId) {
-  var f = fotoDePersona_(leer_(), personaId);
+function fotoParaTV_(id) {
+  var d = leer_();
+  var f = fotoDePersona_(d, id) || recordatorioPorId_(d, id);
   if (!f || !f.foto) return { error: 'sin foto' };
   var blob = DriveApp.getFileById(f.foto.id).getBlob();
   return { v: f.foto.v, tipo: 'image/jpeg', b64: Utilities.base64Encode(blob.getBytes()) };
@@ -489,6 +627,8 @@ function admEstado(k) {
       }),
       noche: d.noche, nocheTexto: d.nocheTexto, contacto: d.contacto,
       ciudad: d.ciudad, latitud: d.latitud, longitud: d.longitud, calendarios: d.calendarios,
+      recordatorios: d.recordatorios.map(function (r) { return recParaPanel_(d, r, ahora); }),
+      correoAviso: d.correoAviso,
       familia: d.familia.map(function (f) {
         var propios = d.mensajes.filter(function (m) { return m.autor === f.id; });
         return { id: f.id, nombre: f.nombre, clave: f.clave, tieneFoto: !!f.foto,
@@ -497,6 +637,8 @@ function admEstado(k) {
       })
     },
     cuentaVista: proxima,
+    pendientes: pendientes_(d, ahora),
+    avisos: { activos: avisosActivos_(), destino: destinoCorreo_(d), minutos: AVISO_MIN },
     calendarios: calendarios_(),
     vista: vistaPreviaTV_(d),
     enlaceBase: ScriptApp.getService().getUrl()
@@ -685,6 +827,105 @@ function admLeerFoto(k, personaId) {
   if (!f || !f.foto) return null;
   var blob = DriveApp.getFileById(f.foto.id).getBlob();
   return 'data:image/jpeg;base64,' + Utilities.base64Encode(blob.getBytes());
+}
+
+/* ---------- Recordatorios (panel) ---------- */
+
+function recParaPanel_(d, r, ahora) {
+  var hoy = fechaClave_(new Date(ahora));
+  var est = d.recEstado[r.id + '|' + hoy];
+  return { id: r.id, hora: r.hora, dias: r.dias, texto: r.texto, texto2: r.texto2, duracion: r.duracion, confirmar: !!r.confirmar,
+           activo: r.activo !== false, tieneFoto: !!r.foto, confirmadoHoy: est && est.conf ? est.conf : null };
+}
+
+/**
+ * Crea o cambia un recordatorio (solo administrador). r: { id?, hora, dias, texto, texto2, duracion, confirmar, activo }.
+ * dataUrl: foto JPEG ya reducida en el móvil (opcional). quitarFoto: true para dejarlo sin foto.
+ */
+function admRecordatorioGuardar(k, r, dataUrl, quitarFoto) {
+  admin_(k);
+  r = r || {};
+  var texto = String(r.texto || '').trim().slice(0, 80);
+  if (!texto) throw new Error('Escribe qué hay que hacer');
+  var hora = horaValida_(r.hora);
+  if (!hora) throw new Error('Elige la hora');
+  var dias = (r.dias || []).map(Number).filter(function (x, i, a) { return x >= 0 && x <= 6 && a.indexOf(x) === i; }).sort();
+  if (!dias.length) dias = [0, 1, 2, 3, 4, 5, 6];
+  var duracion = Math.max(1, Math.min(180, Number(r.duracion) || 15));
+  var id;
+  modificar_(function (d) {
+    var rec = r.id ? recordatorioPorId_(d, r.id) : null;
+    if (!rec) {
+      if (d.recordatorios.length >= MAX_RECORDATORIOS) throw new Error('Ya hay ' + MAX_RECORDATORIOS + ' recordatorios');
+      rec = { id: Utilities.getUuid(), foto: null };
+      d.recordatorios.push(rec);
+    }
+    rec.hora = hora; rec.dias = dias; rec.texto = texto;
+    rec.texto2 = String(r.texto2 || '').trim().slice(0, 120);
+    rec.duracion = duracion; rec.confirmar = !!r.confirmar; rec.activo = r.activo !== false;
+    if (quitarFoto) quitarFoto_(rec);
+    if (dataUrl) guardarFoto_(d, rec, dataUrl);
+    d.recordatorios.sort(function (a, b) { return a.hora.localeCompare(b.hora); });
+    id = rec.id;
+  });
+  return admEstado(k);
+}
+
+function admRecordatorioBorrar(k, id) {
+  admin_(k);
+  modificar_(function (d) {
+    var r = recordatorioPorId_(d, id);
+    if (r) quitarFoto_(r);
+    d.recordatorios = d.recordatorios.filter(function (x) { return x.id !== id; });
+    for (var c in d.recEstado) if (c.indexOf(id + '|') === 0) delete d.recEstado[c];
+    if (d.pruebaRec && d.pruebaRec.id === id) d.pruebaRec = null;
+  });
+  return admEstado(k);
+}
+
+/** "Confirmar que lo ha tomado": la TV vuelve a la pizarra en cuanto pregunta de nuevo. Si era una prueba, la termina. */
+function admRecordatorioConfirmar(k, clave) {
+  admin_(k);
+  var id = String(clave || '').split('|')[0];
+  modificar_(function (d) {
+    if (d.pruebaRec && d.pruebaRec.id === id && String(clave).split('|')[1] === 'prueba') { d.pruebaRec = null; return; }
+    var p = pendientes_(d, Date.now()).filter(function (x) { return x.clave === clave; })[0];
+    if (!p) throw new Error('Ese recordatorio ya no está pendiente');
+    d.recEstado[clave] = Object.assign({}, d.recEstado[clave], { conf: Date.now() });
+  });
+  return admEstado(k);
+}
+
+/** "Probar 1 minuto": la TV enseña ese recordatorio durante un minuto, sea la hora que sea. */
+function admRecordatorioProbar(k, id) {
+  admin_(k);
+  modificar_(function (d) {
+    if (!recordatorioPorId_(d, id)) throw new Error('No se encuentra ese recordatorio');
+    d.pruebaRec = { id: id, hasta: Date.now() + 60000 };
+  });
+  return admEstado(k);
+}
+
+function admRecordatorioFoto(k, id) {
+  admin_(k);
+  var r = recordatorioPorId_(leer_(), id);
+  if (!r || !r.foto) return null;
+  return 'data:image/jpeg;base64,' + Utilities.base64Encode(DriveApp.getFileById(r.foto.id).getBlob().getBytes());
+}
+
+/** Correo al que llegan los avisos (vacío = el de tu cuenta de Google). */
+function admCorreoAviso(k, correo) {
+  admin_(k);
+  correo = String(correo || '').trim().slice(0, 100);
+  if (correo && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(correo)) throw new Error('Ese correo no parece válido');
+  modificar_(function (d) { d.correoAviso = correo; });
+  return admEstado(k);
+}
+
+function admCorreoPrueba(k) {
+  admin_(k);
+  enviarCorreo_(leer_(), 'Pizarra: correo de prueba', 'Si lees esto, los avisos de la pizarra te van a llegar aquí.');
+  return admEstado(k);
 }
 
 function admBuscarCiudad(k, q) {

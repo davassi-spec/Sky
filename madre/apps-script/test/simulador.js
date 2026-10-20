@@ -7,6 +7,8 @@ function crear(opciones = {}) {
   const archivos = {};                         // id -> { nombre, bytes, papelera }
   const carpetas = {};
   let llamadasFetch = 0;
+  const correos = [];                          // correos enviados
+  const disparadores = [];                     // nombres de las funciones con disparador
 
   const blobDe = (a) => ({
     getDataAsString: () => Buffer.from(a.bytes).toString('utf8'),
@@ -57,7 +59,7 @@ function crear(opciones = {}) {
     MimeType: { PLAIN_TEXT: 'text/plain' },
     Utilities: {
       getUuid: () => crypto.randomUUID(),
-      formatDate: (d, tz, f) => { const p = (n) => String(n).padStart(2, '0'); return p(d.getHours()) + ':' + p(d.getMinutes()); },
+      formatDate: (d, tz, f) => { const p = (n) => String(n).padStart(2, '0'); return String(f).replace('yyyy', d.getFullYear()).replace('MM', p(d.getMonth() + 1)).replace('dd', p(d.getDate())).replace('HH', p(d.getHours())).replace('mm', p(d.getMinutes())); },
       newBlob: (bytes, tipo, nombre) => ({ bytes, tipo, nombre }),
       base64Decode: (s) => Array.from(Buffer.from(s, 'base64')),
       base64Encode: (b) => Buffer.from(b).toString('base64'),
@@ -71,22 +73,30 @@ function crear(opciones = {}) {
     UrlFetchApp: { fetch: () => { llamadasFetch++; return { getContentText: () => JSON.stringify({
       current: { temperature_2m: 20.4, weather_code: 2 },
       daily: { weather_code: [2, 61], temperature_2m_max: [23, 19], temperature_2m_min: [17, 15] } }) }; } },
-    Session: { getScriptTimeZone: () => 'Europe/Madrid' },
-    ScriptApp: { getService: () => ({ getUrl: () => 'https://x/exec' }) },
+    Session: { getScriptTimeZone: () => 'Europe/Madrid', getEffectiveUser: () => ({ getEmail: () => 'yo@ejemplo.com' }) },
+    MailApp: {
+      getRemainingDailyQuota: () => 100 - correos.length,
+      sendEmail: (para, asunto, cuerpo) => { if (opciones.correoFalla) throw new Error('Sin permiso para enviar correos'); correos.push({ para, asunto, cuerpo }); },
+    },
+    ScriptApp: {
+      getService: () => ({ getUrl: () => 'https://x/exec' }),
+      getProjectTriggers: () => disparadores.map((f) => ({ getHandlerFunction: () => f })),
+      newTrigger: (f) => ({ timeBased: () => ({ everyMinutes: () => ({ create: () => { disparadores.push(f); } }) }) }),
+    },
     HtmlService: { createTemplateFromFile: () => ({ evaluate: () => ({ setTitle() { return this; }, addMetaTag() { return this; } }) }) },
     Logger: { log() {} }, console, Date, Math, JSON, String, Number, Array, Object, RegExp, Error, isNaN, parseInt,
   };
-  if (opciones.ahora) {                         // reloj congelado, para capturas y pruebas repetibles
-    const base = opciones.ahora, t0 = Date.now();
+  const reloj = { base: opciones.ahora || null, t0: Date.now() };
+  if (opciones.ahora) {                         // reloj congelado (y que se puede mover con fijar), para capturas y pruebas repetibles
     ctx.Date = class FijaDate extends Date {
-      constructor(...a) { if (a.length === 0) super(base + (Date.now() - t0)); else super(...a); }
-      static now() { return base + (Date.now() - t0); }
+      constructor(...a) { if (a.length === 0) super(reloj.base + (Date.now() - reloj.t0)); else super(...a); }
+      static now() { return reloj.base + (Date.now() - reloj.t0); }
     };
   }
   vm.createContext(ctx);
   vm.runInContext(fs.readFileSync(opciones.codigo || path.join(__dirname, '..', 'Code.gs'), 'utf8'), ctx);
   const run = (c) => vm.runInContext(c, ctx);
-  return { run, props, cacheMapa, archivos, contarFetch: () => llamadasFetch, vaciarCache: () => Object.keys(cacheMapa).forEach((k) => delete cacheMapa[k]) };
+  return { fijar: (ms) => { reloj.base = ms; reloj.t0 = Date.now(); }, run, props, cacheMapa, archivos, correos, disparadores, contarFetch: () => llamadasFetch, vaciarCache: () => Object.keys(cacheMapa).forEach((k) => delete cacheMapa[k]) };
 }
 
 module.exports = { crear };
