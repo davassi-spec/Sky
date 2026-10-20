@@ -930,6 +930,9 @@ public class MainActivity extends Activity {
             tpnt.setTextSize(z * s);
             StaticLayout sl = new StaticLayout(txt, tpnt, ancho, Layout.Alignment.ALIGN_NORMAL, interlineado, 0, false);
             if (sl.getHeight() > alto) continue;
+            boolean palabraPartida = false;                         // una palabra que no cabe entera en el ancho se partiría a mitad
+            for (String palabra : txt.split("\\s+")) if (tpnt.measureText(palabra) > ancho) { palabraPartida = true; break; }
+            if (palabraPartida) continue;
             int w = ancho;
             int lineas = sl.getLineCount();
             if (lineas > 1 && lineas <= 3) {

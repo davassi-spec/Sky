@@ -69,5 +69,22 @@ http.createServer((req, res) => {
       catch (e) { res.end(JSON.stringify({ error: String(e.message || e) })); }
     }); return;
   }
+  if (url.pathname === '/exec' && req.method === 'POST') {          // el POST de la app del móvil (RPC) contra el Code.gs real
+    let cuerpo = ''; req.on('data', (c) => (cuerpo += c)); req.on('end', () => {
+      res.setHeader('Content-Type', 'text/plain; charset=utf-8'); res.setHeader('Access-Control-Allow-Origin', '*');
+      res.end(mundo.s.run(`doPost(${JSON.stringify({ parameter: { a: url.searchParams.get('a') }, postData: { contents: cuerpo } })}).s`));
+    }); return;
+  }
+  if (url.pathname.startsWith('/web-app/')) {                        // la app del móvil (envoltorio), tal como se publicaría
+    const f = path.join(__dirname, '..', '..', 'web-app', url.pathname.slice(9));
+    if (f.startsWith(path.join(__dirname, '..', '..', 'web-app')) && fs.existsSync(f) && fs.statSync(f).isFile()) {
+      res.setHeader('Content-Type', f.endsWith('.html') ? 'text/html; charset=utf-8' : f.endsWith('.png') ? 'image/png' : 'application/octet-stream');
+      return res.end(fs.readFileSync(f));
+    }
+  }
+  if (url.pathname.startsWith('/ficheros/') && process.env.FICHEROS) {   // vídeos y audios de prueba (los genera panel.test.js con ffmpeg)
+    const f = path.join(process.env.FICHEROS, path.basename(url.pathname));
+    if (fs.existsSync(f)) { res.setHeader('Content-Type', 'application/octet-stream'); return res.end(fs.readFileSync(f)); }
+  }
   res.statusCode = 404; res.end('no');
 }).listen(Number(process.argv[2]) || 8765, '127.0.0.1', () => console.log('listo'));
