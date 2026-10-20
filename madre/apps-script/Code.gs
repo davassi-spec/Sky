@@ -868,7 +868,9 @@ function admRecordatorioGuardar(k, r, dataUrl, quitarFoto) {
     d.recordatorios.sort(function (a, b) { return a.hora.localeCompare(b.hora); });
     id = rec.id;
   });
-  return admEstado(k);
+  var est = admEstado(k);
+  est.ultimoId = id;                                // para que el panel pueda "probar" justo lo que acaba de guardar
+  return est;
 }
 
 function admRecordatorioBorrar(k, id) {

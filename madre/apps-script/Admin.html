@@ -55,7 +55,7 @@
   .tarjeta > h2:first-child { margin-top: 0; }
   label.eti { display: block; font-weight: 600; margin: 14px 0 6px; }
   label.eti:first-child { margin-top: 0; }
-  input[type=text], input[type=tel], input[type=date], select, textarea {
+  input[type=text], input[type=tel], input[type=date], input[type=time], input[type=email], select, textarea {
     width: 100%; min-height: 48px; padding: 11px 14px; background: var(--tarjeta2); border: 2px solid var(--borde); border-radius: 12px;
   }
   textarea { min-height: 112px; resize: vertical; }
@@ -164,6 +164,21 @@
   .iconos button[aria-pressed="true"] { border-color: var(--primario); }
   .iconos svg { width: 28px; height: 28px; }
   .pista { display: flex; gap: 10px; align-items: flex-start; padding: 12px; border-radius: 12px; background: var(--aviso-fondo); color: var(--aviso); font-size: 15px; margin-top: 12px; }
+  .dias { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+  .dias button { min-height: 52px; border-radius: 12px; border: 2px solid var(--borde); background: var(--tarjeta2); font-weight: 700; cursor: pointer; }
+  .dias button[aria-pressed="true"] { background: var(--primario); color: var(--sobre); border-color: var(--primario); }
+  .foto-rec { width: 100%; height: 200px; border-radius: 14px; background: var(--tarjeta2); border: 2px dashed var(--borde); display: flex; align-items: center; justify-content: center; color: var(--sub); overflow: hidden; margin-top: 8px; }
+  .foto-rec img { width: 100%; height: 100%; object-fit: contain; display: block; background: #000; }
+  .mini-foto { width: 56px; height: 56px; border-radius: 12px; background: var(--suave); color: var(--suave-texto); display: flex; align-items: center; justify-content: center; flex: none; overflow: hidden; }
+  .mini-foto img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .mini-foto svg { width: 26px; height: 26px; }
+  .rec-cuerpo { background: none; border: 0; padding: 0; text-align: left; cursor: pointer; min-height: 56px; }
+  .hora-grande { font-size: 26px; font-weight: 800; line-height: 1.1; }
+  .pendiente { border: 2px solid var(--primario); }
+  .pendiente .texto { font-size: 22px; font-weight: 800; overflow-wrap: anywhere; }
+  .recorte { position: relative; width: 280px; height: 280px; margin: 14px auto 6px; border-radius: 50%; overflow: hidden; touch-action: none; background: #000; cursor: grab; box-shadow: 0 0 0 4px var(--primario); }
+  .recorte canvas { width: 100%; height: 100%; display: block; }
+  input[type=range] { width: 100%; min-height: 48px; accent-color: var(--primario); }
   .oculto-visual { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
   @media (prefers-reduced-motion: reduce) { .sw::before, .sw::after { transition: none; } }
 </style>
@@ -187,6 +202,8 @@
   var fotos = {};                       // personaId -> dataURL | null (null: sin foto)
   var fotosPidiendo = {};
   var cuentaEditando = null;
+  var recEditando = null;               // recordatorio que se está editando
+  var fotosRec = {}, fotosRecPidiendo = {};   // id -> dataURL | null
   var $ = function (id) { return document.getElementById(id); };
 
   function el(tag, attrs) {
@@ -232,6 +249,7 @@
     nube: '<path d="M7 18h10.5a4 4 0 0 0 0-8 6 6 0 0 0-11.4 1.6A3.3 3.3 0 0 0 7 18z"/>',
     sol: '<circle cx="12" cy="12" r="4.5"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M4.9 19.1l1.8-1.8M17.3 6.7l1.8-1.8"/>',
     taza: '<path d="M4 8h13v5a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5zM17 10h1.5a2.5 2.5 0 0 1 0 5H17M8 3v2M12 3v2"/>',
+    campana: '<path d="M6 17h12l-1.5-2.2V10a4.5 4.5 0 0 0-9 0v4.8zM10 20a2 2 0 0 0 4 0"/>',
     papelera: '<path d="M5 7h14M10 7V4h4v3M7 7l1 13h8l1-13"/>',
     ciudad: '<path d="M12 21s-6-5.5-6-11a6 6 0 0 1 12 0c0 5.5-6 11-6 11z"/><circle cx="12" cy="10" r="2.2"/>'
   };
@@ -400,13 +418,79 @@
       img.src = url;
     });
   }
+  /** JPEG de a lo sumo `max` px por el lado largo, sin deformar (para la foto de un recordatorio). */
+  function reducirFotoLibre(archivo, max) {
+    return new Promise(function (ok, ko) {
+      var url = URL.createObjectURL(archivo), img = new Image();
+      img.onload = function () {
+        var k = Math.min(1, max / Math.max(img.naturalWidth, img.naturalHeight));
+        var c = document.createElement('canvas'); c.width = Math.round(img.naturalWidth * k); c.height = Math.round(img.naturalHeight * k);
+        c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+        var q = 0.85, out = c.toDataURL('image/jpeg', q);
+        while (out.length > 400000 && q > 0.4) { q -= 0.1; out = c.toDataURL('image/jpeg', q); }
+        URL.revokeObjectURL(url); ok(out);
+      };
+      img.onerror = function () { URL.revokeObjectURL(url); ko(new Error('No se ha podido leer esa foto')); };
+      img.src = url;
+    });
+  }
+
+  /** Diálogo para encuadrar la cara en un círculo: se arrastra la foto y se acerca con el deslizador. Devuelve un JPEG cuadrado de 512 px. */
+  function recortarCirculo(archivo) {
+    return new Promise(function (ok, ko) {
+      var url = URL.createObjectURL(archivo), img = new Image();
+      img.onerror = function () { URL.revokeObjectURL(url); ko(new Error('No se ha podido leer esa foto')); };
+      img.onload = function () {
+        var VISOR = 280, iw = img.naturalWidth, ih = img.naturalHeight;
+        var base = VISOR / Math.min(iw, ih), zoom = 1, ox = 0, oy = 0;
+        var cv = el('canvas', { width: VISOR * 2, height: VISOR * 2, role: 'img', 'aria-label': 'Tu foto: arrastra para encuadrar la cara' });
+        var cx = cv.getContext('2d');
+        var limita = function () {
+          var w = iw * base * zoom, h = ih * base * zoom;
+          ox = Math.max(-(w - VISOR) / 2, Math.min((w - VISOR) / 2, ox)); oy = Math.max(-(h - VISOR) / 2, Math.min((h - VISOR) / 2, oy));
+        };
+        var dibuja = function (ctx, lado) {
+          var k = lado / VISOR, w = iw * base * zoom * k, h = ih * base * zoom * k;
+          ctx.fillStyle = '#000'; ctx.fillRect(0, 0, lado, lado);
+          ctx.drawImage(img, (lado - w) / 2 + ox * k, (lado - h) / 2 + oy * k, w, h);
+        };
+        var pinta = function () { limita(); dibuja(cx, VISOR * 2); };
+        var arrastre = null;
+        cv.addEventListener('pointerdown', function (e) { arrastre = { x: e.clientX, y: e.clientY, ox: ox, oy: oy }; try { cv.setPointerCapture(e.pointerId); } catch (x) {} });
+        cv.addEventListener('pointermove', function (e) {
+          if (!arrastre) return;
+          var f = VISOR / (cv.clientWidth || VISOR);
+          ox = arrastre.ox + (e.clientX - arrastre.x) * f; oy = arrastre.oy + (e.clientY - arrastre.y) * f; pinta();
+        });
+        ['pointerup', 'pointercancel'].forEach(function (n) { cv.addEventListener(n, function () { arrastre = null; }); });
+        var zoomEl = el('input', { type: 'range', id: 'recorte-zoom', min: '1', max: '3', step: '0.01', value: '1', 'aria-label': 'Acercar',
+          oninput: function (e) { zoom = Number(e.target.value); pinta(); } });
+        var capa = $('capa');
+        var cerrar = function (valor, error) { capa.innerHTML = ''; URL.revokeObjectURL(url); if (error) ko(error); else ok(valor); };
+        var usar = el('button', { class: 'btn', type: 'button', onclick: function () {
+          var sal = document.createElement('canvas'); sal.width = 512; sal.height = 512; dibuja(sal.getContext('2d'), 512);
+          var q = 0.88, out = sal.toDataURL('image/jpeg', q);
+          while (out.length > 400000 && q > 0.4) { q -= 0.1; out = sal.toDataURL('image/jpeg', q); }
+          cerrar(out);
+        } }, 'Usar esta foto');
+        var cancel = el('button', { class: 'btn suave', type: 'button', onclick: function () { cerrar(null, new Error('cancelado')); } }, 'Cancelar');
+        var dlg = el('div', { class: 'dialogo', role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': 'rec-t' },
+          el('h2', { id: 'rec-t' }, 'Encuadra la foto'),
+          el('p', { class: 'sub' }, 'En la tele se verá dentro de un círculo. Arrastra la foto y acércala hasta que se vea bien la cara.'),
+          el('div', { class: 'recorte' }, cv), el('label', { class: 'eti', for: 'recorte-zoom' }, 'Acercar'), zoomEl, el('div', { class: 'fila' }, cancel, usar));
+        capa.innerHTML = ''; capa.appendChild(el('div', { class: 'velo' }, dlg));
+        pinta(); usar.focus();
+      };
+      img.src = url;
+    });
+  }
   function elegirFoto(personaId, boton) {
     var inp = el('input', { type: 'file', accept: 'image/*', class: 'oculto-visual', 'aria-label': 'Elegir foto' });
     inp.onchange = function () {
       var f = inp.files && inp.files[0]; if (!f) return;
-      reducirFoto(f).then(function (d) {
+      recortarCirculo(f).then(function (d) {
         return accion('admFoto', [personaId || null, d], 'Foto guardada', boton).then(function () { delete fotos[personaId || 'yo']; fotos[personaId || S.miId] = d; pintar(); });
-      }).catch(function (e) { aviso(mensajeError(e), 'error'); });
+      }).catch(function (e) { if (e && e.message === 'cancelado') return; aviso(mensajeError(e), 'error'); });
     };
     document.body.appendChild(inp); inp.click(); setTimeout(function () { inp.remove(); }, 60000);
   }
@@ -503,7 +587,7 @@
 
   /* ============================== navegación ============================== */
   var PESTANAS = [['inicio', 'Inicio', 'inicio'], ['mensajes', 'Mensajes', 'mensajes'], ['mas', 'Más', 'mas']];
-  var PADRE = { pantalla: 'mas', cuentas: 'mas', cuenta: 'mas', familia: 'mas', ajustes: 'mas' };
+  var PADRE = { pantalla: 'mas', recordatorios: 'mas', recordatorio: 'mas', cuentas: 'mas', cuenta: 'mas', familia: 'mas', ajustes: 'mas' };
   function ir(v) {
     if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
     vista = v; if (PESTANAS.some(function (p) { return p[0] === v; })) guardarLocal('vista', v);
@@ -525,7 +609,7 @@
     MINIS = [];
     app.innerHTML = '';
     var fn = ROL === 'familia' ? vistaFamiliar : ({ inicio: vistaInicio, mensajes: vistaMensajes, mas: vistaMas, pantalla: vistaPantalla,
-      cuentas: vistaCuentas, cuenta: vistaCuenta, familia: vistaFamilia, ajustes: vistaAjustes })[vista] || vistaInicio;
+      cuentas: vistaCuentas, cuenta: vistaCuenta, recordatorios: vistaRecordatorios, recordatorio: vistaRecordatorio, familia: vistaFamilia, ajustes: vistaAjustes })[vista] || vistaInicio;
     app.appendChild(fn());
     pintarNav();
     window.scrollTo(0, anterior);
@@ -538,6 +622,7 @@
     var m = modoActual();
     w.appendChild(cabecera('La tele de mamá'));
     w.appendChild(estadoTV());
+    (S.pendientes || []).forEach(function (p) { w.appendChild(tarjetaPendiente(p)); });
     var t = el('div', { class: 'tarjeta' }, el('h2', {}, 'Así se ve ahora en la TV'),
       miniatura(v, m.modo, m.estilo),
       m.prueba ? el('p', { class: 'ayuda' }, 'Estás probando un estilo: la tele vuelve sola a su estilo en menos de un minuto.') : null,
@@ -637,7 +722,7 @@
   function vistaMas() {
     var w = document.createDocumentFragment();
     w.appendChild(cabecera('Más'));
-    var items = [['pantalla', 'pantalla', 'Pantalla', 'Qué se ve y con qué estilo'], ['cuentas', 'reloj', 'Cuentas atrás', 'Días que faltan para una fecha'],
+    var items = [['pantalla', 'pantalla', 'Pantalla', 'Qué se ve y con qué estilo'], ['recordatorios', 'campana', 'Recordatorios', 'Con foto, a su hora'], ['cuentas', 'reloj', 'Cuentas atrás', 'Días que faltan para una fecha'],
       ['familia', 'familia', 'Familia', 'Enlaces y fotos'], ['ajustes', 'ajustes', 'Ajustes', 'Noche, contacto, ciudad y calendarios']];
     var menu = el('div', { class: 'tarjeta menu' });
     items.forEach(function (i) {
@@ -759,6 +844,143 @@
     return w;
   }
 
+
+  /* ============================== Recordatorios ============================== */
+  var DIAS_CORTOS = [['L', 1, 'lunes'], ['M', 2, 'martes'], ['X', 3, 'miércoles'], ['J', 4, 'jueves'], ['V', 5, 'viernes'], ['S', 6, 'sábado'], ['D', 0, 'domingo']];
+  function resumenDias(dias) {
+    var d = (dias || []).slice().sort();
+    if (d.length === 7 || !d.length) return 'Todos los días';
+    if (d.join() === '1,2,3,4,5') return 'De lunes a viernes';
+    if (d.join() === '0,6') return 'Fines de semana';
+    return DIAS_CORTOS.filter(function (x) { return d.indexOf(x[1]) >= 0; }).map(function (x) { return x[2].slice(0, 3); }).join(', ');
+  }
+  /** Miniatura cuadrada de la foto de un recordatorio (se pide al servidor solo cuando hace falta). */
+  function miniFotoRec(r) {
+    var m = el('div', { class: 'mini-foto' }, icono('camara'));
+    if (r.tieneFoto) {
+      if (fotosRec[r.id]) { m.innerHTML = ''; m.appendChild(el('img', { src: fotosRec[r.id], alt: '' })); }
+      else if (fotosRec[r.id] === undefined) {
+        if (!fotosRecPidiendo[r.id]) fotosRecPidiendo[r.id] = llamar('admRecordatorioFoto', r.id).then(function (d) { fotosRec[r.id] = d || null; delete fotosRecPidiendo[r.id]; return d; }, function () { delete fotosRecPidiendo[r.id]; return null; });
+        fotosRecPidiendo[r.id].then(function (d) { if (d && m.isConnected) { m.innerHTML = ''; m.appendChild(el('img', { src: d, alt: '' })); } });
+      }
+    }
+    return m;
+  }
+  /** En Inicio: lo que está esperando que alguien lo confirme. */
+  function tarjetaPendiente(p) {
+    var estado = p.enMarcha ? 'Ahora mismo está en la TV.' : 'Ya pasó su hora y sigue sin confirmar.';
+    var b = el('button', { class: 'btn', type: 'button', style: 'margin-top:12px', onclick: function () {
+      accion('admRecordatorioConfirmar', [p.clave], 'Confirmado. La tele vuelve a la pizarra en unos segundos.', b);
+    } }, icono('campana'), 'Confirmar que lo ha tomado');
+    return el('div', { class: 'tarjeta pendiente' }, el('h2', {}, 'Pendiente de confirmar'),
+      el('div', { class: 'quien' }, mayus(aLas(Number(p.hora.split(':')[0]), Number(p.hora.split(':')[1])))),
+      el('div', { class: 'texto' }, p.texto), el('p', { class: 'ayuda' }, estado + (p.avisado ? ' Ya te hemos mandado un correo.' : '')), b);
+  }
+  function vistaRecordatorios() {
+    var d = S.datos, w = document.createDocumentFragment();
+    w.appendChild(cabecera('Recordatorios', 'A su hora, la tele cambia entera: foto grande y letra enorme.', 'mas'));
+    var t = el('div', { class: 'tarjeta' });
+    if (!d.recordatorios.length) t.appendChild(el('p', { class: 'vacio' }, 'Todavía no hay ninguno.'));
+    var l = el('div', { class: 'lista' });
+    d.recordatorios.forEach(function (r) {
+      var sw = el('button', { class: 'sw', type: 'button', role: 'switch', 'aria-checked': r.activo ? 'true' : 'false', 'aria-label': 'Activar: ' + r.texto, onclick: function () {
+        var nuevo = sw.getAttribute('aria-checked') !== 'true'; sw.setAttribute('aria-checked', nuevo ? 'true' : 'false');
+        accion('admRecordatorioGuardar', [Object.assign({}, r, { activo: nuevo }), null, false], null);
+      } });
+      l.appendChild(el('div', { class: 'item' }, miniFotoRec(r),
+        el('button', { class: 'cuerpo rec-cuerpo', type: 'button', 'aria-label': 'Editar: ' + r.texto, onclick: function () { recEditando = Object.assign({}, r); ir('recordatorio'); } },
+          el('div', { class: 'hora-grande' }, r.hora), el('div', { class: 'texto' }, r.texto),
+          el('div', { class: 'meta' }, resumenDias(r.dias) + ' · ' + r.duracion + ' min' + (r.confirmar ? ' · hay que confirmarlo' : ''))), sw));
+    });
+    t.appendChild(l);
+    t.appendChild(el('button', { class: 'btn', type: 'button', style: 'margin-top:12px', onclick: function () {
+      recEditando = { texto: '', texto2: '', hora: '', dias: [0, 1, 2, 3, 4, 5, 6], duracion: 15, confirmar: false, activo: true, tieneFoto: false }; ir('recordatorio');
+    } }, icono('mas2'), 'Añadir recordatorio'));
+    t.appendChild(el('p', { class: 'ayuda' }, 'De noche no salta ninguno. Si lo apagas aquí, no se borra.'));
+    w.appendChild(t);
+    return w;
+  }
+  function vistaRecordatorio() {
+    var r = recEditando || { texto: '', texto2: '', hora: '', dias: [0, 1, 2, 3, 4, 5, 6], duracion: 15, confirmar: false, activo: true, tieneFoto: false };
+    var w = document.createDocumentFragment();
+    w.appendChild(cabecera(r.id ? 'Editar recordatorio' : 'Nuevo recordatorio', null, 'recordatorios'));
+    var f = el('div', { class: 'tarjeta' });
+    f.appendChild(el('label', { class: 'eti', for: 'r-texto' }, 'Qué hay que hacer'));
+    f.appendChild(el('input', { type: 'text', id: 'r-texto', maxlength: '80', value: r.texto, placeholder: 'Salir a pasear', autocomplete: 'off', oninput: function (e) { r.texto = e.target.value; } }));
+    f.appendChild(el('label', { class: 'eti', for: 'r-texto2' }, 'Texto pequeño (si quieres)'));
+    f.appendChild(el('input', { type: 'text', id: 'r-texto2', maxlength: '120', value: r.texto2 || '', placeholder: 'Con calma, sin prisa', autocomplete: 'off', oninput: function (e) { r.texto2 = e.target.value; } }));
+    f.appendChild(el('label', { class: 'eti', for: 'r-hora' }, 'Hora'));
+    f.appendChild(el('input', { type: 'time', id: 'r-hora', value: r.hora, oninput: function (e) { r.hora = e.target.value; } }));
+    f.appendChild(el('span', { class: 'eti', style: 'display:block;margin:14px 0 6px;font-weight:600', id: 'r-dias-et' }, 'Días'));
+    var dias = el('div', { class: 'dias', role: 'group', 'aria-labelledby': 'r-dias-et' });
+    DIAS_CORTOS.forEach(function (x) {
+      var b = el('button', { type: 'button', 'aria-label': mayus(x[2]), 'aria-pressed': r.dias.indexOf(x[1]) >= 0 ? 'true' : 'false', onclick: function () {
+        var i = r.dias.indexOf(x[1]); if (i >= 0) r.dias.splice(i, 1); else r.dias.push(x[1]);
+        b.setAttribute('aria-pressed', i >= 0 ? 'false' : 'true'); resumen.textContent = r.dias.length ? resumenDias(r.dias) : 'Elige al menos un día (si no, saldrá todos los días)';
+      } }, x[0]);
+      dias.appendChild(b);
+    });
+    f.appendChild(dias);
+    var resumen = el('p', { class: 'ayuda' }, resumenDias(r.dias)); f.appendChild(resumen);
+    f.appendChild(el('label', { class: 'eti', for: 'r-dur' }, '¿Cuánto tiempo se ve en la tele?'));
+    var dur = el('select', { id: 'r-dur', onchange: function (e) { r.duracion = Number(e.target.value); } });
+    [5, 10, 15, 30, 60].forEach(function (n) { dur.appendChild(el('option', { value: n }, n + ' minutos')); });
+    dur.value = String(r.duracion); f.appendChild(dur);
+    f.appendChild(el('div', { style: 'margin-top:8px' }, interruptor('Hay que confirmarlo', 'Si nadie lo confirma en ' + ((S.avisos && S.avisos.minutos) || 30) + ' minutos, te llega un correo', null, r.confirmar, function (v) { r.confirmar = v; pistaAvisos(); })));
+    var pista = el('div', {}); f.appendChild(pista);
+    var pistaAvisos = function () {
+      pista.innerHTML = '';
+      if (r.confirmar && S.avisos && !S.avisos.activos) pista.appendChild(el('div', { class: 'pista' }, 'Los avisos por correo todavía no están activados. Mira Más › Ajustes › Avisos por correo.'));
+    };
+    pistaAvisos();
+    f.appendChild(el('h2', { style: 'margin-top:18px' }, 'Foto'));
+    var marco = el('div', { class: 'foto-rec', id: 'r-foto' });
+    var pintarFoto = function () {
+      marco.innerHTML = '';
+      if (r._foto) marco.appendChild(el('img', { src: r._foto, alt: 'La foto elegida' }));
+      else if (r.tieneFoto && !r._quitar) {
+        var cargando = el('span', {}, 'Cargando…'); marco.appendChild(cargando);
+        var poner = function (d) { if (d && !r._foto) { marco.innerHTML = ''; marco.appendChild(el('img', { src: d, alt: 'La foto actual' })); } else if (!d) cargando.textContent = 'Sin foto'; };
+        if (fotosRec[r.id]) poner(fotosRec[r.id]); else llamar('admRecordatorioFoto', r.id).then(function (d) { fotosRec[r.id] = d || null; poner(d); }, function () { poner(null); });
+      } else marco.appendChild(el('span', {}, 'Sin foto'));
+    };
+    f.appendChild(marco); pintarFoto();
+    var elegir = el('button', { class: 'btn suave', type: 'button', style: 'margin-top:10px', onclick: function () {
+      var inp = el('input', { type: 'file', accept: 'image/*', class: 'oculto-visual', 'aria-label': 'Elegir foto del recordatorio' });
+      inp.onchange = function () {
+        var fl = inp.files && inp.files[0]; if (!fl) return;
+        reducirFotoLibre(fl, 900).then(function (d) { r._foto = d; r._quitar = false; pintarFoto(); fila.querySelector('.quitar').hidden = false; }).catch(function (e) { aviso(mensajeError(e), 'error'); });
+      };
+      document.body.appendChild(inp); inp.click(); setTimeout(function () { inp.remove(); }, 60000);
+    } }, icono('camara'), 'Elegir foto');
+    var quitar = el('button', { class: 'btn suave quitar', type: 'button', hidden: !(r._foto || r.tieneFoto), onclick: function () { r._foto = null; r._quitar = true; quitar.hidden = true; pintarFoto(); } }, 'Quitar foto');
+    var fila = el('div', { class: 'fila' }, elegir, quitar); f.appendChild(fila);
+    f.appendChild(el('p', { class: 'ayuda' }, 'Se guarda en tu Drive, privada: nadie más puede verla con un enlace.'));
+    var guardar = el('button', { class: 'btn', type: 'button', style: 'margin-top:16px', onclick: function () {
+      if (!r.texto.trim()) { aviso('Escribe qué hay que hacer', 'error'); return; }
+      if (!r.hora) { aviso('Elige la hora', 'error'); return; }
+      delete fotosRec[r.id];
+      accion('admRecordatorioGuardar', [{ id: r.id, texto: r.texto, texto2: r.texto2, hora: r.hora, dias: r.dias, duracion: r.duracion, confirmar: r.confirmar, activo: r.activo },
+        r._foto || null, !!r._quitar && !r._foto], 'Recordatorio guardado', guardar).then(function () { ir('recordatorios'); });
+    } }, 'Guardar recordatorio');
+    f.appendChild(guardar);
+    var probar = el('button', { class: 'btn suave', type: 'button', onclick: function () {
+      if (!r.texto.trim() || !r.hora) { aviso('Escribe qué hay que hacer y la hora', 'error'); return; }
+      delete fotosRec[r.id];
+      accion('admRecordatorioGuardar', [{ id: r.id, texto: r.texto, texto2: r.texto2, hora: r.hora, dias: r.dias, duracion: r.duracion, confirmar: r.confirmar, activo: r.activo },
+        r._foto || null, !!r._quitar && !r._foto]).then(function (e) {
+        return accion('admRecordatorioProbar', [e.ultimoId], 'La tele lo enseñará durante 1 minuto (en menos de 15 segundos).', probar);
+      }).then(function () { ir('recordatorios'); });
+    } }, icono('pantalla'), 'Guardar y probar 1 minuto en la TV');
+    f.appendChild(probar);
+    f.appendChild(el('button', { class: 'btn suave', type: 'button', onclick: function () { ir('recordatorios'); } }, 'Cancelar'));
+    if (r.id) f.appendChild(el('button', { class: 'btn borde', type: 'button', style: 'color:var(--peligro)', onclick: function () {
+      confirmar('¿Borrar este recordatorio?', r.texto, 'Borrar', true).then(function (si) { if (si) accion('admRecordatorioBorrar', [r.id], 'Recordatorio borrado').then(function () { delete fotosRec[r.id]; ir('recordatorios'); }); });
+    } }, icono('papelera'), 'Borrar'));
+    w.appendChild(f);
+    return w;
+  }
+
   /* ============================== Familia ============================== */
   function enlaceDe(f) { return BASE + '?a=admin&k=' + f.clave; }
   function copiar(texto) {
@@ -839,6 +1061,16 @@
       }));
     });
     w.appendChild(el('div', { class: 'tarjeta' }, el('h2', {}, 'Calendarios de Google'), cals, el('p', { class: 'ayuda' }, 'Si no marcas ninguno, se usa tu calendario principal.')));
+    var av = S.avisos || {};
+    var correo = el('input', { type: 'email', id: 'a-correo', maxlength: '100', autocomplete: 'off', inputmode: 'email', placeholder: av.destino || 'tucorreo@ejemplo.com', value: d.correoAviso || '' });
+    var bCorreo = el('button', { class: 'btn', type: 'button', style: 'margin-top:12px', onclick: function () { accion('admCorreoAviso', [correo.value], 'Correo guardado', bCorreo); } }, 'Guardar correo');
+    var bPrueba = el('button', { class: 'btn suave', type: 'button', onclick: function () { accion('admCorreoPrueba', [], 'Correo de prueba enviado a ' + (correo.value.trim() || av.destino), bPrueba); } }, 'Enviar un correo de prueba');
+    w.appendChild(el('div', { class: 'tarjeta', id: 'avisos' }, el('h2', {}, 'Avisos por correo'),
+      av.activos
+        ? el('p', { class: 'ayuda', style: 'margin:0 0 10px' }, 'Activados: si un recordatorio que hay que confirmar sigue sin confirmar tras ' + av.minutos + ' minutos, te llega un correo.')
+        : el('div', { class: 'pista', style: 'margin:0 0 10px' }, 'Todavía no están activados. En el editor de Apps Script ejecuta la función autorizar (una sola vez) y acepta los permisos nuevos.'),
+      el('label', { class: 'eti', for: 'a-correo' }, 'Correo donde te avisamos'), correo,
+      el('p', { class: 'ayuda' }, 'Si lo dejas vacío, el aviso llega a ' + (av.destino || 'tu correo de Google') + '.'), bCorreo, bPrueba));
     var aspecto = el('div', { class: 'segmentos', style: 'grid-template-columns:repeat(3,1fr);margin-top:0', role: 'group', 'aria-label': 'Aspecto' });
     [['claro', 'Claro'], ['oscuro', 'Oscuro'], ['', 'Según el móvil']].forEach(function (a) {
       aspecto.appendChild(el('button', { type: 'button', 'aria-pressed': (leerLocal('tema') === a[0]) ? 'true' : 'false', style: 'font-size:15px', onclick: function () {
