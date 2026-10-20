@@ -75,6 +75,85 @@ las distribuciones de pantalla (Reloj a la izquierda, Lista, Sencillo) combinabl
 
 Con el script nuevo y la TV todavía en la 2.0, todo sigue funcionando (la 2.0 ignora los recordatorios). Y con el script anterior, la TV 3.0 también (simplemente no hay recordatorios).
 
+## Versión 5.0: distribuciones, audios/vídeos/fotos a distancia y app con icono
+
+Todo está en tres PR en borrador encadenados (#8 distribuciones → #9 audios y vídeos → #10 app con icono), sobre #7 (fase 3.1). Nada está fusionado.
+
+### Qué hay de nuevo
+
+- **Fase 3.1** (ya en #7): el texto nunca se corta (baja hasta 36 px y, si hace falta, pasa a otra línea), el teléfono y "Es hora de dormir" crecen hasta llenar su tarjeta y la vista previa del móvil es una captura real de la TV.
+- **Distribuciones** (**Más › Pantalla › Distribución**, con miniaturas que son capturas reales): *Clásica*, *Reloj a la izquierda*, *Lista* y *Sencillo*. Se combinan con cualquier estilo, de día y de noche; "Probar 1 minuto con esta distribución" prueba la combinación elegida.
+- **Audios, vídeos y fotos** (**Más › Audios y vídeos**, y en la página de cada familiar): grabar un audio (hasta 1 min) o un vídeo (hasta 30 s), o elegir una foto/vídeo/audio del móvil. Todo queda en `Pizarra/Medios` de tu Drive, privado, sin enlaces públicos y sin aprobación.
+  - Nada se pone solo. En **Preparados** se ve quién lo mandó; **Reproducir ahora** / **Mostrar ahora en la TV** lo pone. De noche no se pone nada (y no deja pulsarlo).
+  - La TV pone pantalla completa con "Vídeo de Ana", un pitido suave, sube el volumen (al 70 % si estaba más bajo) y lo devuelve a como estaba al terminar; luego vuelve a la pizarra. Una foto se queda 1, 5 o 15 minutos, o hasta que se quite.
+  - En el móvil: Repetir, Parar, Volumen − y +, y el estado en vivo (Esperando a la TV… / Reproduciendo / Terminado / un error claro). Si la TV no contesta en 15 minutos, el envío deja de esperar.
+  - Permisos: cada familiar reproduce, muestra y borra lo suyo; el administrador todo, con **Historial** de lo que se ha puesto y quién.
+  - Audio: se convierte siempre en el móvil a WAV mono de 16 kHz (lo entiende cualquier Android). Vídeo: Safari graba MP4/H.264 y Chrome MP4/H.264 o WebM/VP8. Un vídeo de la galería en **HEVC** (el de los iPhone recientes) se rechaza con una explicación ("Ajustes › Cámara › Formatos › Más compatible").
+- **App con icono** (carpeta `web-app/`): el mismo panel en su propia página, para publicar en GitHub Pages. Icono de la tele con el corazón, nombre "La tele de mamá", pantalla completa. Así el micrófono y la cámara funcionan en Safari y Chrome (dentro de la página de Google, el navegador suele bloquearlos). Los enlaces de la familia apuntan a ella.
+
+### Desplegar el script v5 (la dirección `/exec` no cambia)
+
+1. Pega `apps-script/Code.gs` y `apps-script/Admin.html` en el editor de Apps Script (sustituyen a los actuales).
+2. **Implementar › Administrar implementaciones › lápiz › Versión: Nueva versión › Implementar.** Nunca "Nueva implementación".
+3. **No hay permisos nuevos:** usa los mismos que la v3 (Drive, Calendario, correo, servicios externos y activadores). Aun así, ejecuta `autorizar` una vez; si Google no te pide nada, es que no falta ninguno.
+4. La carpeta `Pizarra/Medios` se crea sola al mandar el primer envío.
+
+### Publicar la app del móvil (GitHub Pages)
+
+La rama `gh-pages` contiene solo `index.html` e `iconos/` (sin claves ni direcciones del script). En GitHub: **Settings › Pages › Source: Deploy from a branch › `gh-pages` / root.** Queda en `https://davassi-spec.github.io/Sky/`. Cada vez que cambie `Admin.html` hay que ejecutar `python3 web-app/construir.py` y volver a publicar `index.html` en esa rama.
+
+Después:
+1. Abre en el móvil `https://davassi-spec.github.io/Sky/#u=IDENTIFICADOR&k=TU_CLAVE`. `IDENTIFICADOR` es la parte de tu dirección `/exec` entre `/s/` y `/exec`. Más cómodo: en el panel de Google, **Más › Ajustes › Icono en la pantalla de inicio**, pega `https://davassi-spec.github.io/Sky/` en "Dirección de la app" y toca "Copiar mi enlace de la app".
+2. A partir de ahí, **Familia** da a cada persona un enlace de la app (con su clave tras el `#`, que el navegador nunca envía).
+3. **Añadir a pantalla de inicio:** *iPhone (Safari)*: Compartir (cuadrado con flecha) › Añadir a pantalla de inicio › Añadir. *Samsung (Chrome)*: ⋮ › Añadir a pantalla de inicio (o Instalar aplicación) › Añadir.
+4. Si el icono se abre sin el enlace, la app pide pegarlo una vez (también vale el enlace antiguo de Google).
+
+### Instalar la 5.0 en la TV (Windows PowerShell)
+
+El APK es `app-tv/release/PizarraTV-5.0.apk`, con el mismo certificado que la 3.0 (se instala encima, sin desinstalar). No pide permisos nuevos.
+
+```
+adb connect IP_DE_LA_TV:5555
+adb install -r PizarraTV-5.0.apk
+adb shell am start -n es.pizarra.tv/.MainActivity
+```
+
+**Volver a la 3.0** (el script v5 sigue valiendo para la 3.0; solo se pierden distribuciones y envíos a la TV): como Android no deja bajar de versión con `-r`, hay que desinstalar y reinstalar, y la TV pide la URL y la clave otra vez:
+
+```
+adb uninstall es.pizarra.tv
+adb install PizarraTV-3.0.apk
+adb shell am start -n es.pizarra.tv/.MainActivity --es url "TU_URL_EXEC" --es k "TU_CLAVE"
+```
+
+### Qué códecs entiende la TV
+
+```
+adb shell "cat /system/etc/media_codecs*.xml /vendor/etc/media_codecs*.xml 2>/dev/null | grep -i -E 'avc|hevc|vp8|vp9|aac|opus|mp3|wav'"
+adb logcat -d -s Pizarra          # errores de reproducción de la app (la TV dice por qué no pudo)
+```
+
+H.264 + AAC (MP4) lo reproduce cualquier Android 5.1; WAV también. Si en ese listado no sale `video/avc`, o un vídeo de Chrome en WebM no se ve, grábalo desde Safari o elige H.264.
+
+### ¿Cabe en las cuotas gratuitas? (estimación; mide con tu `?a=metricas`)
+
+Mira los números reales con `TU_URL_EXEC?a=metricas&k=TU_CLAVE` (cuentan `estado`, `medio`, `medioEstado`, `rpc` y `post` por separado). Estimación con el código actual:
+
+- Consulta normal: 1 llamada/min = 1.440 al día. Solo toca la caché (no Drive), así que son ejecuciones muy cortas.
+- Mientras hay algo pendiente la TV pregunta cada 6 s. Un envío es: ~1 llamada de `medio` por cada trozo de 1 MB (un vídeo de 10 MB = 10 llamadas, cada una lee un fichero de Drive), ~10 consultas de estado y unas pocas escrituras (reproduciendo/terminado). Unas 25–50 llamadas por envío. Con 20 envíos al día: 500–1.000 llamadas más, y unos minutos de ejecución.
+- El panel mira el estado cada 3 s solo mientras algo está pendiente (llamada ligera, de caché).
+- Los límites de una cuenta gratuita que importan son: 6 min por ejecución, 90 min/día de activadores (el aviso por correo usa ~5), 20.000 llamadas/día a servicios externos y 30 ejecuciones simultáneas. Nada de esto se acerca. Lo único a vigilar es la lectura de Drive en los vídeos grandes: si ves `medio` con tiempos medios altos, acorta los vídeos.
+
+### Pruebas nuevas
+
+```
+node apps-script/test/servidor.test.js      # 231: + distribución, envíos, permisos, noche, RPC y lista cerrada de funciones
+node apps-script/test/panel.test.js         # 145: + audios/vídeos, subida por trozos, HEVC, grabar con micrófono y cámara simulados
+node apps-script/test/envoltorio.test.js    # 23: la app con icono (enlaces, manifiesto, sin enlace, sin claves en el repo)
+node apps-script/test/capturas-panel.js /ruta   # capturas del móvil de las fases 5 y 6
+python3 web-app/construir.py --comprobar    # index.html al día respecto a Admin.html
+```
+
 ## Poner el script (una vez, unos 5 minutos)
 
 1. Entra en <https://script.google.com> con tu cuenta y abre tu proyecto (o crea uno nuevo).
@@ -95,7 +174,7 @@ Quien tenga la dirección y una clave puede usar la pizarra. La clave de adminis
 las de familia solo escriben mensajes, quitan los suyos y cambian su foto. Si quitas a alguien en **Familia**, su enlace deja de funcionar al instante.
 **No pongas claves ni la dirección `/exec` en el repositorio.**
 
-## App de la TV (versión 3.0)
+## App de la TV (versión 3.0; la 5.0 está más arriba)
 
 Pantalla: arriba el día, la fecha, la hora en cifras (con los dos puntos parpadeando), la hora en palabras ("Son las cinco y cuarto de la tarde")
 y una etiqueta grande con la parte del día. Debajo, a la izquierda los mensajes de la familia (con su foto), a la derecha lo próximo del calendario y
@@ -197,4 +276,7 @@ gradle testDebugUnitTest -Dcapturas.dir=/ruta/capturas   # prueba de contraste, 
 
 - El panel dentro de Apps Script, en iPhone (Safari) y Android (Chrome).
 - La TV: que se vea bien a 3 metros, que el fundido y los dos puntos del reloj vayan fluidos en Android 5.1, que se descarguen las fotos y que arranque sola al encender.
-- El intervalo de consulta de la TV frente a las cuotas de Apps Script (fase 4).
+- El intervalo de consulta de la TV frente a las cuotas de Apps Script (ver la estimación de la 5.0 y comprobar con `?a=metricas`).
+- **Fase 5 en la TV real:** que el audio y el vídeo se oigan y se vean (códecs de la Philips), que el volumen suba y vuelva a como estaba (puede que el volumen de Android no mande en los altavoces de la TV), que el pitido suene.
+- **Grabar en Safari (iPhone)**: aquí solo se ha probado en Chromium con micrófono y cámara simulados. Hay que probar iPhone reciente (administrador), iPhone XR (María) y Samsung (Ana).
+- **Añadir a pantalla de inicio en iPhone**: algunas versiones de iOS pierden lo que va tras el `#`; la app lo guarda en el móvil y, si aun así se pierde, pide pegar el enlace una vez.
