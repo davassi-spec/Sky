@@ -326,6 +326,7 @@
   function aLas(h, m) {
     var hh = m > 30 ? (h + 1) % 24 : h, h12 = hh % 12 || 12, base = (h12 === 1 ? 'a la ' : 'a las ') + HORAS[h12];
     if (m === 0) return base; if (m === 15) return base + ' y cuarto'; if (m === 30) return base + ' y media'; if (m === 45) return base + ' menos cuarto';
+    if (m === 1) return base + ' y un minuto'; if (m === 59) return base + ' menos un minuto';
     return base + (m < 30 ? ' y ' + NUM[m] : ' menos ' + NUM[60 - m]);
   }
   function mismoDia(a, b) { return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate(); }

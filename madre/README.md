@@ -11,8 +11,9 @@ Se maneja desde una web app en el móvil: un panel de administrador y un enlace 
 | `mockup/` | Diseños de referencia: estilos de la TV (`estilos/`) y panel del móvil (`panel/`). |
 | `web-app/iconos/` | Iconos para poner el panel en la pantalla de inicio del móvil (se usan en la fase 4). |
 
-Estado: **fases 0 y 1 hechas** (script, datos en Drive, panel del móvil). **Fase 2 lista para instalar** (app de la TV 2.0 con
-cinco estilos). Las fases 3 y 4 (recordatorios, audio y vídeo) están pendientes.
+Estado: **fases 0, 1 y 2 hechas** (script, datos en Drive, panel del móvil, app de la TV 2.0 con cinco estilos). **Fase 3 en revisión**
+(recordatorios con foto, fotos de la familia con encuadre en círculo, aviso por correo). Pendiente: la fase 4 (audio y vídeo) y, después,
+las distribuciones de pantalla (Reloj a la izquierda, Lista, Sencillo) combinables con cualquier estilo de color.
 
 ## Fase 1: qué hay de nuevo en el script
 
@@ -33,6 +34,37 @@ cinco estilos). Las fases 3 y 4 (recordatorios, audio y vídeo) están pendiente
 - **Contador de uso** (fase 0). `TU_DIRECCION_EXEC?a=metricas&k=TU_CLAVE` (solo administrador) devuelve cuántas peticiones llegan cada día,
   de cada tipo (`estado` es la TV, `admin` es el panel), con su tiempo medio y máximo, de los últimos 8 días. Es aproximado; el tiempo real de
   ejecución sale en la pantalla **Ejecuciones** de Apps Script. Sirve para medir el consumo frente a las cuotas gratuitas.
+
+## Fase 3: recordatorios con foto, fotos de la familia y aviso por correo
+
+- **Fotos de la familia.** Cada persona sube la suya desde su enlace (cámara o galería). Antes de subirla se abre un recuadro redondo: arrastra la foto y
+  acércala hasta que se vea bien la cara. Sale en la TV junto a sus mensajes, sin aprobación de nadie. El administrador puede cambiarla o quitarla en **Más › Familia**.
+  Sin foto, se ve la inicial en un círculo.
+- **Recordatorios** (**Más › Recordatorios**): hora, días de la semana, texto principal, texto pequeño, foto, cuánto tiempo se ve (5 a 60 minutos) y si hay que confirmarlo.
+  A su hora la TV cambia entera con un fundido: arriba una línea fina con el día y la hora, en el centro la foto grande y el texto en letra enorme con la etiqueta **AHORA**,
+  y abajo los mensajes de la familia. Pasada la duración, o al confirmarlo desde el móvil, vuelve a la pizarra. **De noche no salta ninguno.**
+  "Guardar y probar 1 minuto en la TV" lo enseña enseguida, sea la hora que sea.
+- **Confirmar.** Si hay que confirmarlo, en **Inicio** del móvil aparece "Pendiente de confirmar" con el botón **Confirmar que lo ha tomado**. Solo el administrador puede confirmar.
+- **Aviso por correo.** Si algo que hay que confirmar sigue sin confirmar 30 minutos después de su hora, te llega un correo (una sola vez por recordatorio y día). Se manda al correo
+  de tu cuenta de Google, o al que pongas en **Más › Ajustes › Avisos por correo**, donde también hay un botón para mandar un correo de prueba.
+  Una comprobación automática lo revisa cada 5 minutos.
+- **Fotos privadas.** Se guardan en tu Drive, en la carpeta **Pizarra**, y no se comparten con ningún enlace. La TV no entra en tu Drive: pide cada foto al script con la clave de
+  administrador (`?a=foto&p=…`), que solo sirve fotos registradas en la pizarra (de una persona o de un recordatorio). La TV la guarda y no la vuelve a pedir hasta que cambie.
+  El móvil las reduce antes de subirlas (familiares: 512 px cuadradas; recordatorios: hasta 900 px sin deformar) y el script rechaza más de 450 KB.
+- **La TV** pregunta cada 60 s y, mientras muestra un recordatorio, cada 15 s (para volver a la pizarra enseguida al confirmarlo).
+- Nunca hay nombres de medicinas en los ejemplos ni en los textos por defecto: lo que se escribe en cada recordatorio lo decides tú.
+
+### Desplegar la versión 3 del script (la dirección `/exec` no cambia)
+
+1. En <https://script.google.com> abre tu proyecto. Pega el nuevo `Code.gs` en `Código.gs` y el nuevo `Admin.html` en el archivo `Admin`. Deja `appsscript.json` como está.
+2. **Guardar**, elige la función **`autorizar`** y pulsa **Ejecutar**. Google pedirá **permisos nuevos**:
+   - **Enviar correos** como tú (para el aviso).
+   - **Crear y gestionar disparadores** (para la comprobación automática cada 5 minutos).
+   Acéptalos (Opciones avanzadas › Ir a… › Permitir). En el registro tiene que salir "Avisos por correo: activados".
+3. **Implementar › Gestionar implementaciones › lápiz › Versión: Nueva versión › Implementar.** No uses "Nueva implementación": la dirección `/exec` no debe cambiar.
+4. Abre el panel, ve a **Más › Ajustes › Avisos por correo** y pulsa "Enviar un correo de prueba".
+
+Con el script nuevo y la TV todavía en la 2.0, todo sigue funcionando (la 2.0 ignora los recordatorios). Y con el script anterior, la TV 3.0 también (simplemente no hay recordatorios).
 
 ## Poner el script (una vez, unos 5 minutos)
 

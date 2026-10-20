@@ -70,6 +70,8 @@ public class MainActivity extends Activity {
     private ImageView icBanda, icPildora;
     private TextView txBanda, txPildora, tvDia, tvFecha, tvH, tvDos, tvM, tvHablada;
     private final List<LinearLayout> tarjetasMsg = new ArrayList<>();
+    private LinearLayout recView;        // la pantalla del recordatorio (ocupa todo, sustituye a la pizarra)
+    private TextView tvRecTop;
 
     private final Runnable tic = new Runnable() {
         @Override public void run() {
@@ -82,7 +84,8 @@ public class MainActivity extends Activity {
     private final Runnable busca = new Runnable() {
         @Override public void run() {
             buscar();
-            h.postDelayed(this, 60000);
+            // Mientras hay un recordatorio en pantalla se pregunta más a menudo, para volver a la pizarra enseguida al confirmarlo.
+            h.postDelayed(this, datos != null && datos.recordatorio != null ? 15000 : 60000);
         }
     };
 
@@ -160,7 +163,7 @@ public class MainActivity extends Activity {
         long t = prefs.getLong("cacheT", 0);
         if (c == null || System.currentTimeMillis() - t > MAX_EDAD_CACHE_MS) return;
         try {
-            datos = Datos.parse(c);
+            datos = Datos.parse(c, t);      // el recordatorio guardado caduca contando desde que llegó
             datos.pruebaEstilo = null;      // una prueba de hace rato ya no vale
         } catch (Exception e) {
             Log.w(TAG, "Caché ilegible", e);
@@ -183,6 +186,7 @@ public class MainActivity extends Activity {
                     final Datos nuevo = Datos.parse(cuerpoJson);
                     prefs.edit().putString("cache", cuerpoJson).putLong("cacheT", System.currentTimeMillis()).apply();
                     for (Datos.Mensaje m : nuevo.mensajes) Fotos.asegurar(MainActivity.this, url, k, m.autor, m.foto);
+                    if (nuevo.recordatorio != null) Fotos.asegurar(MainActivity.this, url, k, nuevo.recordatorio.id, nuevo.recordatorio.foto);
                     h.post(new Runnable() {
                         @Override public void run() {
                             datos = nuevo;
@@ -421,6 +425,12 @@ public class MainActivity extends Activity {
         lpCuerpo.topMargin = px(16);
         raiz.addView(cuerpo, lpCuerpo);
 
+        recView = new LinearLayout(this);
+        recView.setOrientation(LinearLayout.VERTICAL);
+        recView.setPadding(px(56), px(24), px(56), px(24));
+        recView.setVisibility(View.GONE);
+        marco.addView(recView, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+
         setContentView(marco);
     }
 
@@ -429,6 +439,7 @@ public class MainActivity extends Activity {
     private void pintarReloj() {
         Calendar a = Hora.ahora();
         int hora = a.get(Calendar.HOUR_OF_DAY);
+        if (datos != null && datos.recordatorio != null && System.currentTimeMillis() >= datos.recordatorio.hasta) datos.recordatorio = null;   // se acabó su tiempo
         boolean n = datos != null ? datos.esNocheAhora(hora) : (hora >= 21 || hora < 6);
         String estilo = datos != null ? datos.estiloAhora(n) : (n ? "calido" : "lavanda");
         String f = n + "/" + estilo + "/" + hora + "/" + a.get(Calendar.DAY_OF_YEAR) + "/"
@@ -445,6 +456,7 @@ public class MainActivity extends Activity {
     /** Solo los textos que cambian cada minuto. */
     private void pintarHora(Calendar a) {
         String cifras = Texto.horaCifras(a);
+        if (tvRecTop != null && recView.getVisibility() == View.VISIBLE) setSiCambia(tvRecTop, lineaFina(a));
         int dos = cifras.indexOf(':');
         setSiCambia(tvH, cifras.substring(0, dos));
         setSiCambia(tvM, cifras.substring(dos + 1));
@@ -452,6 +464,11 @@ public class MainActivity extends Activity {
         String hablada = parte ? Texto.horaConParte(a) : Texto.horaHablada(a);
         int ancho = px(1000);
         if (!hablada.contentEquals(tvHablada.getText())) ajustarLinea(tvHablada, hablada, ancho, 46, 40);
+    }
+
+    /** "Martes 20 de octubre · 5:15": la línea fina de arriba en la pantalla del recordatorio. */
+    private static String lineaFina(Calendar a) {
+        return Texto.nombreDia(a) + " " + Texto.fecha(a).replace(" de " + a.get(Calendar.YEAR), "") + " · " + Texto.horaCifras(a);
     }
 
     private static void setSiCambia(TextView t, String x) {
@@ -491,6 +508,16 @@ public class MainActivity extends Activity {
 
     private void pintar(Calendar ahora) {
         int hora = ahora.get(Calendar.HOUR_OF_DAY);
+        Datos.Recordatorio rec = recordatorioVisible();
+        if (rec != null) {
+            raiz.setVisibility(View.GONE);
+            recView.setVisibility(View.VISIBLE);
+            marco.setBackgroundColor(p.fondo);
+            pintarRecordatorio(ahora, rec);
+            return;
+        }
+        raiz.setVisibility(View.VISIBLE);
+        recView.setVisibility(View.GONE);
         raiz.setBackgroundColor(p.fondo);
         marco.setBackgroundColor(p.fondo);
         tvDia.setTextColor(p.texto);
@@ -597,6 +624,217 @@ public class MainActivity extends Activity {
         cuerpo.requestLayout();
     }
 
+    /**
+     * Elige la letra más grande de la lista con la que el texto cabe en ancho x alto y la pone. Prueba de mayor a menor:
+     * crece hasta llenar el hueco y solo encoge si no cabe. Evita la palabra suelta en la última línea y, si el texto
+     * ocupa dos o tres líneas, las reparte por igual (en Android 5.1 no hay BREAK_STRATEGY_BALANCED).
+     */
+    private void llenarTexto(TextView tx, String txt, Typeface tf, int ancho, int alto, int[] tamanos, float interlineado) {
+        if (ancho <= 0 || alto <= 0) return;
+        TextPaint tpnt = new TextPaint(Paint.ANTI_ALIAS_FLAG);
+        tpnt.setTypeface(tf);
+        int elegido = tamanos[tamanos.length - 1];
+        int anchoElegido = ancho;
+        for (int z : tamanos) {
+            tpnt.setTextSize(z * s);
+            StaticLayout sl = new StaticLayout(txt, tpnt, ancho, Layout.Alignment.ALIGN_NORMAL, interlineado, 0, false);
+            if (sl.getHeight() > alto) continue;
+            int w = ancho;
+            int lineas = sl.getLineCount();
+            if (lineas > 1 && lineas <= 3) {
+                int lo = ancho / 2, hi = ancho;      // el ancho más estrecho con las mismas líneas
+                for (int i = 0; i < 9; i++) {
+                    int mid = (lo + hi) / 2;
+                    int n = new StaticLayout(txt, tpnt, mid, Layout.Alignment.ALIGN_NORMAL, interlineado, 0, false).getLineCount();
+                    if (n <= lineas) hi = mid; else lo = mid + 1;
+                }
+                w = hi;
+                sl = new StaticLayout(txt, tpnt, w, Layout.Alignment.ALIGN_NORMAL, interlineado, 0, false);
+            }
+            boolean huerfana = sl.getLineCount() > 1 && sl.getLineWidth(sl.getLineCount() - 1) < w * 0.3f;
+            if (!huerfana) {
+                elegido = z;
+                anchoElegido = w;
+                break;
+            }
+        }
+        tx.setTextSize(TypedValue.COMPLEX_UNIT_PX, elegido * s);
+        ViewGroup.LayoutParams lt = tx.getLayoutParams();
+        lt.width = anchoElegido >= ancho ? ViewGroup.LayoutParams.MATCH_PARENT : anchoElegido + px(4);
+        tx.setLayoutParams(lt);
+    }
+
+    /* ---------- Pantalla del recordatorio ---------- */
+
+    /** El recordatorio que toca enseñar: el script ya no lo manda de noche (salvo una prueba) y la TV lo vuelve a comprobar. */
+    private Datos.Recordatorio recordatorioVisible() {
+        if (datos == null || datos.recordatorio == null || prefs.getString("url", "").isEmpty()) return null;
+        Datos.Recordatorio r = datos.recordatorio;
+        if (System.currentTimeMillis() >= r.hasta) return null;
+        if (noche && !r.prueba) return null;
+        return r;
+    }
+
+    /**
+     * La pantalla cambia entera: arriba una línea fina con el día y la hora; en el centro la foto grande y el texto
+     * en letra enorme con la etiqueta AHORA; abajo, los mensajes de la familia.
+     */
+    private void pintarRecordatorio(Calendar ahora, final Datos.Recordatorio r) {
+        recView.removeAllViews();
+        recView.setBackgroundColor(p.fondo);
+        tvRecTop = texto(44, true);
+        tvRecTop.setTextColor(p.sub);
+        tvRecTop.setSingleLine(true);
+        tvRecTop.setText(lineaFina(ahora));
+        recView.addView(tvRecTop, lp(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+
+        final LinearLayout card = tarjeta(false);
+        card.setOrientation(LinearLayout.HORIZONTAL);
+        card.setGravity(Gravity.CENTER_VERTICAL);
+        card.setPadding(px(40), px(32), px(40), px(32));
+        final ImageView foto = new ImageView(this);
+        foto.setScaleType(ImageView.ScaleType.FIT_XY);
+        foto.setVisibility(View.GONE);
+        card.addView(foto, lp(0, 0));
+        final LinearLayout col = new LinearLayout(this);
+        col.setOrientation(LinearLayout.VERTICAL);
+        col.setGravity(Gravity.CENTER_VERTICAL);
+        final TextView ahoraTx = texto(64, true);
+        ahoraTx.setText("AHORA");
+        ahoraTx.setTextColor(p.pillTexto);
+        ahoraTx.setLetterSpacing(0.1f);
+        ahoraTx.setBackgroundDrawable(caja(p.pillFondo, 24, p.borde, p.grosorBorde > 2 ? p.grosorBorde : 0));
+        ahoraTx.setPadding(px(34), px(12), px(34), px(12));
+        col.addView(ahoraTx, lp(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        final TextView principal = texto(140, true);
+        principal.setTextColor(p.texto);
+        principal.setLineSpacing(0, 1.05f);
+        principal.setText(r.texto);
+        LinearLayout.LayoutParams lpP = lp(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        lpP.topMargin = px(24);
+        col.addView(principal, lpP);
+        final TextView pequeno = texto(56, false);
+        pequeno.setTextColor(p.sub);
+        pequeno.setText(r.texto2);
+        LinearLayout.LayoutParams lpS = lp(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        lpS.topMargin = px(20);
+        pequeno.setVisibility(r.texto2.isEmpty() ? View.GONE : View.VISIBLE);
+        col.addView(pequeno, lpS);
+        card.addView(col, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+        LinearLayout.LayoutParams lpCard = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f);
+        lpCard.topMargin = px(16);
+        recView.addView(card, lpCard);
+
+        card.addOnLayoutChangeListener(new View.OnLayoutChangeListener() {
+            @Override public void onLayoutChange(View v, int l, int tp, int rr, int b, int ol, int ot, int or, int ob) {
+                if (rr - l == or - ol && b - tp == ob - ot) return;
+                int anchoInt = card.getWidth() - card.getPaddingLeft() - card.getPaddingRight();
+                int altoInt = card.getHeight() - card.getPaddingTop() - card.getPaddingBottom();
+                if (anchoInt <= 0 || altoInt <= 0) return;
+                // La foto, entera y sin deformar, con el tamaño más grande que quepa (hasta casi la mitad del ancho).
+                int[] dim = Fotos.dimensiones(MainActivity.this, r.id, r.foto);
+                int fw = 0, fh = 0;
+                if (dim != null) {
+                    float k = Math.min(anchoInt * 0.46f / dim[0], altoInt / (float) dim[1]);
+                    fw = Math.round(dim[0] * k);
+                    fh = Math.round(dim[1] * k);
+                }
+                Bitmap bmp = fw > 0 ? Fotos.redondeada(MainActivity.this, r.id, r.foto, fw, fh, px(32)) : null;
+                LinearLayout.LayoutParams lf = (LinearLayout.LayoutParams) foto.getLayoutParams();
+                if (bmp != null) {
+                    foto.setImageBitmap(bmp);
+                    lf.width = fw;
+                    lf.height = fh;
+                    lf.rightMargin = px(48);
+                    foto.setVisibility(View.VISIBLE);
+                } else {
+                    fw = 0;
+                    foto.setVisibility(View.GONE);
+                }
+                foto.setLayoutParams(lf);
+                int anchoTexto = anchoInt - (bmp != null ? fw + px(48) : 0);
+                ahoraTx.measure(View.MeasureSpec.makeMeasureSpec(anchoTexto, View.MeasureSpec.AT_MOST), View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED));
+                int alto = altoInt - ahoraTx.getMeasuredHeight() - px(24);
+                if (!r.texto2.isEmpty()) {
+                    // el texto pequeño ocupa a lo sumo un tercio; el principal se lleva el resto
+                    llenarTexto(pequeno, r.texto2, normal, anchoTexto, altoInt / 3, new int[]{56, 50, 44, 40, 36}, 1.1f);
+                    pequeno.measure(View.MeasureSpec.makeMeasureSpec(anchoTexto, View.MeasureSpec.AT_MOST), View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED));
+                    alto -= pequeno.getMeasuredHeight() + px(20);
+                }
+                llenarTexto(principal, r.texto, negrita, anchoTexto, alto, new int[]{160, 148, 136, 124, 112, 100, 92, 84, 76, 68, 60, 52, 46, 40, 36}, 1.05f);
+                int g = bmp != null ? Gravity.LEFT : Gravity.CENTER_HORIZONTAL;
+                principal.setGravity(g);
+                pequeno.setGravity(g);
+                col.setGravity(Gravity.CENTER_VERTICAL | (bmp != null ? Gravity.LEFT : Gravity.CENTER_HORIZONTAL));
+                ((LinearLayout.LayoutParams) ahoraTx.getLayoutParams()).gravity = bmp != null ? Gravity.LEFT : Gravity.CENTER_HORIZONTAL;
+                col.requestLayout();
+            }
+        });
+
+        // Abajo, los mensajes de la familia (hasta dos, uno al lado del otro)
+        int nm = datos.verMensajes ? Math.min(2, datos.mensajes.size()) : 0;
+        if (nm > 0) {
+            LinearLayout fila = new LinearLayout(this);
+            fila.setOrientation(LinearLayout.HORIZONTAL);
+            for (int i = 0; i < nm; i++) {
+                LinearLayout.LayoutParams lm = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 1f);
+                if (i > 0) lm.leftMargin = px(16);
+                fila.addView(tarjetaMensajeMini(datos.mensajes.get(i)), lm);
+            }
+            recView.addView(fila, lp(ViewGroup.LayoutParams.MATCH_PARENT, px(210)));
+            ((LinearLayout.LayoutParams) fila.getLayoutParams()).topMargin = px(16);
+        }
+    }
+
+    /** Un mensaje pequeño para la franja de abajo: foto o inicial, quién lo dice y el texto. */
+    private View tarjetaMensajeMini(final Datos.Mensaje m) {
+        final LinearLayout t = tarjeta(false);
+        t.setOrientation(LinearLayout.HORIZONTAL);
+        t.setGravity(Gravity.CENTER_VERTICAL);
+        t.setPadding(px(28), px(16), px(28), px(16));
+        int lado = 88;
+        if (!m.de.isEmpty()) {
+            Bitmap foto = Fotos.circulo(this, m.autor, m.foto, px(lado));
+            LinearLayout.LayoutParams lpAv = lp(px(lado), px(lado));
+            lpAv.rightMargin = px(24);
+            if (foto != null) {
+                ImageView av = new ImageView(this);
+                av.setImageBitmap(foto);
+                t.addView(av, lpAv);
+            } else {
+                TextView av = texto(lado * 0.54f, true);
+                av.setGravity(Gravity.CENTER);
+                av.setTextColor(Color.WHITE);
+                av.setBackgroundDrawable(ovalo(p.avatar));
+                av.setText(m.de.substring(0, 1).toUpperCase(new Locale("es")));
+                t.addView(av, lpAv);
+            }
+        }
+        final LinearLayout col = new LinearLayout(this);
+        col.setOrientation(LinearLayout.VERTICAL);
+        TextView quien = texto(36, true);
+        quien.setTextColor(p.acentoTexto);
+        quien.setSingleLine(true);
+        quien.setText(m.de.isEmpty() ? "Mensaje" : m.de + " dice");
+        col.addView(quien);
+        final TextView tx = texto(48, true);
+        tx.setTextColor(p.texto);
+        tx.setLineSpacing(0, 1.05f);
+        tx.setText(m.texto);
+        col.addView(tx, lp(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        t.addView(col, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+        final int usado = px(lado) + px(24);
+        t.addOnLayoutChangeListener(new View.OnLayoutChangeListener() {
+            @Override public void onLayoutChange(View v, int l, int tp, int r, int b, int ol, int ot, int or, int ob) {
+                if (r - l == or - ol && b - tp == ob - ot) return;
+                int ancho = t.getWidth() - t.getPaddingLeft() - t.getPaddingRight() - (m.de.isEmpty() ? 0 : usado);
+                int alto = t.getHeight() - t.getPaddingTop() - t.getPaddingBottom() - px(46);
+                llenarTexto(tx, m.texto, negrita, ancho, alto, new int[]{52, 48, 44, 40, 36}, 1.05f);
+            }
+        });
+        return t;
+    }
+
     /** Un mensaje de la familia, con su foto (o la inicial) y la letra más grande que quepa. */
     private View tarjetaMensaje(final Datos.Mensaje m, Calendar ahora, boolean dos) {
         final LinearLayout t = tarjeta(false);
@@ -653,40 +891,7 @@ public class MainActivity extends Activity {
                 int ancho = t.getWidth() - t.getPaddingLeft() - t.getPaddingRight();
                 int alto = t.getHeight() - t.getPaddingTop() - t.getPaddingBottom() - cabeza.getHeight()
                         - ((ViewGroup.MarginLayoutParams) tx.getLayoutParams()).topMargin;
-                if (ancho <= 0 || alto <= 0) return;
-                TextPaint tpnt = new TextPaint(Paint.ANTI_ALIAS_FLAG);
-                tpnt.setTypeface(negrita);
-                int elegido = tamanos[tamanos.length - 1];
-                int anchoElegido = ancho;
-                for (int z : tamanos) {
-                    tpnt.setTextSize(z * s);
-                    StaticLayout sl = new StaticLayout(m.texto, tpnt, ancho, Layout.Alignment.ALIGN_NORMAL, 1.1f, 0, false);
-                    if (sl.getHeight() > alto) continue;
-                    int w = ancho;
-                    int lineas = sl.getLineCount();
-                    if (lineas > 1 && lineas <= 3) {
-                        // Reparto equilibrado (en Android 5.1 no hay BREAK_STRATEGY_BALANCED): el ancho más estrecho con las mismas líneas.
-                        int lo = ancho / 2, hi = ancho;
-                        for (int i = 0; i < 9; i++) {
-                            int mid = (lo + hi) / 2;
-                            int n = new StaticLayout(m.texto, tpnt, mid, Layout.Alignment.ALIGN_NORMAL, 1.1f, 0, false).getLineCount();
-                            if (n <= lineas) hi = mid; else lo = mid + 1;
-                        }
-                        w = hi;
-                        sl = new StaticLayout(m.texto, tpnt, w, Layout.Alignment.ALIGN_NORMAL, 1.1f, 0, false);
-                    }
-                    // Una palabra suelta en la última línea queda fea: se prefiere una letra algo menor.
-                    boolean huerfana = sl.getLineCount() > 1 && sl.getLineWidth(sl.getLineCount() - 1) < w * 0.3f;
-                    if (!huerfana) {
-                        elegido = z;
-                        anchoElegido = w;
-                        break;
-                    }
-                }
-                ViewGroup.LayoutParams lt = tx.getLayoutParams();
-                lt.width = anchoElegido >= ancho ? ViewGroup.LayoutParams.MATCH_PARENT : anchoElegido + px(4);
-                tx.setLayoutParams(lt);
-                tx.setTextSize(TypedValue.COMPLEX_UNIT_PX, elegido * s);
+                llenarTexto(tx, m.texto, negrita, ancho, alto, tamanos, 1.1f);
             }
         });
         return t;
@@ -757,10 +962,11 @@ public class MainActivity extends Activity {
         caja.addView(ic, lpIc);
         LinearLayout col = new LinearLayout(this);
         col.setOrientation(LinearLayout.VERTICAL);
-        TextView hora = texto(proximo ? 56 : grande ? 64 : 44, true);
+        TextView hora = texto(proximo ? 44 : grande ? 52 : 40, true);
         hora.setTextColor(p.texto);
-        hora.setText(e.hora.isEmpty() ? "Todo el día" : e.hora);
-        TextView nombre = texto(proximo ? 44 : grande ? 52 : 40, true);
+        hora.setText(e.hora.isEmpty() || Texto.aLas(e.hora).isEmpty() ? "Todo el día" : Texto.mayus(Texto.aLas(e.hora)));
+        hora.setMaxLines(2);
+        TextView nombre = texto(proximo ? 52 : grande ? 52 : 40, true);
         nombre.setTextColor(proximo || grande ? p.texto : p.sub);
         nombre.setText(e.titulo);
         nombre.setMaxLines(2);
@@ -905,9 +1111,9 @@ public class MainActivity extends Activity {
                 que.setTextColor(p.sub);
             } else {
                 Datos.Evento e = lista.get(0);
-                cuando.setText(dia + (e.hora.isEmpty() ? ", todo el día" : " a las " + e.hora)
-                        + (lista.size() > 1 ? " (y " + (lista.size() - 1) + " más)" : ""));
-                que.setText(e.titulo);
+                String cuandoTxt = e.hora.isEmpty() ? "todo el día" : Texto.aLas(e.hora);
+                cuando.setText(dia + " " + (cuandoTxt.isEmpty() ? "todo el día" : cuandoTxt));      // "Mañana a las nueve"
+                que.setText(Texto.mayus(e.titulo));
             }
             t.addView(cuando);
             t.addView(que);

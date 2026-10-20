@@ -303,7 +303,7 @@ const JPEG = 'data:image/jpeg;base64,' + Buffer.from('foto-de-prueba').toString(
   e = s.run(`admRecordatorioProbar('ADMINKEY', ${J(r1.id)})`);
   const pr = tv();
   t('probar 1 minuto lo enseña aunque sea de noche', pr && pr.prueba === true && pr.segundos === 60);
-  s.fijar(a(2026, 10, 21, 22, 31, 1)); t('y se acaba solo', tv() === null);
+  s.fijar(a(2026, 10, 21, 22, 32)); t('y se acaba solo', tv() === null);
   s.run(`admRecordatorioProbar('ADMINKEY', ${J(r1.id)})`);
   s.run(`admRecordatorioConfirmar('ADMINKEY', ${J(tv().clave)})`); t('confirmar una prueba la termina', tv() === null);
   t('probar un recordatorio que no existe falla', falla(() => s.run("admRecordatorioProbar('ADMINKEY','no-existe')")));
