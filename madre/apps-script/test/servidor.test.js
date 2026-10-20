@@ -645,7 +645,7 @@ const JPEG = 'data:image/jpeg;base64,' + Buffer.from('foto-de-prueba').toString(
   const h1 = todos().find((m) => m.texto === 'Una hora'), h3 = todos().find((m) => m.texto === 'Tres horas');
   t('una hora y tres horas', h1.hasta - h1.t === 3600 && h3.hasta - h3.t === 10800);
   s.fijar(hoy(18, 30));
-  t('pasada la hora, se quita sola (y las tres horas siguen)', !tv().includes('Una hora') && tv().includes('Tres horas'));
+  t('pasada la hora, se quita sola (y las tres horas siguen)', !tv().includes('Una hora') && s.run("esVivo_(leer_().mensajes.find(function (m) { return m.texto === 'Tres horas'; }))") === true && s.run("esVivo_(leer_().mensajes.find(function (m) { return m.texto === 'Una hora'; }))") === false);
   s.fijar(hoy(17, 15));
   env('ADMINKEY', 'Programado con duración', '1h', { dia: 'hoy', hora: '19:00' });
   const pd = todos().find((m) => m.texto === 'Programado con duración');
