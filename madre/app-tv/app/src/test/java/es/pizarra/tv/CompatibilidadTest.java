@@ -1,6 +1,7 @@
 package es.pizarra.tv;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -149,5 +150,18 @@ public class CompatibilidadTest {
         c.set(Calendar.HOUR_OF_DAY, h);
         c.set(Calendar.MINUTE, m);
         return Texto.horaConParte(c);
+    }
+
+    @Test
+    public void laDistribucionSeLeeYLaVieja3_0SigueFuncionando() throws Exception {
+        assertEquals("clasica", Datos.parse("{\"mensajes\":[]}").distribucion);
+        Datos d = Datos.parse("{\"distribucion\":\"lista\"}");
+        assertEquals("lista", d.distribucionAhora());
+        assertEquals("clasica", Datos.parse("{\"distribucion\":\"rara\"}").distribucion);
+        Datos p = Datos.parse("{\"distribucion\":\"lista\",\"prueba\":{\"estilo\":\"salvia\",\"modo\":\"dia\",\"segundos\":60,\"distribucion\":\"sencillo\"}}");
+        assertEquals("sencillo", p.distribucionAhora());
+        Datos q = Datos.parse("{\"distribucion\":\"reloj\",\"prueba\":{\"estilo\":\"salvia\",\"modo\":\"dia\",\"segundos\":60,\"distribucion\":null}}");
+        assertEquals("reloj", q.distribucionAhora());
+        assertNotEquals(d.firma(), Datos.parse("{\"distribucion\":\"reloj\"}").firma());
     }
 }

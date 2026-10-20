@@ -64,8 +64,13 @@ const PRUEBAS = {
     t('avisa de que la colocación es fija', texto().indexOf('La pantalla siempre coloca cada cosa en el mismo sitio') >= 0);
     await clic('Lavanda', document.querySelectorAll('.estilos')[0]); t('estilo de día', S.datos.estiloDia === 'lavanda');
     await clic('Salvia', document.querySelectorAll('.estilos')[1]); t('estilo de noche', S.datos.estiloNoche === 'salvia');
-    await clic('Probar este estilo 1 minuto', document.querySelectorAll('.tarjeta')[1]);
-    t('probar 1 minuto', S.datos.prueba && S.datos.prueba.estilo === 'lavanda' && S.datos.prueba.modo === 'dia');
+    t('hay cuatro distribuciones con miniatura real', document.querySelectorAll('.dist').length === 4 && Array.from(document.querySelectorAll('.dist img')).every((i) => i.src.indexOf('data:image/jpeg;base64,') === 0));
+    t('la distribución va antes que los colores', document.querySelector('.dists').compareDocumentPosition(document.querySelector('.estilos')) & 4);
+    t('por defecto la clásica', document.querySelector('.dist[aria-pressed=true]').getAttribute('data-dist') === 'clasica');
+    await clic('Lista', document.querySelector('.dists')); await espera(300);
+    t('elegir distribución', S.datos.distribucion === 'lista' && document.querySelector('.dist[aria-pressed=true]').getAttribute('data-dist') === 'lista');
+    await clic('Probar 1 minuto con esta distribución', document.querySelectorAll('.tarjeta')[2]);
+    t('probar 1 minuto', S.datos.prueba && S.datos.prueba.estilo === 'lavanda' && S.datos.prueba.modo === 'dia' && S.datos.prueba.distribucion === 'lista');
     ir('inicio'); await espera(100); t('Inicio avisa de que se está probando', texto().indexOf('probando un estilo') >= 0);`,
   'admin: cuentas atrás': `
     ir('cuentas'); await espera(100);
