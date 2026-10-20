@@ -39,16 +39,22 @@
   #estado { position:fixed; left:16px; right:16px; bottom:16px; max-width:528px; margin:0 auto; padding:12px 16px; border-radius:12px; background:var(--panel); border:1px solid var(--linea); font-weight:600; display:none; }
   #estado.ok { color:var(--ok); } #estado.error { color:var(--error); }
   .vacio { color:var(--apagado); margin:0; }
+  .persona { padding:12px 0; border-top:1px solid var(--linea); }
+  .persona:first-child { border-top:0; }
+  .persona input { margin-top:8px; font-size:14px; padding:8px; }
+  .acciones { display:flex; gap:16px; align-items:center; margin-top:6px; }
+  .acciones button { font:inherit; background:none; border:0; color:var(--acento); text-decoration:underline; cursor:pointer; padding:4px 0; }
+  .acciones button.quitar { color:var(--error); }
 </style>
 </head>
 <body>
 <main>
-  <h1>Pizarra</h1>
-  <p class="sub">Lo que escribas aparece en la tele en menos de un minuto.</p>
+  <h1 id="titulo">Pizarra</h1>
+  <p class="sub" id="subtitulo">Lo que escribas aparece en la tele en menos de un minuto.</p>
 
   <section>
     <h2>Escribir un mensaje</h2>
-    <label for="de">¿Quién lo escribe?</label>
+    <label for="de" id="de-eti">¿Quién lo escribe?</label>
     <input type="text" id="de" placeholder="Daniel" autocomplete="off">
     <label for="texto">Mensaje</label>
     <textarea id="texto" maxlength="200" placeholder="Mamá, llámame cuando veas el mensaje."></textarea>
@@ -63,24 +69,24 @@
   </section>
 
   <section>
-    <h2>Mensajes en la pantalla</h2>
+    <h2 id="h-mensajes">Mensajes en la pantalla</h2>
     <div id="lista"><p class="vacio">Cargando…</p></div>
   </section>
 
-  <section>
+  <section class="solo-admin">
     <h2>Qué se ve en la pantalla</h2>
     <label class="fila"><input type="checkbox" id="w-mensajes"><span>Mensajes</span></label>
     <label class="fila"><input type="checkbox" id="w-eventos"><span>Calendario (hoy y mañana)</span></label>
     <label class="fila"><input type="checkbox" id="w-tiempo"><span>El tiempo</span></label>
   </section>
 
-  <section>
+  <section class="solo-admin">
     <h2>Calendarios</h2>
     <p class="sub" style="margin-bottom:8px">Si no marcas ninguno, se usa tu calendario principal.</p>
     <div id="calendarios"><p class="vacio">Cargando…</p></div>
   </section>
 
-  <section>
+  <section class="solo-admin">
     <h2>Ciudad del tiempo</h2>
     <p id="ciudad-actual" style="margin:0 0 10px;font-weight:600"></p>
     <input type="text" id="ciudad" placeholder="Escribe una ciudad" autocomplete="off">
@@ -88,7 +94,7 @@
     <div id="resultados"></div>
   </section>
 
-  <section>
+  <section class="solo-admin">
     <h2>Por la noche</h2>
     <p class="sub" style="margin-bottom:8px">La pantalla se pone oscura y deja de mostrar los mensajes del día.</p>
     <div class="dos">
@@ -104,13 +110,24 @@
     <input type="text" id="c-tel" inputmode="tel" placeholder="600 000 000" autocomplete="off">
   </section>
 
-  <button class="principal" id="guardar" type="button">Guardar ajustes</button>
+  <section class="solo-admin">
+    <h2>Familia</h2>
+    <p class="sub" style="margin-bottom:8px">Cada persona tiene su propio enlace. Con él solo puede escribir mensajes y quitar los suyos; no ve ni cambia nada más. Si quitas a alguien, su enlace deja de funcionar al momento.</p>
+    <div id="familia"></div>
+    <label for="f-nombre">Añadir a alguien</label>
+    <input type="text" id="f-nombre" placeholder="María" autocomplete="off">
+    <button class="principal" id="f-anadir" type="button" style="margin-top:10px">Crear su enlace</button>
+  </section>
+
+  <button class="principal solo-admin" id="guardar" type="button">Guardar ajustes</button>
 </main>
 <div id="estado" role="status"></div>
 
 <script>
   var K = <?!= JSON.stringify(clave) ?>;
-  var datos = null, calendarios = [], ciudad = null;
+  var ROL = <?!= JSON.stringify(rol) ?>;
+  var BASE = <?!= JSON.stringify(enlaceBase) ?>;
+  var datos = null, calendarios = [], ciudad = null, familia = [];
   var $ = function (id) { return document.getElementById(id); };
 
   function aviso(txt, tipo) {
@@ -127,10 +144,17 @@
   }
 
   function pintar(r) {
-    datos = r.datos; calendarios = r.calendarios;
+    datos = r.datos; calendarios = r.calendarios; familia = r.familia || [];
+    if (r.rol === 'familia') {
+      document.querySelectorAll('.solo-admin').forEach(function (e) { e.style.display = 'none'; });
+      $('titulo').textContent = 'Mensajes para mamá';
+      $('subtitulo').textContent = 'Hola, ' + r.nombre + '. Lo que escribas aparece en la tele en menos de un minuto.';
+      $('de-eti').textContent = 'Firmas como';
+      $('de').value = r.nombre; $('de').readOnly = true;
+    }
     // mensajes
     var l = $('lista'); l.innerHTML = '';
-    if (!datos.mensajes.length) l.innerHTML = '<p class="vacio">No hay mensajes. La pantalla muestra solo el día, el calendario y el tiempo.</p>';
+    if (!datos.mensajes.length) l.innerHTML = '<p class="vacio">' + (r.rol === 'familia' ? 'No tienes mensajes en la pantalla.' : 'No hay mensajes. La pantalla muestra solo el día, el calendario y el tiempo.') + '</p>';
     datos.mensajes.forEach(function (m) {
       var d = document.createElement('div'); d.className = 'msg';
       var cuando = m.hasta ? 'Hasta el ' + new Date(m.hasta * 1000).toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' }) : 'Hasta que lo quites';
@@ -140,11 +164,13 @@
       d.children[2].onclick = function () { google.script.run.withSuccessHandler(pintar).withFailureHandler(fallo).admBorrar(K, m.id); };
       l.appendChild(d);
     });
-    if (datos.mensajes.length > 1) {
+    if (datos.mensajes.length > 1 && r.rol === 'admin') {
       var t = document.createElement('button'); t.type = 'button'; t.className = 'enlace'; t.textContent = 'Quitar todos';
       t.onclick = function () { google.script.run.withSuccessHandler(pintar).withFailureHandler(fallo).admBorrar(K, 'todos'); };
       l.appendChild(t);
     }
+    if (r.rol !== 'admin') return;
+    pintarFamilia();
     // widgets
     $('w-mensajes').checked = datos.widgets.mensajes; $('w-eventos').checked = datos.widgets.eventos; $('w-tiempo').checked = datos.widgets.tiempo;
     // calendarios
@@ -162,6 +188,34 @@
     $('n-texto').value = datos.nocheTexto || ''; $('c-nombre').value = datos.contacto.nombre || ''; $('c-tel').value = datos.contacto.telefono || '';
   }
 
+  function pintarFamilia() {
+    var c = $('familia'); c.innerHTML = '';
+    if (!familia.length) c.innerHTML = '<p class="vacio">Todavía no has añadido a nadie.</p>';
+    familia.forEach(function (f) {
+      var enlace = BASE + '?a=admin&k=' + f.clave;
+      var d = document.createElement('div'); d.className = 'persona';
+      d.innerHTML = '<strong></strong><input type="text" readonly><div class="acciones"><button type="button" class="copiar">Copiar enlace</button><button type="button" class="quitar">Quitar</button></div>';
+      d.children[0].textContent = f.nombre;
+      var campo = d.children[1]; campo.value = enlace;
+      campo.onfocus = function () { campo.select(); };
+      d.querySelector('.copiar').onclick = function () {
+        campo.select();
+        var ok = false;
+        try { ok = document.execCommand('copy'); } catch (e) {}
+        aviso(ok ? 'Enlace copiado. Mándaselo solo a ' + f.nombre + '.' : 'Pulsa y mantén sobre el enlace para copiarlo', ok ? 'ok' : '');
+      };
+      d.querySelector('.quitar').onclick = function () {
+        google.script.run.withSuccessHandler(pintar).withFailureHandler(fallo).admFamiliaQuitar(K, f.id);
+      };
+      c.appendChild(d);
+    });
+  }
+  $('f-anadir').onclick = function () {
+    var n = $('f-nombre').value.trim(); if (!n) { aviso('Escribe un nombre', 'error'); return; }
+    google.script.run.withSuccessHandler(function (r) { $('f-nombre').value = ''; pintar(r); aviso('Enlace creado. Cópialo y mándaselo.', 'ok'); })
+      .withFailureHandler(fallo).admFamiliaAnadir(K, n);
+  };
+
   $('de').value = leer('de');
   ['Hoy comemos juntos.', 'Hoy viene alguien a verte.', 'Te llamamos a las 6.', 'Te queremos mucho.'].forEach(function (t) {
     var b = document.createElement('button'); b.type = 'button'; b.textContent = t;
@@ -172,7 +226,7 @@
   $('enviar').onclick = function () {
     var t = $('texto').value.trim();
     if (!t) { aviso('Escribe un mensaje', 'error'); return; }
-    guardarLocal('de', $('de').value.trim());
+    if (ROL === 'admin') guardarLocal('de', $('de').value.trim());
     $('enviar').disabled = true;
     google.script.run.withSuccessHandler(function (r) {
       $('enviar').disabled = false; $('texto').value = ''; pintar(r); aviso('Enviado. Saldrá en la tele en menos de un minuto.', 'ok');
