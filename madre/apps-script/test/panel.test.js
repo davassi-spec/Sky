@@ -89,7 +89,7 @@ const PRUEBAS = {
     t('detecta un vídeo HEVC', await esHEVC(falso('hvc1')) && await esHEVC(falso('hev1')) && !(await esHEVC(falso('avc1'))));
     t('el HEVC se rechaza con una explicación clara', await comprobarVideo(falso('hvc1')).then(() => false, (e) => /HEVC/.test(e.message) && /Más compatible/.test(e.message)));
     t('un formato raro se rechaza', await comprobarVideo(new File([new Uint8Array(10)], 'v.mkv', { type: 'video/x-matroska' })).then(() => false, (e) => /no lo entiende/.test(e.message)));
-    t('un vídeo demasiado grande se rechaza', await comprobarVideo({ type: 'video/mp4', name: 'v.mp4', size: 40000000 }).then(() => false, (e) => /pesa demasiado/.test(e.message)));
+    t('un vídeo demasiado grande se rechaza', await comprobarVideo({ type: 'video/mp4', name: 'v.mp4', size: 500000000 }).then(() => false, (e) => /pesa demasiado/.test(e.message)));
     // foto
     const cv = document.createElement('canvas'); cv.width = 3000; cv.height = 2000; cv.getContext('2d').fillRect(0, 0, 3000, 2000);
     const jpg = await new Promise((ok) => cv.toBlob(ok, 'image/jpeg', 0.9));
@@ -172,6 +172,36 @@ const PRUEBAS = {
     await clic('Grabar audio'); await clic('Empezar a grabar', document.querySelector('[role=dialog]')); await espera(300);
     t('sin permiso: lo explica y ofrece elegir un audio del móvil', texto().indexOf('No hay permiso') >= 0 || document.querySelector('[role=dialog]').textContent.indexOf('No hay permiso') >= 0);
     t('y ofrece usar lo que ya hay en el móvil', !!boton('Elegir un audio del móvil', document.querySelector('[role=dialog]')));` },
+  'admin: vídeos y audios reales (HEVC, largo, nota de voz, abrir la app)': { real: 120000, url: '', cuerpo: `
+    const traer = async (n, tipo) => new File([await (await fetch('/ficheros/' + n)).arrayBuffer()], n, { type: tipo });
+    ir('medios'); await espera(100);
+    const hevc = await traer('hevc.mp4', 'video/mp4');
+    t('un MP4 de HEVC de verdad (x265, hvc1) se detecta', await esHEVC(hevc) === true);
+    t('un vídeo normal no se toma por HEVC', await esHEVC(await traer('corto.webm', 'video/webm')) === false);
+    t('el HEVC que este navegador no puede convertir da la explicación del iPhone', await comprobarVideo(hevc).then(() => false, (e) => /HEVC/.test(e.message) && /Más compatible/.test(e.message)));
+    // vídeo de 36 s: se acorta a 30 s
+    const largo = await traer('largo.webm', 'video/webm'); const avances = [];
+    const cortado = await comprobarVideo(largo).then((b) => b, (e) => e);
+    t('un vídeo de 36 s se acorta (sin error)', cortado instanceof Blob && cortado.size > 20000 && cortado.size < 12000000);
+    t('el aviso de conversión se cierra al acabar', !document.querySelector('[role=dialog]'));
+    // lo que sale se puede ver y su duración es la de 30 s
+    const dur = await new Promise((ok) => { const v = document.createElement('video'); v.src = URL.createObjectURL(cortado); v.onloadedmetadata = () => { if (v.duration === Infinity) { v.currentTime = 1e9; v.ontimeupdate = () => { v.ontimeupdate = null; ok(v.duration); }; } else ok(v.duration); }; v.onerror = () => ok(-1); });
+    t('el resultado dura unos 30 s, no 36', dur > 27 && dur < 33.5);
+    // notas de voz
+    const ogg = await aWav(await traer('nota.ogg', 'audio/ogg')).then((b) => b, (e) => e);
+    t('una nota de audio (ogg/opus) se pasa a WAV de 3 s', ogg instanceof Blob && ogg.type === 'audio/wav' && Math.abs(ogg.size - (44 + 16000 * 2 * 3)) < 3000);
+    const m4a = await prepararArchivo(await traer('nota.m4a', 'audio/x-m4a')).then((r) => r.tipo, (e) => 'ERR ' + e.message);
+    t('una nota de voz .m4a se entiende (' + m4a + ')', m4a === 'audio' || /leer/.test(m4a));
+    // abrir la app: botón cuando no hay permiso
+    navigator.mediaDevices.getUserMedia = () => Promise.reject({ name: 'NotAllowedError', message: 'Permission denied' });
+    await clic('Grabar audio'); await clic('Empezar a grabar', document.querySelector('[role=dialog]')); await espera(300);
+    const a = document.querySelector('[role=dialog] a');
+    t('sin permiso: botón grande Abrir la app para grabar', !!a && a.textContent.indexOf('Abrir la app para grabar') >= 0);
+    t('que abre la app con mi enlace (clave tras el #)', a.target === '_blank' && /^https:\/\/davassi-spec\.github\.io\/Sky\/tele\/#u=.*&k=ADMINKEY$/.test(a.href) || /#u=.*&k=ADMINKEY/.test(a.href));
+    cerrarDialogo(); ir('familia'); await espera(200);
+    t('cada familiar tiene su botón de WhatsApp', !!boton('Enviar por WhatsApp a Ana'));
+    ir('ajustes'); await espera(200);
+    t('Ajustes: copiar mi enlace y mandármelo por WhatsApp', !!boton('Copiar mi enlace de la app') && !!boton('Enviármelo por WhatsApp'));` },
   'admin: cuentas atrás': `
     ir('cuentas'); await espera(100);
     t('lista las existentes', texto().indexOf('Todos los Santos') >= 0 && texto().indexOf('Faltan 12 días') >= 0);
@@ -367,8 +397,20 @@ async function chromeReal(url, ms) {
     return await pag.content();
   } finally { await nav.close(); }
 }
+const FICHEROS = path.join(require('os').tmpdir(), 'pizarra-ficheros');
+function generarFicheros() {
+  require('fs').mkdirSync(FICHEROS, { recursive: true });
+  const ff = (...a) => spawnSync('ffmpeg', ['-y', '-v', 'error', ...a], { timeout: 120000 });
+  const v = ['-f', 'lavfi', '-i', 'testsrc=size=640x360:rate=15'], au = ['-f', 'lavfi', '-i', 'sine=frequency=440'];
+  ff(...v, ...au, '-t', '36', '-c:v', 'libvpx', '-b:v', '300k', '-c:a', 'libopus', path.join(FICHEROS, 'largo.webm'));
+  ff(...v, ...au, '-t', '3', '-c:v', 'libx265', '-tag:v', 'hvc1', '-c:a', 'aac', path.join(FICHEROS, 'hevc.mp4'));
+  ff(...v, '-t', '3', '-c:v', 'libvpx', '-b:v', '300k', path.join(FICHEROS, 'corto.webm'));
+  ff(...au, '-t', '3', '-c:a', 'aac', path.join(FICHEROS, 'nota.m4a'));
+  ff(...au, '-t', '3', '-c:a', 'libopus', path.join(FICHEROS, 'nota.ogg'));
+}
 async function main() {
-  const srv = spawn('node', [path.join(__dirname, 'servidor-ui.js'), String(PUERTO)], { stdio: 'ignore' });
+  generarFicheros();
+  const srv = spawn('node', [path.join(__dirname, 'servidor-ui.js'), String(PUERTO)], { stdio: 'ignore', env: Object.assign({}, process.env, { FICHEROS }) });
   await new Promise((r) => setTimeout(r, 1500));
   let bien = 0, mal = 0;
   for (const [nombre, def] of Object.entries(PRUEBAS)) {

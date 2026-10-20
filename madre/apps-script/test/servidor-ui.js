@@ -82,5 +82,9 @@ http.createServer((req, res) => {
       return res.end(fs.readFileSync(f));
     }
   }
+  if (url.pathname.startsWith('/ficheros/') && process.env.FICHEROS) {   // vídeos y audios de prueba (los genera panel.test.js con ffmpeg)
+    const f = path.join(process.env.FICHEROS, path.basename(url.pathname));
+    if (fs.existsSync(f)) { res.setHeader('Content-Type', 'application/octet-stream'); return res.end(fs.readFileSync(f)); }
+  }
   res.statusCode = 404; res.end('no');
 }).listen(Number(process.argv[2]) || 8765, '127.0.0.1', () => console.log('listo'));

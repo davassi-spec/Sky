@@ -1106,7 +1106,13 @@
   /** Enlace de una persona: apunta a la app del móvil (el envoltorio) si ya se ha dicho dónde está; si no, al panel de Google. La clave va tras el #. */
   var EN_APP = typeof window.PIZARRA === 'object';
   function idDeLaWeb() { var m = /\/s\/([^\/]+)\/exec/.exec(BASE); return m ? m[1] : ''; }
-  function direccionApp() { return (EN_APP ? window.PIZARRA.envoltorio : (S && S.datos && S.datos.enlaceApp)) || ''; }
+  var APP_POR_DEFECTO = 'https://davassi-spec.github.io/Sky/tele/';       // la app publicada (es pública y no lleva claves)
+  function direccionApp() { return (EN_APP ? window.PIZARRA.envoltorio : (S && S.datos && S.datos.enlaceApp)) || APP_POR_DEFECTO; }
+  var EN_IFRAME = (function () { try { return window.self !== window.top; } catch (e) { return true; } })();
+  /** Un botón grande que abre la app (en su propia página, donde el móvil sí deja grabar) con el enlace de esta persona. */
+  function botonAbrirApp() {
+    return el('a', { class: 'btn', href: enlaceConClave(K), target: '_blank', rel: 'noopener', style: 'text-decoration:none;margin-top:10px' }, icono('micro'), 'Abrir la app para grabar');
+  }
   function enlaceConClave(clave) {
     var app = direccionApp(), id = idDeLaWeb();
     return app && id ? app.replace(/#.*$/, '') + '#u=' + id + '&k=' + clave : BASE + '?a=admin&k=' + clave;
@@ -1150,6 +1156,9 @@
             if (navigator.share) navigator.share({ title: 'La tele de mamá', text: texto }).catch(function () {});
             else window.open('https://wa.me/?text=' + encodeURIComponent(texto), '_blank');
           } }, icono('compartir'), 'Compartir')),
+        el('button', { class: 'btn suave', type: 'button', style: 'margin-top:10px', onclick: function () {
+          window.open('https://wa.me/?text=' + encodeURIComponent('Hola ' + f.nombre + ': con este enlace puedes escribir mensajes y mandar audios, vídeos y fotos a la tele de mamá. No lo reenvíes. ' + enlaceDe(f)), '_blank');
+        } }, icono('compartir'), 'Enviar por WhatsApp a ' + f.nombre),
         foto,
         el('button', { class: 'enlace peligro', type: 'button', style: 'margin-top:6px', onclick: function () {
           confirmar('¿Quitar el acceso de ' + f.nombre + '?', 'Su enlace dejará de funcionar. Sus mensajes seguirán en el historial.', 'Quitar acceso', true).then(function (si) {
@@ -1217,12 +1226,13 @@
     var miEnlace = enlaceConClave(K);
     w.appendChild(el('div', { class: 'tarjeta', id: 'icono-inicio' }, el('h2', {}, 'Icono en la pantalla de inicio'),
       el('p', { class: 'ayuda', style: 'margin-top:0' }, EN_APP ? 'Estás usando la app. Los enlaces de la familia salen ya con su dirección.'
-        : 'Con la app, grabar audio y vídeo funciona bien y queda un icono propio. Pega aquí la dirección donde está publicada (la que termina en web-app/).'),
+        : 'Con la app, grabar audio y vídeo funciona bien y queda un icono propio. Ya apunta a la publicada; cambia la dirección solo si la pones en otro sitio.'),
       EN_APP ? null : el('label', { class: 'eti', for: 'app-dir' }, 'Dirección de la app'), EN_APP ? null : app,
       EN_APP ? null : el('button', { class: 'btn suave', type: 'button', style: 'margin-top:10px', onclick: function (e) {
         accion('admAjustes', [{ enlaceApp: app.value.trim() }], app.value.trim() ? 'Dirección guardada. Los enlaces de la familia ya llevan a la app.' : 'Dirección quitada', e.currentTarget);
       } }, 'Guardar dirección'),
-      direccionApp() ? el('button', { class: 'btn', type: 'button', style: 'margin-top:10px', onclick: function () { copiar(miEnlace).then(function (ok) { aviso(ok ? 'Tu enlace de administrador está copiado. Ábrelo en el móvil y añade el icono. No lo compartas.' : 'No se pudo copiar', ok ? 'ok' : 'error'); }); } }, icono('copiar'), 'Copiar mi enlace de la app') : null,
+      el('button', { class: 'btn', type: 'button', style: 'margin-top:10px', onclick: function () { copiar(miEnlace).then(function (ok) { aviso(ok ? 'Tu enlace de administrador está copiado. Ábrelo en el móvil y añade el icono. No lo compartas.' : 'No se pudo copiar', ok ? 'ok' : 'error'); }); } }, icono('copiar'), 'Copiar mi enlace de la app'),
+      el('button', { class: 'btn suave', type: 'button', style: 'margin-top:10px', onclick: function () { window.open('https://wa.me/?text=' + encodeURIComponent('Mi enlace de la app de la tele de mamá (no lo compartas): ' + miEnlace), '_blank'); } }, icono('compartir'), 'Enviármelo por WhatsApp'),
       ayudaIcono()));
     w.appendChild(el('div', { class: 'tarjeta' }, el('h2', {}, 'Aspecto'), aspecto, el('p', { class: 'ayuda' }, 'Solo cambia cómo ves este panel en tu móvil.')));
     var guardar = el('button', { class: 'btn', type: 'button', style: 'margin-top:16px', onclick: function () {
@@ -1399,22 +1409,27 @@
     if (/\.webm$/.test(n)) return 'video/webm';
     return '';
   }
-  /** ¿El vídeo es HEVC (el de los iPhone recientes)? La tele de 2015 no lo reproduce. Busca su código dentro del archivo. */
+  /** ¿El vídeo es HEVC (el de los iPhone recientes)? La tele de 2015 no lo reproduce. Busca su código en la cabecera y el final del archivo (donde va el moov). */
   function esHEVC(archivo) {
-    return new Promise(function (ok) {
-      var r = new FileReader();
-      r.onerror = function () { ok(false); };
-      r.onload = function () {
-        var b = new Uint8Array(r.result), n = b.length - 3;
-        for (var i = 0; i < n; i++) {
-          if ((b[i] === 0x68 || b[i] === 0x64) && ((b[i + 1] === 0x76 && b[i + 2] === 0x63 && b[i + 3] === 0x31) ||        // hvc1, dvc1
-              (b[i + 1] === 0x65 && b[i + 2] === 0x76 && b[i + 3] === 0x31) ||                                               // hev1
-              (b[i + 1] === 0x76 && b[i + 2] === 0x68 && (b[i + 3] === 0x31 || b[i + 3] === 0x65)))) { ok(true); return; }   // dvh1, dvhe
-        }
-        ok(false);
-      };
-      r.readAsArrayBuffer(archivo);
-    });
+    var busca = function (b) {
+      var n = b.length - 3;
+      for (var i = 0; i < n; i++) {
+        if ((b[i] === 0x68 || b[i] === 0x64) && ((b[i + 1] === 0x76 && b[i + 2] === 0x63 && b[i + 3] === 0x31) ||        // hvc1, dvc1
+            (b[i + 1] === 0x65 && b[i + 2] === 0x76 && b[i + 3] === 0x31) ||                                               // hev1
+            (b[i + 1] === 0x76 && b[i + 2] === 0x68 && (b[i + 3] === 0x31 || b[i + 3] === 0x65)))) return true;          // dvh1, dvhe
+      }
+      return false;
+    };
+    var leer = function (trozo) {
+      return new Promise(function (ok) {
+        var r = new FileReader();
+        r.onerror = function () { ok(false); };
+        r.onload = function () { ok(busca(new Uint8Array(r.result))); };
+        r.readAsArrayBuffer(trozo);
+      });
+    };
+    var K4 = 4 * 1024 * 1024, n = archivo.size;
+    return leer(archivo.slice(0, Math.min(n, K4))).then(function (a) { return a || (n > K4 ? leer(archivo.slice(Math.max(K4, n - K4), n)) : false); });
   }
   function duracionVideo(archivo) {
     return new Promise(function (ok, ko) {
@@ -1427,17 +1442,70 @@
       setTimeout(function () { fin(function () { ko(new Error('x')); }); }, 8000);
     });
   }
-  var AYUDA_HEVC = 'Ese vídeo está en formato HEVC (el de los iPhone recientes) y la tele no lo entiende. En el iPhone: Ajustes › Cámara › Formatos › "Más compatible", y vuelve a grabarlo. O grábalo desde aquí con "Grabar vídeo".';
+  var AYUDA_HEVC = 'Ese vídeo está en formato HEVC (el de los iPhone recientes) y la tele no lo entiende, y este móvil no ha podido convertirlo. En el iPhone: Ajustes › Cámara › Formatos › "Más compatible", y vuelve a grabarlo. O grábalo desde aquí con "Grabar vídeo".';
+  var MAX_VIDEO_ENTRADA = 400000000;
+  /** Convierte un vídeo (HEVC, o más largo de 30 s) a H.264/MP4 en el propio móvil: lo reproduce a 720p como mucho y lo vuelve a grabar. Dura lo que dure el vídeo (30 s como mucho). */
+  function convertirVideo(archivo, avance, cancelado) {
+    return new Promise(function (ok, ko) {
+      var cv = document.createElement('canvas'), mime = mimeGrabacion('video');
+      if (!cv.captureStream || !window.MediaRecorder || mime === null) { ko(new Error('NOCONV')); return; }
+      var AC = window.AudioContext || window.webkitAudioContext, url = URL.createObjectURL(archivo), v = document.createElement('video');
+      v.playsInline = true; v.setAttribute('playsinline', ''); v.preload = 'auto'; v.src = url;
+      v.onerror = function () { URL.revokeObjectURL(url); ko(new Error('NOCONV')); };
+      v.onloadedmetadata = function () {
+        var w = v.videoWidth, h = v.videoHeight, k = Math.min(1, 1280 / Math.max(w, h)), ctx = cv.getContext('2d');
+        cv.width = Math.max(2, Math.round(w * k / 2) * 2); cv.height = Math.max(2, Math.round(h * k / 2) * 2);
+        var flujo = cv.captureStream(30), ac = null;
+        try { if (AC) { ac = new AC(); var fuente = ac.createMediaElementSource(v), dest = ac.createMediaStreamDestination(); fuente.connect(dest); dest.stream.getAudioTracks().forEach(function (t) { flujo.addTrack(t); }); } } catch (e) { ac = null; }
+        var rec, trozos = [], parado = false, raf = 0, total = Math.min(isFinite(v.duration) ? v.duration : MAX_VIDEO_S, MAX_VIDEO_S);
+        try { rec = new MediaRecorder(flujo, mime ? { mimeType: mime, videoBitsPerSecond: 2000000 } : { videoBitsPerSecond: 2000000 }); } catch (e) { URL.revokeObjectURL(url); ko(new Error('NOCONV')); return; }
+        rec.ondataavailable = function (ev) { if (ev.data && ev.data.size) trozos.push(ev.data); };
+        rec.onstop = function () {
+          URL.revokeObjectURL(url); try { if (ac) ac.close(); } catch (e) {}
+          var blob = new Blob(trozos, { type: String(rec.mimeType || mime || 'video/mp4').split(';')[0] });
+          if (cancelado()) ko(new Error('Cancelado')); else if (blob.size > 1000) ok(blob); else ko(new Error('NOCONV'));
+        };
+        var fin = function () { if (parado) return; parado = true; cancelAnimationFrame(raf); try { v.pause(); } catch (e) {} try { rec.stop(); } catch (e) { ko(new Error('NOCONV')); } };
+        var dibujar = function () {
+          ctx.drawImage(v, 0, 0, cv.width, cv.height); avance(Math.min(1, v.currentTime / Math.max(0.1, total)));
+          if (cancelado() || v.ended || v.currentTime >= MAX_VIDEO_S) fin(); else raf = requestAnimationFrame(dibujar);
+        };
+        v.onended = fin;
+        rec.start(1000);
+        var p = v.play(); if (p && p.then) p.then(dibujar, function () { parado = true; try { rec.stop(); } catch (e) {} ko(new Error('NOCONV')); }); else dibujar();
+      };
+    });
+  }
+  function dialogoConvirtiendo(titulo) {
+    var barra = el('div', { class: 'barra-subida', 'aria-live': 'polite' }), estado = el('p', { class: 'sub' }, 'Preparando…'), cancelado = false;
+    abrirDialogo([el('h2', {}, titulo), el('p', { class: 'sub' }, 'Se está preparando el vídeo para que la tele lo entienda. Tarda lo que dure el vídeo; no cierres esta pantalla.'), estado, barra,
+      el('div', { class: 'fila', style: 'margin-top:12px' }, el('button', { class: 'btn suave', type: 'button', onclick: function () { cancelado = true; } }, 'Cancelar'))]);
+    return { cancelado: function () { return cancelado; }, avance: function (f) { barra.style.setProperty('--pct', Math.round(f * 100) + '%'); estado.textContent = 'Convirtiendo… ' + Math.round(f * 100) + ' %'; }, cerrar: cerrarDialogo };
+  }
   function comprobarVideo(archivo) {
     var tipo = tipoVideo(archivo);
     if (!tipo) return Promise.reject(new Error('Ese tipo de vídeo no lo entiende la tele. Graba uno desde aquí con "Grabar vídeo".'));
-    if (archivo.size > MAX_VIDEO_BYTES) return Promise.reject(new Error('Ese vídeo pesa demasiado (' + pesoMedio(archivo.size) + '). Que dure menos de 30 segundos.'));
+    if (archivo.size > MAX_VIDEO_ENTRADA) return Promise.reject(new Error('Ese vídeo pesa demasiado (' + pesoMedio(archivo.size) + '). Elige uno más corto.'));
     return esHEVC(archivo).then(function (hevc) {
-      if (hevc) throw new Error(AYUDA_HEVC);
-      return duracionVideo(archivo).then(function (d) {
-        if (d > MAX_VIDEO_S + 2) throw new Error('Ese vídeo dura ' + Math.round(d) + ' segundos. Que dure menos de 30.');
-        return new Blob([archivo], { type: tipo });
-      }, function () { throw new Error('No se puede leer ese vídeo. Puede que sea de un formato que la tele no entiende; graba uno desde aquí con "Grabar vídeo".'); });
+      return duracionVideo(archivo).then(function (d) { return { hevc: hevc, d: d }; }, function () {
+        throw new Error(hevc ? AYUDA_HEVC : 'No se puede leer ese vídeo. Puede que sea de un formato que la tele no entiende; graba uno desde aquí con "Grabar vídeo".');
+      });
+    }).then(function (i) {
+      var largo = isFinite(i.d) && i.d > MAX_VIDEO_S + 2, pesado = archivo.size > MAX_VIDEO_BYTES;
+      if (!i.hevc && !largo && !pesado) return new Blob([archivo], { type: tipo });
+      var pan = dialogoConvirtiendo(i.hevc ? 'Convirtiendo el vídeo' : 'Acortando el vídeo');
+      return convertirVideo(archivo, pan.avance, pan.cancelado).then(function (b) {
+        pan.cerrar();
+        return esHEVC(b).then(function (aun) {
+          if (aun) throw new Error(AYUDA_HEVC);
+          if (b.size > MAX_VIDEO_BYTES) throw new Error('Aun convertido pesa demasiado (' + pesoMedio(b.size) + '). Elige uno más corto.');
+          return b;
+        });
+      }, function (e) {
+        pan.cerrar();
+        if (e.message !== 'NOCONV') throw e;
+        throw new Error(i.hevc ? AYUDA_HEVC : largo ? 'Ese vídeo dura ' + Math.round(i.d) + ' segundos y este móvil no ha podido acortarlo. Que dure menos de 30.' : 'Ese vídeo pesa demasiado (' + pesoMedio(archivo.size) + ') y este móvil no ha podido reducirlo. Que dure menos de 30 segundos.');
+      });
     });
   }
   function dataUrlABlob(du) {
@@ -1522,7 +1590,7 @@
 
   function mimeGrabacion(tipo) {
     if (!window.MediaRecorder) return null;
-    var cand = tipo === 'video' ? ['video/mp4;codecs=avc1.42E01E,mp4a.40.2', 'video/mp4', 'video/webm;codecs=vp8,opus', 'video/webm;codecs=vp8', 'video/webm']
+    var cand = tipo === 'video' ? ['video/mp4;codecs=avc1.42E01E,mp4a.40.2', 'video/mp4;codecs=avc1,mp4a.40.2', 'video/mp4;codecs=avc1', 'video/mp4', 'video/webm;codecs=vp8,opus', 'video/webm;codecs=vp8', 'video/webm']
       : ['audio/mp4', 'audio/webm;codecs=opus', 'audio/webm', 'audio/ogg;codecs=opus'];
     for (var i = 0; i < cand.length; i++) { try { if (MediaRecorder.isTypeSupported(cand[i])) return cand[i]; } catch (e) {} }
     return '';
@@ -1559,6 +1627,7 @@
       var galeria = el('button', { class: 'btn suave', type: 'button', onclick: function () { soltar(); cerrarDialogo(); pedirArchivo(tipo === 'video' ? 'video/*' : 'audio/*', tipo === 'video' ? 'user' : null).then(procesarArchivo); } },
         icono('camara'), tipo === 'video' ? 'Usar la cámara del móvil' : 'Elegir un audio del móvil');
       empezar.replaceWith(galeria);
+      if (!EN_APP) msg.after(botonAbrirApp());
     };
     empezar.onclick = function () {
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || mime === null) { alternativa('Este navegador no deja grabar desde aquí. Puedes usar lo que ya tengas en el móvil.'); return; }
@@ -1577,7 +1646,7 @@
           cerrarDialogo();
           if (!blob.size) { aviso('No se ha grabado nada. Prueba otra vez.', 'error'); return; }
           if (tipo === 'audio') { aviso('Preparando el audio…', 'ok'); aWav(blob).then(function (w) { dialogoRevisar(w, 'audio'); }, function (e) { aviso(errorLegible(e), 'error'); }); }
-          else dialogoRevisar(blob, 'video');
+          else esHEVC(blob).then(function (hevc) { return hevc ? comprobarVideo(blob) : blob; }).then(function (b) { dialogoRevisar(b, 'video'); }, function (e) { aviso(errorLegible(e), 'error'); });
         };
         rec.start(1000);
         empezar.hidden = true; parar.hidden = false; msg.textContent = tipo === 'video' ? 'Grabando… habla a la cámara.' : 'Grabando… habla cerca del micrófono.';
@@ -1592,7 +1661,8 @@
       });
     };
     parar.onclick = function () { if (rec && rec.state === 'recording') rec.stop(); };
-    abrirDialogo([titulo, vista, cuenta, msg, el('div', { class: 'fila', style: 'margin-top:12px' }, cancelar, empezar, parar)]);
+    if (EN_IFRAME && !EN_APP) { msg.textContent = 'Desde esta página el móvil suele bloquear el micrófono y la cámara. Con la app sí deja grabar.'; }
+    abrirDialogo([titulo, vista, cuenta, msg, EN_IFRAME && !EN_APP ? botonAbrirApp() : null, el('div', { class: 'fila', style: 'margin-top:12px' }, cancelar, empezar, parar)]);
   }
 
   /* ---- la tarjeta que usan el administrador y la familia ---- */

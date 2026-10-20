@@ -291,4 +291,16 @@ public class CapturasTest {
         capturaMedio("d5-audio", medio("audio", "Daniel", "", "audio/wav", 0), false);
         capturaMedio("d5-llegando-video", medio("video", "Ana", "", "video/mp4", 0), true);
     }
+
+    /** El caso de la TV real: "Toma Medicina a Mamá" con una foto vertical; la palabra larga no puede partirse. */
+    @Test
+    public void recordatorioConPalabraLargaYFotoVertical() throws Exception {
+        Context ctx = RuntimeEnvironment.getApplication();
+        copia("/foto-vertical.jpg", new File(ctx.getCacheDir(), "foto_rec3_1.jpg"));
+        foto();
+        String rec = "{\"id\":\"rec3\",\"clave\":\"rec3|2026-10-20\",\"texto\":\"Toma Medicina a Mamá\",\"texto2\":\"\",\"foto\":1,\"confirmar\":true,\"segundos\":600,\"prueba\":false}";
+        for (String e : ESTILOS) captura(e + "-recordatorio-palabra-larga-foto-vertical", json(e, DANIEL + "," + ANA, EV_DIA, TIEMPO, "null", rec), 20, 11, 22);
+        String rec2 = rec.replace("Toma Medicina a Mamá", "Hidratación y medicación después del desayuno");
+        captura("lavanda-recordatorio-palabra-larga-2", json("lavanda", DANIEL, EV_DIA, TIEMPO, "null", rec2), 20, 11, 22);
+    }
 }
