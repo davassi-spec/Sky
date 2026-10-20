@@ -52,14 +52,15 @@ const PRUEBAS = {
     ir('mensajes'); pestanaMsg = 'caducados'; pintar(); filtroPersona = 'todas'; pintar(); await espera(50);
     await clic('Borrar del historial: Buenas noches'); await clic('Borrar', document.querySelector('[role=dialog]'));
     t('borrar del historial pide confirmación y borra', !S.datos.mensajes.find((x) => x.id === 'c2'));`,
-  'admin: pantalla (bloques, orden, estilos, prueba)': `
+  'admin: pantalla (bloques, estilos, prueba)': `
     ir('pantalla'); await espera(100);
     const sw = Array.from(document.querySelectorAll('[role=switch]')).find((b) => b.getAttribute('aria-label') === 'Tiempo de hoy y de mañana');
     sw.click(); await espera(500);
     t('apagar un bloque se guarda', S.datos.bloques.find((b) => b.id === 'tiempo').activo === false);
     t('la miniatura de Inicio ya no muestra el tiempo', (ir('inicio'), await espera(100), texto().indexOf('Hoy 20 grados') < 0));
     ir('pantalla'); await espera(100);
-    await clic('Bajar: Cuenta atrás'); t('el orden cambia', S.datos.bloques[0].id === 'mensajes' && S.datos.bloques[1].id === 'cuentaAtras');
+    t('no hay flechas de ordenar', !document.querySelector('.mover') && texto().indexOf('Subir') < 0 && texto().indexOf('Bajar') < 0);
+    t('avisa de que la colocación es fija', texto().indexOf('La pantalla siempre coloca cada cosa en el mismo sitio') >= 0);
     await clic('Lavanda', document.querySelectorAll('.estilos')[0]); t('estilo de día', S.datos.estiloDia === 'lavanda');
     await clic('Salvia', document.querySelectorAll('.estilos')[1]); t('estilo de noche', S.datos.estiloNoche === 'salvia');
     await clic('Probar este estilo 1 minuto', document.querySelectorAll('.tarjeta')[1]);

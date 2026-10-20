@@ -122,9 +122,6 @@
   .sw::after { content: ""; position: absolute; left: 4px; top: 12px; width: 24px; height: 24px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.3); transition: transform .15s; }
   .sw[aria-checked="true"]::before { background: var(--primario); }
   .sw[aria-checked="true"]::after { transform: translateX(24px); }
-  .mover { width: 44px; height: 48px; border: 1.5px solid var(--borde); background: var(--tarjeta2); border-radius: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex: none; }
-  .mover svg { width: 20px; height: 20px; }
-  .mover:disabled { opacity: .35; cursor: default; }
 
   .estilos { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 10px; }
   .estilo { border: 3px solid transparent; border-radius: 16px; padding: 0; background: none; cursor: pointer; text-align: center; font-weight: 700; }
@@ -224,8 +221,6 @@
     enviar: '<path d="M21 3L3 10.5l7 2.5 2.5 7z"/><path d="M10 13l11-10"/>',
     atras: '<path d="M15 5l-7 7 7 7"/>',
     flecha: '<path d="M9 5l7 7-7 7"/>',
-    arriba: '<path d="M6 15l6-6 6 6"/>',
-    abajo: '<path d="M6 9l6 6 6-6"/>',
     mas2: '<path d="M12 5v14M5 12h14"/>',
     enlace: '<path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/>',
     compartir: '<circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="6" r="2.5"/><circle cx="18" cy="18" r="2.5"/><path d="M8.2 10.8l7.6-3.6M8.2 13.2l7.6 3.6"/>',
@@ -660,9 +655,9 @@
   }
   function vistaPantalla() {
     var d = S.datos, w = document.createDocumentFragment();
-    w.appendChild(cabecera('Pantalla', 'Elige qué se muestra en la tele y en qué orden.', 'mas'));
+    w.appendChild(cabecera('Pantalla', 'Elige qué se muestra en la tele.', 'mas'));
     var t = el('div', { class: 'tarjeta' }, el('h2', {}, 'Qué se ve en la TV'));
-    d.bloques.forEach(function (b, i) {
+    d.bloques.forEach(function (b) {
       var n = NOMBRES_BLOQUE[b.id];
       var sw = el('button', { class: 'sw', type: 'button', role: 'switch', 'aria-checked': b.activo ? 'true' : 'false', 'aria-label': n[0], onclick: function () {
         var nuevo = sw.getAttribute('aria-checked') !== 'true'; sw.setAttribute('aria-checked', nuevo ? 'true' : 'false');
@@ -671,11 +666,9 @@
       t.appendChild(el('div', { class: 'bloque' },
         el('div', { class: 'bloque-t' }, el('span', { class: 'ico' }, icono(n[1])), el('div', { class: 't' }, n[0], el('small', {}, n[2]))),
         el('div', { class: 'bloque-c' },
-          el('button', { class: 'mover', type: 'button', disabled: i === 0, 'aria-label': 'Subir: ' + n[0], onclick: function () { var x = d.bloques.slice(); x.splice(i - 1, 0, x.splice(i, 1)[0]); guardarBloques(x); } }, icono('arriba')),
-          el('button', { class: 'mover', type: 'button', disabled: i === d.bloques.length - 1, 'aria-label': 'Bajar: ' + n[0], onclick: function () { var x = d.bloques.slice(); x.splice(i + 1, 0, x.splice(i, 1)[0]); guardarBloques(x); } }, icono('abajo')),
           sw)));
     });
-    t.appendChild(el('p', { class: 'ayuda' }, 'Los cambios se aplican al tocar. El orden cuenta entre los bloques de una misma columna.'));
+    t.appendChild(el('p', { class: 'ayuda' }, 'Los cambios se aplican al tocar. La pantalla siempre coloca cada cosa en el mismo sitio.'));
     w.appendChild(t);
     [['dia', 'Estilo de día', 'estiloDia'], ['noche', 'Estilo de noche', 'estiloNoche']].forEach(function (par) {
       var modo = par[0], campo = par[2], card = el('div', { class: 'tarjeta' }, el('h2', {}, par[1]));

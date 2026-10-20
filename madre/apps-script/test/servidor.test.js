@@ -81,7 +81,7 @@ const JPEG = 'data:image/jpeg;base64,' + Buffer.from('foto-de-prueba').toString(
   t('tiempo (v1)', e.tiempo.temp === 20.4 && e.tiempo.codigo === 2);
   t('noche y contacto (v1)', e.noche.desde === 21 && e.noche.hasta === 6 && e.nocheTexto && e.contacto);
   t('tiempo de hoy y mañana', e.tiempo.hoy.max === 23 && e.tiempo.manana.temp === 19 && e.tiempo.manana.codigo === 61);
-  t('versión y estilos', e.version === 2 && e.estiloDia === 'calido' && e.estiloNoche === 'calido' && e.bloques.length === 5);
+  t('versión y estilos', e.version === 2 && e.estiloDia === 'lavanda' && e.estiloNoche === 'calido' && e.bloques.length === 5);
   const antes = s.contarFetch(); s.run('estado_()'); s.run('estado_()');
   t('el tiempo se guarda en caché', s.contarFetch() === antes);
 }

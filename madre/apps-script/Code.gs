@@ -33,7 +33,7 @@ function base_() {
     ciudad: 'Maó', latitud: 39.889, longitud: 4.265,
     calendarios: [],
     bloques: BLOQUES.map(function (id) { return { id: id, activo: true }; }),
-    estiloDia: 'calido', estiloNoche: 'calido',
+    estiloDia: 'lavanda', estiloNoche: 'calido',
     prueba: null,                                  // { estilo, modo, hasta } mientras dura "Probar 1 minuto"
     cuentasAtras: [],
     noche: { desde: 21, hasta: 6 },
@@ -65,7 +65,7 @@ function normalizar_(d) {
   });
   BLOQUES.forEach(function (id) { if (!vistos[id]) orden.push({ id: id, activo: true }); });
   d.bloques = orden;
-  if (ESTILOS.indexOf(d.estiloDia) < 0) d.estiloDia = 'calido';
+  if (ESTILOS.indexOf(d.estiloDia) < 0) d.estiloDia = 'lavanda';
   if (ESTILOS.indexOf(d.estiloNoche) < 0) d.estiloNoche = 'calido';
   d.version = VERSION;
   return d;
