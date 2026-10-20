@@ -13,6 +13,8 @@ final class Datos {
         String de = "";
         String texto = "";
         long t;             // cuándo se escribió, en segundos
+        String autor = "";  // id de la persona de la familia (para su foto)
+        int foto;           // versión de su foto; 0 si no tiene
     }
 
     static final class Evento {
@@ -21,6 +23,25 @@ final class Datos {
         String titulo = "";
     }
 
+    static final class Dia {
+        int temp, codigo, max, min;
+    }
+
+    static final class Cuenta {
+        String texto = "";
+        String icono = "calendario";
+        int dias;
+    }
+
+    String estiloDia = "calido";
+    String estiloNoche = "calido";
+    String pruebaEstilo;            // "Probar 1 minuto" desde el panel; null si no hay prueba
+    boolean pruebaNoche;
+    int pruebaSegundos;
+    boolean verCuenta = true;
+    boolean verParte = true;
+    Cuenta cuenta;
+    Dia hoy, manana;
     boolean verMensajes = true;
     boolean verEventos = true;
     boolean verTiempo = true;
@@ -45,6 +66,32 @@ final class Datos {
             d.verEventos = w.optBoolean("eventos", true);
             d.verTiempo = w.optBoolean("tiempo", true);
         }
+        JSONArray bl = o.optJSONArray("bloques");
+        for (int i = 0; bl != null && i < bl.length(); i++) {
+            JSONObject b = bl.getJSONObject(i);
+            boolean on = b.optBoolean("activo", true);
+            String id = b.optString("id");
+            if (id.equals("mensajes")) d.verMensajes = on;
+            else if (id.equals("proximo")) d.verEventos = on;
+            else if (id.equals("tiempo")) d.verTiempo = on;
+            else if (id.equals("cuentaAtras")) d.verCuenta = on;
+            else if (id.equals("parteDelDia")) d.verParte = on;
+        }
+        d.estiloDia = o.optString("estiloDia", "calido");
+        d.estiloNoche = o.optString("estiloNoche", "calido");
+        JSONObject pr = o.optJSONObject("prueba");
+        if (pr != null) {
+            d.pruebaEstilo = pr.optString("estilo", null);
+            d.pruebaNoche = "noche".equals(pr.optString("modo"));
+            d.pruebaSegundos = pr.optInt("segundos", 0);
+        }
+        JSONObject ca = o.optJSONObject("cuentaAtras");
+        if (ca != null && d.verCuenta && !ca.optString("texto", "").trim().isEmpty()) {
+            d.cuenta = new Cuenta();
+            d.cuenta.texto = ca.optString("texto").trim();
+            d.cuenta.icono = ca.optString("icono", "calendario");
+            d.cuenta.dias = ca.optInt("dias", 0);
+        }
         JSONObject n = o.optJSONObject("noche");
         if (n != null) {
             d.nocheDesde = n.optInt("desde", 21);
@@ -63,6 +110,8 @@ final class Datos {
             x.de = m.optString("de", "").trim();
             x.texto = m.optString("texto", "").trim();
             x.t = m.optLong("t", 0);
+            x.autor = m.isNull("autor") ? "" : m.optString("autor", "");
+            x.foto = m.isNull("foto") ? 0 : m.optInt("foto", 0);
             if (!x.texto.isEmpty()) d.mensajes.add(x);
         }
         JSONArray es = o.optJSONArray("eventos");
@@ -79,8 +128,43 @@ final class Datos {
             d.hayTiempo = true;
             d.temperatura = (int) Math.round(t.optDouble("temp"));
             d.codigoTiempo = t.optInt("codigo", 3);
+            d.hoy = dia(t.optJSONObject("hoy"));
+            d.manana = dia(t.optJSONObject("manana"));
         }
         return d;
+    }
+
+    /** Resumen de lo que se ve: si no cambia entre una consulta y la siguiente, la pantalla no se repinta. */
+    String firma() {
+        StringBuilder b = new StringBuilder();
+        b.append(verMensajes).append(verEventos).append(verTiempo).append(verCuenta).append(verParte);
+        b.append('|').append(nocheTexto).append('|').append(contactoNombre).append(contactoTelefono);
+        for (Mensaje m : mensajes) b.append('|').append(m.de).append(m.texto).append(m.t).append(m.autor).append(m.foto);
+        for (Evento e : eventos) b.append('|').append(e.manana).append(e.hora).append(e.titulo);
+        if (hayTiempo) b.append('|').append(temperatura).append(codigoTiempo);
+        if (hoy != null) b.append(hoy.temp).append(hoy.codigo);
+        if (manana != null) b.append(manana.temp).append(manana.codigo);
+        if (cuenta != null) b.append('|').append(cuenta.texto).append(cuenta.icono);
+        return b.toString().hashCode() + "";
+    }
+
+    private static Dia dia(JSONObject o) {
+        if (o == null || !o.has("temp")) return null;
+        Dia x = new Dia();
+        x.temp = (int) Math.round(o.optDouble("temp"));
+        x.codigo = o.optInt("codigo", 3);
+        x.max = (int) Math.round(o.optDouble("max", x.temp));
+        x.min = (int) Math.round(o.optDouble("min", x.temp));
+        return x;
+    }
+
+    /** Estilo y modo que se ven ahora, teniendo en cuenta "Probar 1 minuto". */
+    boolean esNocheAhora(int hora) {
+        return pruebaEstilo != null ? pruebaNoche : esNoche(hora);
+    }
+
+    String estiloAhora(boolean noche) {
+        return pruebaEstilo != null ? pruebaEstilo : (noche ? estiloNoche : estiloDia);
     }
 
     /** ¿Estamos en horario de noche? Admite tramos que cruzan la medianoche (21 a 6). */

@@ -1,0 +1,3 @@
+Pizarra Sans es una versión modificada de Atkinson Hyperlegible (Braille Institute of America, licencia SIL OFL 1.1, ver OFL.txt).
+Único cambio: el cero se dibuja sin tachar (como una "O" más estrecha) para que "20" y "2026" no se confundan con otros signos.
+Se ha cambiado el nombre de la fuente, como exige la licencia.

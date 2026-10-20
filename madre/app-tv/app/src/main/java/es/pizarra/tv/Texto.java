@@ -55,6 +55,22 @@ final class Texto {
         return verbo + HORAS[hora] + resto;
     }
 
+    /** "Son las cinco y cuarto de la tarde": la hora dicha con la parte del día. */
+    static String horaConParte(Calendar c) {
+        return horaHablada(c) + " " + parteDelDia(c.get(Calendar.HOUR_OF_DAY), c.get(Calendar.MINUTE));
+    }
+
+    static String parteDelDia(int h, int m) {
+        // Lo que se dice depende de la hora que se nombra ("las siete menos veinte" ya es de la tarde).
+        int dicha = m > 30 ? (h + 1) % 24 : h;
+        if (dicha == 12) return "del mediodía";
+        if (dicha == 0) return "de la noche";
+        if (dicha < 6) return "de la madrugada";
+        if (dicha < 12) return "de la mañana";
+        if (dicha < 20) return "de la tarde";
+        return "de la noche";
+    }
+
     /** Mañana 6:00-11:59, tarde 12:00-19:59, noche 20:00-5:59. */
     static int franja(int hora) {
         if (hora >= 6 && hora < 12) return MANANA;
@@ -117,6 +133,13 @@ final class Texto {
             case 95: case 96: case 99: return "Tormenta";
             default: return "";
         }
+    }
+
+    static int iconoDeLaCuenta(String nombre) {
+        if ("avion".equals(nombre)) return R.drawable.ic_avion;
+        if ("corazon".equals(nombre)) return R.drawable.ic_corazon;
+        if ("tarta".equals(nombre)) return R.drawable.ic_tarta;
+        return R.drawable.ic_calendario;
     }
 
     static int iconoDelTiempo(int codigo) {
