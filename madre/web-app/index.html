@@ -1721,7 +1721,7 @@
       el('div', { style: 'display:flex;justify-content:space-between;font-size:12px;color:var(--sub);margin-top:4px' }, el('span', {}, horasTv.length ? horasTv[0].h.slice(8) + ' h' : ''), el('span', {}, 'ahora'))));
     var av = S.avisos || {};
     var correo = el('input', { type: 'email', id: 'a-correo', maxlength: '100', autocomplete: 'off', inputmode: 'email', placeholder: 'tucorreo@ejemplo.com', value: d.correoAviso || av.destino || '' });
-    correo.onchange = function () { var v = correo.value.trim(); if (v === av.destino && !d.correoAviso) v = ''; llamar('admCorreoAviso', v).then(function (r) { if (r && r.rol) S = r; aviso('Guardado', 'ok'); }, function (e) { aviso(mensajeError(e), 'error'); }); };
+    correo.onchange = function () { var v = correo.value.trim(); if (v === av.destino && !d.correoAviso) v = ''; llamar('admCorreoAviso', v).then(function (r) { if (r && r.rol) S = r; d.correoAviso = v; aviso('Guardado', 'ok'); }, function (e) { aviso(mensajeError(e), 'error'); }); };
     var bPrueba = el('button', { class: 'btn suave', type: 'button', onclick: function () { accion('admCorreoPrueba', [], 'Correo de prueba enviado a ' + (d.correoAviso || av.destino), bPrueba); } }, 'Enviar un correo de prueba');
     w.appendChild(el('div', { class: 'tarjeta', id: 'avisos' }, el('h2', {}, 'Avisos por correo'),
       av.activos
