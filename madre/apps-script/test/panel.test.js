@@ -430,6 +430,17 @@ const PRUEBAS = {
     Object.defineProperty(HTMLMediaElement.prototype, 'src', desc);
     t('en vez de dar error, se abre la revisión del vídeo', !!document.querySelector('.dialogo') && document.getElementById('err-contenido').hidden !== false);
     t('y no queda ningún vídeo suelto en la página', document.querySelectorAll('body > video').length === 0);`,
+  'admin: los enlaces de la familia son siempre de la app, nunca del panel de Google': `
+    const base0 = BASE, id0 = S.datos.idWeb, f = S.datos.familia[0];
+    t('con la dirección /exec normal, el enlace es de la app con el identificador y su clave', enlaceDe(f).startsWith('https://davassi-spec.github.io/Sky/tele/#u=EXEC&k=' + f.clave) && enlaceDe(f).indexOf('a=admin') < 0);
+    BASE = 'https://script.google.com/macros/s/PRUEBAS/dev'; S.datos.idWeb = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123';
+    t('abierto por la dirección de pruebas, usa el identificador que guardó la app', enlaceDe(f) === 'https://davassi-spec.github.io/Sky/tele/#u=ABCDEFGHIJKLMNOPQRSTUVWXYZ0123&k=' + f.clave);
+    S.datos.idWeb = '';
+    t('si no sabe el identificador no da el enlace del panel: no da ninguno', enlaceDe(f) === '' && enlaceConClave(K) === '');
+    ir('familia'); await espera(300);
+    await clic('Copiar enlace de ' + bonito(f.nombre)); await espera(200);
+    t('y explica qué hacer', toast().indexOf('Abre una vez el panel desde la app') >= 0);
+    BASE = base0; S.datos.idWeb = id0;`,
   'admin: errores junto a lo que falló': `
     ir('mandar'); await espera(100);
     procesarArchivo(new File([new Uint8Array(10)], 'v.mkv', { type: 'video/x-matroska' })); await espera(500);

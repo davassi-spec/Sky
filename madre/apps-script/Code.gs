@@ -60,6 +60,7 @@ function base_() {
     visitas: [],                                   // { id, fecha 'AAAA-MM-DD', hora 'HH:MM'|'', persona (id de la familia)|'', texto }
     rutina: [],                                    // { id, dia 0..6 (0 = domingo), hora, persona, texto }
     enlaceApp: '',                                 // dirección de la app del móvil (el envoltorio); sirve para los enlaces de la familia
+    idWeb: '',                                     // identificador del script (lo manda la app del móvil): los enlaces de la familia llevan siempre la app, nunca el panel
     noche: { desde: 21, hasta: 6 },
     nocheTexto: 'Es hora de dormir.',
     contacto: { nombre: '', telefono: '' },
@@ -744,7 +745,7 @@ function admEstado(k) {
       tieneFoto: !!(yo && yo.foto),
       pendientes: pendientes_(d, ahora),
       mensajes: d.mensajes.filter(function (m) { return m.autor === q.id; }),
-      ciudad: d.ciudad, noche: d.noche,
+      ciudad: d.ciudad, noche: d.noche, idWeb: idWeb_(d),
       medios: mediosParaPanel_(d, q, ahora)
     };
   }
@@ -763,7 +764,7 @@ function admEstado(k) {
       ciudad: d.ciudad, latitud: d.latitud, longitud: d.longitud, calendarios: d.calendarios,
       recordatorios: d.recordatorios.map(function (r) { return recParaPanel_(d, r, ahora); }),
       correoAviso: d.correoAviso,
-      enlaceApp: d.enlaceApp, icloud: d.icloud, avisoTV: d.avisoTV !== false, leerVoz: !!d.leerVoz,
+      enlaceApp: d.enlaceApp, idWeb: idWeb_(d), icloud: d.icloud, avisoTV: d.avisoTV !== false, leerVoz: !!d.leerVoz,
       visitas: d.visitas, rutina: d.rutina, espacio: espacioGuardado_(), tvHoras: tvHoras_(),
       familia: d.familia.map(function (f) {
         var propios = d.mensajes.filter(function (m) { return m.autor === f.id; });
@@ -781,6 +782,12 @@ function admEstado(k) {
     vista: vistaPreviaTV_(d),
     enlaceBase: ScriptApp.getService().getUrl()
   };
+}
+
+/** El identificador de este script: el de su dirección /exec si se puede leer; si no (p. ej. abierto por la dirección de pruebas), el que guardó la app del móvil. */
+function idWeb_(d) {
+  var m = /\/s\/([^\/]+)\/exec$/.exec(ScriptApp.getService().getUrl() || '');
+  return m ? m[1] : (d && d.idWeb) || '';
 }
 
 /** Lo mismo que ve la TV, para la miniatura del panel (sin contar como "TV conectada"). */
@@ -935,6 +942,11 @@ function admAjustes(k, aj) {
       var ea = String(aj.enlaceApp || '').trim();
       if (ea && !/^https:\/\/[^\s?#]{4,190}$/.test(ea)) throw new Error('La dirección de la app tiene que empezar por https:// y no llevar ? ni #');
       d.enlaceApp = ea;
+    }
+    if (aj.idWeb !== undefined) {
+      var iw = String(aj.idWeb || '').trim();
+      if (iw && !/^[A-Za-z0-9_-]{20,200}$/.test(iw)) throw new Error('El identificador del script no es válido');
+      d.idWeb = iw;
     }
     if (aj.icloud !== undefined) {
       var ic = String(aj.icloud || '').trim();

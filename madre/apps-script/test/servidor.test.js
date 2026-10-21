@@ -968,5 +968,16 @@ const JPEG = 'data:image/jpeg;base64,' + Buffer.from('foto-de-prueba').toString(
   t('una consulta sin versión no la borra', s.run("admEstado('ADMINKEY')").tv.version !== '');
 }
 
+/* ---------- Identificador del script para los enlaces de la familia ---------- */
+{
+  const s = crear();
+  s.run("admFamiliaAnadir('ADMINKEY','Ana')");
+  s.run("admAjustes('ADMINKEY', {idWeb:'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123'})");
+  t('se guarda el identificador que manda la app', s.run("leer_()").idWeb === 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123');
+  t('un identificador raro se rechaza', falla(() => s.run("admAjustes('ADMINKEY', {idWeb:'no vale/..'})")));
+  const ana = s.run('leer_()').familia[0];
+  t('el administrador y el familiar lo reciben', typeof s.run("admEstado('ADMINKEY')").datos.idWeb === 'string' && typeof s.run(`admEstado('${ana.clave}')`).idWeb === 'string');
+}
+
 console.log(bien + ' bien, ' + mal + ' fallos');
 process.exit(mal ? 1 : 0);
