@@ -2106,6 +2106,7 @@
   function cargar(silencioso) {
     return llamar('admEstado').then(function (r) {
       S = r;
+      if (EN_APP && window.PIZARRA.iconosPara) window.PIZARRA.iconosPara(r.rol);      // cada persona, su icono en la pantalla de inicio
       if (!ROL) { ROL = r.rol; if (ROL === 'admin') { var v0 = leerLocal('vista'); if (v0 === 'inicio' || v0 === 'mensajes' || v0 === 'mas') vista = v0; } }
       if (EN_APP && r.rol === 'admin' && r.datos.enlaceApp !== window.PIZARRA.envoltorio) llamar('admAjustes', { enlaceApp: window.PIZARRA.envoltorio }).then(function (n) { if (n && n.datos) S.datos.enlaceApp = n.datos.enlaceApp; }, function () {});
       if (ROL === 'familia' && !S.miId) S.miId = 'yo';

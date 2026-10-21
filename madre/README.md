@@ -103,6 +103,13 @@ Con el script nuevo y la TV todavía en la 2.0, todo sigue funcionando (la 2.0 i
   de cada tipo cada 6 h), calendario de iCloud (`webcal://`, el enlace se guarda solo en el script), "Hoy viene…" y rutina semanal.
 - **TV**: lee en voz alta los mensajes nuevos (español, nunca de noche; sin voz española no falla), y "Hoy viene…" con la foto.
 
+### Iconos de la pantalla de inicio
+- **Administrador**: el televisor violeta con el corazón (`web-app/iconos/`).
+- **Familiares (Ana, Dani, María…)**: el mismo televisor en verde (`web-app/iconos-familia/`). El panel pone uno u otro según quién entra
+  (iPhone: `apple-touch-icon`; Android: iconos de 192/512 y manifiesto). Solo vale si guardan la app desde `…/Sky/tele/`, no desde la página de Google.
+- Para usar otro dibujo: `python3 madre/web-app/hacer-iconos.py mi-icono.png` (PNG cuadrado, mejor de 1024 px), después `python3 madre/web-app/construir.py` y `sh madre/web-app/publicar.sh`.
+  Quien ya añadió la app debe borrar el icono y volver a añadirla: iOS guarda el icono al añadirla.
+
 ### Desplegar el script (la dirección `/exec` no cambia)
 1. Abre el proyecto en script.google.com; sustituye todo `Code.gs` y `Admin.html` por los de esta carpeta.
 2. Ejecuta una vez la función `autorizar` (crea el activador diario de limpieza y copias). **No hacen falta permisos nuevos.**

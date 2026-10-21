@@ -43,6 +43,7 @@ const espera = (ms) => new Promise((r) => setTimeout(r, ms));
   t('manifiesto: nombre, pantalla completa e iconos', man.name === 'La tele de mamá' && man.display === 'fullscreen' && man.icons.length === 3);
   t('el icono de Android abre con el enlace completo (con su clave)', man.start_url === url('#u=IDDEPRUEBA&k=ADMINKEY'));
   t('iconos para iPhone y nombre', await p.evaluate(() => !!document.querySelector('link[rel=apple-touch-icon]') && document.querySelector('meta[name=apple-mobile-web-app-title]').content === 'La tele de mamá' && document.querySelector('meta[name=apple-mobile-web-app-capable]').content === 'yes'));
+  t('el administrador conserva su icono', await p.evaluate(async () => /\/iconos\/apple-touch-icon\.png$/.test(document.querySelector('link[rel=apple-touch-icon]').href) && (await (await fetch(document.getElementById('manifiesto').href)).json()).icons.every((x) => /\/iconos\//.test(x.src))));
   t('iconos de Android (192 y 512) enlazados además del manifiesto', await p.evaluate(() => !!document.querySelector('link[rel=icon][sizes="192x192"]') && !!document.querySelector('link[rel=icon][sizes="512x512"]')));
   t('la imagen del icono existe', (await fetch(base + '/web-app/iconos/apple-touch-icon.png')).status === 200 && (await fetch(base + '/web-app/iconos/icono-512.png')).status === 200);
   t('no se indexa ni se manda la dirección a nadie', await p.evaluate(() => document.querySelector('meta[name=robots]').content.includes('noindex') && document.querySelector('meta[name=referrer]').content === 'no-referrer'));
@@ -60,6 +61,15 @@ const espera = (ms) => new Promise((r) => setTimeout(r, ms));
   p = await nueva();
   await p.goto(url(`#u=IDDEPRUEBA&k=${ana}`)); await p.waitForSelector('#barra .t', { timeout: 15000 }); await espera(1200);
   t('abre la página de la familia', (await p.textContent('#app')).includes('Hola, Ana') && (await p.textContent('#nav')).includes('Mandar'));
+  t('el familiar tiene su propio icono en la pantalla de inicio (iPhone, Android y manifiesto)', await p.evaluate(async () => {
+    const ap = document.querySelector('link[rel=apple-touch-icon]').href, i192 = document.querySelector('link[rel=icon][sizes="192x192"]').href;
+    const m = await (await fetch(document.getElementById('manifiesto').href)).json();
+    return /iconos-familia\/apple-touch-icon\.png$/.test(ap) && /iconos-familia\/icono-192\.png$/.test(i192) && m.icons.every((x) => x.src.indexOf('iconos-familia/') > 0);
+  }));
+  t('los iconos de familiares existen y no son los del administrador', await p.evaluate(async () => {
+    const a = await (await fetch('iconos/apple-touch-icon.png')).arrayBuffer(), b = await (await fetch('iconos-familia/apple-touch-icon.png')).arrayBuffer();
+    return a.byteLength > 1000 && b.byteLength > 1000 && a.byteLength !== b.byteLength;
+  }));
   await p.click('#nav >> text=Mandar'); await espera(300);
   t('Mandar tiene las opciones de contenido y el micrófono', (await p.textContent('#app')).includes('Grabar un audio') && !!(await p.$('#mic')));
   await p.fill('#texto', 'Desde la app'); await p.click('text=Enviar a la TV'); await espera(800);
