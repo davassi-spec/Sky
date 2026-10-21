@@ -375,6 +375,7 @@
     var e = $('aviso'); e.textContent = txt; e.className = tipo || 'ok';
     clearTimeout(aviso.t); aviso.t = setTimeout(function () { e.className = ''; e.textContent = ''; }, tipo === 'error' ? 6000 : 3500);
   }
+  function quitarAviso() { var e = $('aviso'); clearTimeout(aviso.t); e.className = ''; e.textContent = ''; }
   /** "DANIEL" o "daniel" se enseña "Daniel"; lo que ya mezcla mayúsculas y minúsculas se deja como está. */
   function bonito(n) {
     n = String(n || '').trim();
@@ -389,13 +390,15 @@
     clearTimeout(aviso.t); aviso.t = setTimeout(function () { e.className = ''; e.textContent = ''; }, 10000);
   }
   /** El error se enseña junto a lo que ha fallado (si no está en pantalla, como aviso). */
-  function errorEn(id, texto) {
+  var errorAbierto = null;      // el aviso que se está enseñando: si la pantalla se repinta sola, se vuelve a poner
+  function errorEn(id, texto, sinScroll) {
     var e = $(id);
     if (!e) { aviso(texto, 'error'); return; }
+    errorAbierto = { id: id, texto: texto };
     e.innerHTML = ''; e.hidden = false;
     e.appendChild(el('span', {}, texto));
-    e.appendChild(el('button', { class: 'enlace', type: 'button', 'aria-label': 'Cerrar el aviso', style: 'min-height:32px;padding:0', onclick: function () { e.hidden = true; } }, 'Cerrar'));
-    try { e.scrollIntoView({ block: 'center' }); } catch (x) { /* sin scroll */ }
+    e.appendChild(el('button', { class: 'enlace', type: 'button', 'aria-label': 'Cerrar el aviso', style: 'min-height:32px;padding:0', onclick: function () { e.hidden = true; errorAbierto = null; } }, 'Cerrar'));
+    if (!sinScroll) try { e.scrollIntoView({ block: 'center' }); } catch (x) { /* sin scroll */ }
   }
   /** Una hora siempre en 24 horas ("17:00"), escrita a mano: el selector del móvil a veces sale con AM/PM. */
   function campoHora(id, valor, alCambiar, aria) {
@@ -515,8 +518,8 @@
   }
   function hace(t) {
     var s = Math.max(0, Math.round(Date.now() / 1000 - t));
-    if (s < 60) return 'hace ' + s + ' segundos';
-    if (s < 3600) return 'hace ' + Math.round(s / 60) + ' minutos';
+    if (s < 60) return 'hace ' + s + (s === 1 ? ' segundo' : ' segundos');
+    if (s < 3600) { var m = Math.round(s / 60); return 'hace ' + m + (m === 1 ? ' minuto' : ' minutos'); }
     var f = new Date(t * 1000);
     return (mismoDia(f, new Date()) ? 'desde las ' : 'desde el ' + f.getDate() + ' a las ') + f.getHours() + ':' + dos(f.getMinutes());
   }
@@ -791,7 +794,7 @@
   function ir(v) {
     if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
     if (ROL === 'familia' && PADRE[v]) v = 'inicio';             // Pantalla, Familia y Ajustes son solo del administrador
-    vista = v; if (PESTANAS.some(function (p) { return p[0] === v; })) guardarLocal('vista', v);
+    vista = v; errorAbierto = null; if (PESTANAS.some(function (p) { return p[0] === v; })) guardarLocal('vista', v);
     pintar(); window.scrollTo(0, 0);
   }
   function pintarBarra() {
@@ -823,6 +826,7 @@
     window.scrollTo(0, anterior);
     app.querySelectorAll('.miniatura').forEach(function (m) { if (m._ajustar) m._ajustar(); });
     if ($('vista-tv')) arrancarCaptura();
+    if (errorAbierto && $(errorAbierto.id)) errorEn(errorAbierto.id, errorAbierto.texto, true);
   }
 
   /* ============================== datos comunes de las tres pantallas ============================== */
@@ -1204,7 +1208,7 @@
   function vistaGestion() {
     var w = document.createDocumentFragment();
     var items = [['pantalla', 'pantalla', 'Pantalla', 'Qué se ve, distribución y estilo'], ['recordatorios', 'campana', 'Recordatorios', 'Con foto, a su hora'], ['cuentas', 'reloj', 'Cuentas atrás', 'Días que faltan para una fecha'],
-      ['visitas', 'familia', 'Visitas y rutina', 'Quién viene y qué pasa cada semana'], ['familia', 'familia', 'Familia', 'Enlaces y fotos'], ['ajustes', 'ajustes', 'Ajustes', 'Noche, calendarios, avisos y espacio']];
+      ['visitas', 'calendario', 'Visitas y rutina', 'Quién viene y qué pasa cada semana'], ['familia', 'familia', 'Familia', 'Enlaces y fotos'], ['ajustes', 'ajustes', 'Ajustes', 'Noche, calendarios, avisos y espacio']];
     w.appendChild(seccion('Gestión', grupo(items.map(function (i) { return fila({ icono: i[1], titulo: i[2], sub: i[3], flecha: true, onclick: function () { ir(i[0]); } }); }), 'gestion-lista')));
     return w;
   }
@@ -2012,8 +2016,8 @@
     if (!f) return;
     var turno = ++turnoArchivo;
     aviso('Preparando…', 'ok');
-    prepararArchivo(f).then(function (r) { if (turno === turnoArchivo) dialogoRevisar(r.blob, r.tipo); },
-      function (e) { if (turno === turnoArchivo) errorEn('err-contenido', errorLegible(e)); });
+    prepararArchivo(f).then(function (r) { if (turno === turnoArchivo) { quitarAviso(); dialogoRevisar(r.blob, r.tipo); } },
+      function (e) { if (turno === turnoArchivo) { quitarAviso(); errorEn('err-contenido', errorLegible(e)); } });
   }
 
   /** Grabar con el micrófono o la cámara del móvil, con cuenta atrás hasta el máximo. */

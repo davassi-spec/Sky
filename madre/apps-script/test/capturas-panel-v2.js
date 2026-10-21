@@ -18,6 +18,7 @@ const rpc = async (fn, ...args) => (await (await fetch(base + '/rpc', { method: 
   const srv = spawn('node', [path.join(__dirname, 'servidor-ui.js'), String(PUERTO)], { stdio: 'ignore', env: Object.assign({}, process.env, { FICHEROS: FICH }) });
   await espera(1500);
   const nav = await chromium.launch({ executablePath: CHROME, args: ['--no-sandbox', '--use-fake-ui-for-media-stream', '--use-fake-device-for-media-stream', '--autoplay-policy=no-user-gesture-required'] });
+  await rpc('doGet', { parameter: { k: 'ADMINKEY', v: '6.1' } });      // la tele dice su versión
   const datos = await rpc('leer_');
   const ana = datos.familia[0];
   if (TV && fs.existsSync(TV)) await rpc('doPost', { parameter: { a: 'captura', k: 'ADMINKEY' }, postData: { contents: fs.readFileSync(TV).toString('base64') } });
