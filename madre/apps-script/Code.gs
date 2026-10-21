@@ -178,6 +178,12 @@ function podar_(d) {
   var limite = fechaClave_(new Date(ahora - 4 * 86400000));        // del estado de los recordatorios solo se guardan los últimos días
   for (var c in d.recEstado) if (c.split('|')[1] < limite) delete d.recEstado[c];
 }
+/** "DANIEL" o "daniel" se escribe "Daniel"; lo que ya tiene mayúsculas y minúsculas mezcladas ("María José", "Pep del Pino") se deja como está. */
+function bonito_(n) {
+  n = String(n || '').trim();
+  if (n.length < 2 || (n !== n.toUpperCase() && n !== n.toLowerCase())) return n;
+  return n.toLowerCase().replace(/(^|[\s\-'])([a-záéíóúüñ])/g, function (m, a, b) { return a + b.toUpperCase(); });
+}
 function esVivo_(m, ahora) { return !m.hasta || m.hasta * 1000 > (ahora || Date.now()); }
 /** Un mensaje programado todavía no se ve hasta que llegue su hora (m.desde, en segundos). */
 function yaSeVe_(m, ahora) { return !m.desde || m.desde * 1000 <= (ahora || Date.now()); }
@@ -284,7 +290,8 @@ var RPC_ = {
   admCorreoPrueba: admCorreoPrueba, admBuscarCiudad: admBuscarCiudad, admMedioNuevo: admMedioNuevo, admMedioParte: admMedioParte,
   admMedioFin: admMedioFin, admMedioBorrar: admMedioBorrar, admMedioReproducir: admMedioReproducir, admMedioControl: admMedioControl,
   admMediosEstado: admMediosEstado, admVisitaGuardar: admVisitaGuardar, admVisitaBorrar: admVisitaBorrar, admRutinaGuardar: admRutinaGuardar,
-  admRutinaBorrar: admRutinaBorrar, admProbarICloud: admProbarICloud, admEspacio: admEspacio
+  admRutinaBorrar: admRutinaBorrar, admProbarICloud: admProbarICloud, admEspacio: admEspacio,
+  admMensajeRestaurar: admMensajeRestaurar, admFijar: admFijar, admMedioRestaurar: admMedioRestaurar, admMedioMini: admMedioMini
 };
 
 /** ?a=rpc: el cuerpo es { fn, args } (la clave va dentro de args, nunca en la dirección). Devuelve { valor } o { error }. */
@@ -444,7 +451,7 @@ function bloqueActivo_(d, id) {
 function estado_() {
   var d = leer_();
   var ahora = Date.now();
-  var vivos = d.mensajes.filter(function (m) { return esVivo_(m, ahora) && yaSeVe_(m, ahora); }).sort(function (a, b) { return (b.desde || b.t) - (a.desde || a.t); });
+  var vivos = d.mensajes.filter(function (m) { return esVivo_(m, ahora) && yaSeVe_(m, ahora); }).sort(function (a, b) { return (b.fijado ? 1 : 0) - (a.fijado ? 1 : 0) || (b.desde || b.t) - (a.desde || a.t); });   // el fijado se queda arriba
   var verMsg = bloqueActivo_(d, 'mensajes'), verEv = bloqueActivo_(d, 'proximo'), verT = bloqueActivo_(d, 'tiempo');
   var prueba = d.prueba && d.prueba.hasta > ahora ? { estilo: d.prueba.estilo, distribucion: d.prueba.distribucion || null, modo: d.prueba.modo, segundos: Math.round((d.prueba.hasta - ahora) / 1000) } : null;
   return {
@@ -496,7 +503,7 @@ function anotarVistos_(msgs) {
 function mensajeParaTV_(m, d) {
   var f = null;
   for (var i = 0; i < d.familia.length; i++) if (d.familia[i].id === m.autor) f = d.familia[i];
-  return { id: m.id, de: m.de, texto: m.texto, t: m.t, hasta: m.hasta, autor: m.autor, foto: f && f.foto ? f.foto.v : null };
+  return { id: m.id, de: bonito_(m.de), texto: m.texto, t: m.t, hasta: m.hasta, autor: m.autor, foto: f && f.foto ? f.foto.v : null };
 }
 
 function tiempo_(lat, lon) {
@@ -706,7 +713,9 @@ function calendarios_() {
   var cache = CacheService.getScriptCache();
   var hit = cache.get('calendarios');
   if (hit) return JSON.parse(hit);
-  var out = CalendarApp.getAllCalendars().map(function (c) { return { id: c.getId(), nombre: c.getName() }; });
+  var principal = '';
+  try { principal = CalendarApp.getDefaultCalendar().getId(); } catch (e0) { /* sin calendario principal */ }
+  var out = CalendarApp.getAllCalendars().map(function (c) { return { id: c.getId(), nombre: c.getName(), principal: c.getId() === principal }; });
   try { cache.put('calendarios', JSON.stringify(out), 600); } catch (e) { /* sin caché */ }
   return out;
 }
@@ -828,9 +837,16 @@ function admEnviar(k, de, texto, duracion, cuando) {
   if (cuando && cuando.hora) {
     var hh = horaValida_(cuando.hora);
     if (!hh) throw new Error('Esa hora no vale');
-    var dia = cuando.dia === 'manana' ? 1 : 0;
-    prog = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate() + dia, Number(hh.slice(0, 2)), Number(hh.slice(3)), 0);
-    if (prog.getTime() < ahora.getTime() - 60000) throw new Error('Esa hora ya ha pasado. Elige una hora de más tarde o mañana.');
+    var dia = cuando.dia === 'manana' ? 1 : 0, y = ahora.getFullYear(), mo = ahora.getMonth(), da = ahora.getDate() + dia;
+    if (cuando.fecha) {                                          // una fecha concreta (hasta dentro de 60 días)
+      var mf = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(cuando.fecha));
+      if (!mf) throw new Error('Esa fecha no vale');
+      y = Number(mf[1]); mo = Number(mf[2]) - 1; da = Number(mf[3]);
+      var lejos = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate() + 61).getTime();
+      if (new Date(y, mo, da).getTime() > lejos) throw new Error('Solo se puede programar dentro de los próximos 60 días');
+    }
+    prog = new Date(y, mo, da, Number(hh.slice(0, 2)), Number(hh.slice(3)), 0);
+    if (prog.getTime() < ahora.getTime() - 60000) throw new Error('Esa fecha y hora ya han pasado. Elige una de más tarde.');
     if (prog.getTime() > ahora.getTime() + 60000) visible = despuesDeLaNoche_(leer_(), prog); else prog = null;
   }
   var programado = !!prog && visible.getTime() > ahora.getTime() + 60000;
@@ -841,7 +857,7 @@ function admEnviar(k, de, texto, duracion, cuando) {
   modificar_(function (d) {
     var m = {
       id: Utilities.getUuid(),
-      de: q.rol === 'familia' ? q.nombre : String(de || '').trim().slice(0, 30),   // un familiar no firma con otro nombre
+      de: q.rol === 'familia' ? q.nombre : bonito_(String(de || '').trim().slice(0, 30)),   // un familiar no firma con otro nombre
       autor: q.id,
       texto: texto,
       t: Math.floor(Date.now() / 1000),
@@ -968,13 +984,40 @@ function admBorrarCuentaAtras(k, id) {
 
 /* ---------- Familia ---------- */
 
+/** Deshacer "Quitar": devuelve a cada mensaje su duración de antes. cambios: [{ id, hasta }] (hasta en segundos, o null = sin límite). */
+function admMensajeRestaurar(k, cambios) {
+  var q = alguien_(k);
+  modificar_(function (d) {
+    (cambios || []).forEach(function (c) {
+      d.mensajes.forEach(function (m) {
+        if (m.id === c.id && (q.rol === 'admin' || m.autor === q.id)) m.hasta = c.hasta === null || c.hasta === undefined ? null : Number(c.hasta);
+      });
+    });
+  });
+  return admEstado(k);
+}
+/** Fija un mensaje para que se quede arriba en la tele (solo uno a la vez, solo el administrador). fijar=false lo suelta. */
+function admFijar(k, id, fijar) {
+  admin_(k);
+  modificar_(function (d) {
+    var ahora = Date.now();
+    d.mensajes.forEach(function (m) { if (m.fijado && (m.id !== id || !fijar)) delete m.fijado; });
+    if (fijar) {
+      var m = null;
+      d.mensajes.forEach(function (x) { if (x.id === id) m = x; });
+      if (!m || !esVivo_(m, ahora)) throw new Error('Ese mensaje ya no está en la tele');
+      m.fijado = true;
+    }
+  });
+  return admEstado(k);
+}
 function admFamiliaAnadir(k, nombre) {
   admin_(k);
   nombre = String(nombre || '').trim().slice(0, 30);
   if (!nombre) throw new Error('Escribe un nombre');
   modificar_(function (d) {
     if (d.familia.length >= 10) throw new Error('Ya hay 10 personas');
-    d.familia.push({ id: Utilities.getUuid(), nombre: nombre, clave: nuevaClave_(), foto: null });
+    d.familia.push({ id: Utilities.getUuid(), nombre: bonito_(nombre), clave: nuevaClave_(), foto: null });
   });
   return admEstado(k);
 }
@@ -1153,12 +1196,13 @@ function carpetaMedios_() {
 }
 
 function medioPorId_(d, id) {
-  for (var i = 0; i < d.medios.length; i++) if (d.medios[i].id === id) return d.medios[i];
+  for (var i = 0; i < d.medios.length; i++) if (d.medios[i].id === id && !d.medios[i].borrado) return d.medios[i];
   return null;
 }
 function puedeMedio_(q, m) { return q.rol === 'admin' || m.autor === q.id; }
 
 function borrarTrozos_(id) {
+  try { CacheService.getScriptCache().remove('mini_' + id); } catch (e) { /* sin caché */ }
   var it = carpetaMedios_().getFiles();
   while (it.hasNext()) { var f = it.next(); if (f.getName().indexOf(id + '.') === 0) f.setTrashed(true); }
 }
@@ -1179,14 +1223,17 @@ function admMedioNuevo(k, meta) {
   if (!(partes >= 1 && partes <= MAX_PARTES)) throw new Error('Envío no válido');
   var id = Utilities.getUuid().replace(/-/g, '').slice(0, 16);
   var desechar = [];
+  var mini = /^data:image\/jpeg;base64,([A-Za-z0-9+\/=]{100,30000})$/.exec(String(meta.mini || ''));
   modificar_(function (d) {
     var limite = Date.now() - 3600000;                        // los envíos a medias de hace más de una hora se tiran
-    d.medios = d.medios.filter(function (m) { if (!m.listo && m.t < limite) { desechar.push(m.id); return false; } return true; });
-    if (d.medios.length >= MAX_MEDIOS) throw new Error('Hay demasiados envíos preparados. Borra alguno antes de mandar otro.');
-    d.medios.unshift({ id: id, tipo: tipo, de: q.rol === 'familia' ? q.nombre : String(meta.de || '').trim().slice(0, 30), autor: q.id, texto: String(meta.texto || '').trim().slice(0, 200),
-      t: Date.now(), mime: mime, bytes: bytes, partes: partes, seg: Math.max(0, Math.min(3600, Math.round(Number(meta.seg) || 0))), listo: false });
+    var hace10 = Date.now() - 600000;                          // los borrados hace más de 10 minutos ya no se pueden deshacer: se tiran
+    d.medios = d.medios.filter(function (m) { if ((!m.listo && m.t < limite) || (m.borrado && m.borrado < hace10)) { desechar.push(m.id); return false; } return true; });
+    if (d.medios.filter(function (m) { return !m.borrado; }).length >= MAX_MEDIOS) throw new Error('Hay demasiados envíos preparados. Borra alguno antes de mandar otro.');
+    d.medios.unshift({ id: id, tipo: tipo, de: q.rol === 'familia' ? q.nombre : bonito_(String(meta.de || '').trim().slice(0, 30)), autor: q.id, texto: String(meta.texto || '').trim().slice(0, 200),
+      t: Date.now(), mime: mime, bytes: bytes, partes: partes, mini: !!mini, seg: Math.max(0, Math.min(3600, Math.round(Number(meta.seg) || 0))), listo: false });
   });
   desechar.forEach(borrarTrozos_);
+  if (mini) carpetaMedios_().createFile(Utilities.newBlob(Utilities.base64Decode(mini[1]), 'image/jpeg', id + '.mini'));
   return { id: id };
 }
 
@@ -1212,7 +1259,7 @@ function admMedioFin(k, id) {
   var it = carpetaMedios_().getFiles();
   while (it.hasNext()) {
     var f = it.next(), nom = f.getName();
-    if (nom.indexOf(id + '.') === 0 && !vistas[nom]) { vistas[nom] = 1; total += f.getSize(); }
+    if (nom.indexOf(id + '.') === 0 && /\.\d+$/.test(nom) && !vistas[nom]) { vistas[nom] = 1; total += f.getSize(); }
   }
   if (Object.keys(vistas).length !== m0.partes || total !== m0.bytes) {
     throw new Error('Se ha cortado la subida (llegaron ' + Object.keys(vistas).length + ' de ' + m0.partes + ' partes). Prueba otra vez.');
@@ -1225,20 +1272,44 @@ function admMedioBorrar(k, id) {
   var q = alguien_(k);
   var m0 = medioPorId_(leer_(), id);
   if (!m0 || !puedeMedio_(q, m0)) throw new Error('Ese envío no existe');
-  modificar_(function (d) {
-    d.medios = d.medios.filter(function (m) { return m.id !== id; });
+  modificar_(function (d) {                                    // se esconde; los archivos se tiran más tarde (así se puede deshacer)
+    d.medios.forEach(function (m) { if (m.id === id) m.borrado = Date.now(); });
     if (d.repro && d.repro.id === id) d.repro.estado = 'terminado';
   });
-  borrarTrozos_(id);
   return admEstado(k);
+}
+/** Deshacer "Borrar" (mientras los archivos siguen en Drive). */
+function admMedioRestaurar(k, id) {
+  var q = alguien_(k);
+  var ok = false;
+  modificar_(function (d) {
+    d.medios.forEach(function (m) {
+      if (m.id === id && m.borrado && puedeMedio_(q, m)) { delete m.borrado; ok = true; }
+    });
+  });
+  if (!ok) throw new Error('Ya no se puede deshacer');
+  return admEstado(k);
+}
+/** La miniatura de una foto o de un vídeo (el primer fotograma), como imagen en texto. */
+function admMedioMini(k, id) {
+  var q = alguien_(k);
+  var m = medioPorId_(leer_(), id);
+  if (!m || !puedeMedio_(q, m) || !m.mini) return null;
+  var cache = CacheService.getScriptCache(), hit = cache.get('mini_' + id);
+  if (hit) return hit;
+  var it = carpetaMedios_().getFilesByName(id + '.mini');
+  if (!it.hasNext()) return null;
+  var du = 'data:image/jpeg;base64,' + Utilities.base64Encode(it.next().getBlob().getBytes());
+  try { cache.put('mini_' + id, du, 21600); } catch (e) { /* sin caché */ }
+  return du;
 }
 
 /** Lo que cada persona ve de sus envíos (el administrador, todos). */
 function mediosParaPanel_(d, q, ahora) {
-  var lista = d.medios.filter(function (m) { return m.listo && puedeMedio_(q, m); }).map(function (m) {
+  var lista = d.medios.filter(function (m) { return m.listo && !m.borrado && puedeMedio_(q, m); }).map(function (m) {
     var visto = null;
     for (var i = 0; i < d.histMedios.length; i++) if (d.histMedios[i].id === m.id) { visto = d.histMedios[i]; break; }       // la más reciente
-    return { id: m.id, tipo: m.tipo, de: m.de, autor: m.autor, texto: m.texto, t: m.t, bytes: m.bytes, seg: m.tipo === 'audio' && m.mime.indexOf('wav') >= 0 ? Math.round(Math.max(0, m.bytes - 44) / 32000) : (m.seg || 0),
+    return { id: m.id, tipo: m.tipo, de: bonito_(m.de), autor: m.autor, texto: m.texto, t: m.t, bytes: m.bytes, mini: !!m.mini, seg: m.tipo === 'audio' && m.mime.indexOf('wav') >= 0 ? Math.round(Math.max(0, m.bytes - 44) / 32000) : (m.seg || 0),
              vistoT: visto ? visto.t : null, puso: visto ? visto.quien : '' };
   });
   var rp = null, e = reproEstado_(d, ahora);
@@ -1276,7 +1347,7 @@ function medioParaTV_(d, ahora) {
   if (!m || !m.listo) return null;
   var seg = 0;
   if (m.tipo === 'foto' && r.minutos > 0) seg = Math.max(1, Math.round(((r.desde || ahora) + r.minutos * 60000 - ahora) / 1000));
-  return { orden: r.orden, id: m.id, tipo: m.tipo, de: m.de, texto: m.texto, partes: m.partes, bytes: m.bytes, mime: m.mime,
+  return { orden: r.orden, id: m.id, tipo: m.tipo, de: bonito_(m.de), texto: m.texto, partes: m.partes, bytes: m.bytes, mime: m.mime,
            segundos: seg, cmd: r.cmd || { n: 0, c: '' }, rep: r.rep || 0, sinLimite: m.tipo === 'foto' && !(r.minutos > 0) };
 }
 
@@ -1715,12 +1786,13 @@ function limpiarMedios_() {
     for (var i = 0; i < d.histMedios.length; i++) if (d.histMedios[i].id === m.id) { visto = d.histMedios[i].t; break; }
     var enUso = d.repro && d.repro.id === m.id && reproPendiente_(d, ahora);
     if (m.listo && visto && visto < limite && !enUso) borrar.push(m.id);
+    else if (m.borrado && m.borrado < ahora - 600000 && !enUso) borrar.push(m.id);
   });
   var vivos = {};
   d.medios.forEach(function (m) { if (borrar.indexOf(m.id) < 0) vivos[m.id] = 1; });
   var huerfanos = 0, it = carpetaMedios_().getFiles();
   while (it.hasNext()) {
-    var f = it.next(), n = /^([0-9a-f]{16})\.\d+$/.exec(f.getName());
+    var f = it.next(), n = /^([0-9a-f]{16})\.(?:\d+|mini)$/.exec(f.getName());
     if (!n) continue;                                                       // lo que no es un trozo no se toca
     if (borrar.indexOf(n[1]) >= 0) { f.setTrashed(true); continue; }
     if (!vivos[n[1]] && f.getDateCreated().getTime() < ahora - 86400000) { f.setTrashed(true); huerfanos++; }

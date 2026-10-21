@@ -726,8 +726,8 @@
   /* ============================== navegación ============================== */
   var PESTANAS = [['inicio', 'Inicio', 'inicio'], ['mandar', 'Mandar', 'enviar'], ['enviados', 'Enviados', 'reloj']];
   var TITULOS = { inicio: 'Inicio', mandar: 'Mandar', enviados: 'Enviados', gestion: 'Gestión', pantalla: 'Pantalla', cuentas: 'Cuentas atrás', cuenta: 'Cuenta atrás',
-    recordatorios: 'Recordatorios', recordatorio: 'Recordatorio', familia: 'Familia', ajustes: 'Ajustes' };
-  var PADRE = { gestion: 'inicio', pantalla: 'gestion', cuentas: 'gestion', cuenta: 'cuentas', recordatorios: 'gestion', recordatorio: 'recordatorios', familia: 'gestion', ajustes: 'gestion' };
+    recordatorios: 'Recordatorios', recordatorio: 'Recordatorio', visitas: 'Visitas y rutina', familia: 'Familia', ajustes: 'Ajustes' };
+  var PADRE = { gestion: 'inicio', pantalla: 'gestion', cuentas: 'gestion', cuenta: 'cuentas', recordatorios: 'gestion', recordatorio: 'recordatorios', visitas: 'gestion', familia: 'gestion', ajustes: 'gestion' };
   var filtroEnv = 'todos';
   var previaPedida = false;
   function ir(v) {
@@ -759,7 +759,7 @@
     MINIS = [];
     app.innerHTML = '';
     var vistas = { inicio: vistaInicio, mandar: vistaMandar, enviados: vistaEnviados, gestion: vistaGestion, pantalla: vistaPantalla, cuentas: vistaCuentas, cuenta: vistaCuenta,
-      recordatorios: vistaRecordatorios, recordatorio: vistaRecordatorio, familia: vistaFamilia, ajustes: vistaAjustes };
+      recordatorios: vistaRecordatorios, recordatorio: vistaRecordatorio, visitas: vistaVisitas, familia: vistaFamilia, ajustes: vistaAjustes };
     app.appendChild((vistas[vista] || vistaInicio)());
     pintarBarra(); pintarNav();
     window.scrollTo(0, anterior);
@@ -1072,7 +1072,7 @@
   function vistaGestion() {
     var w = document.createDocumentFragment();
     var items = [['pantalla', 'pantalla', 'Pantalla', 'Qué se ve, distribución y estilo'], ['recordatorios', 'campana', 'Recordatorios', 'Con foto, a su hora'], ['cuentas', 'reloj', 'Cuentas atrás', 'Días que faltan para una fecha'],
-      ['familia', 'familia', 'Familia', 'Enlaces y fotos'], ['ajustes', 'ajustes', 'Ajustes', 'Noche, contacto, ciudad y calendarios']];
+      ['visitas', 'familia', 'Visitas y rutina', 'Quién viene y qué pasa cada semana'], ['familia', 'familia', 'Familia', 'Enlaces y fotos'], ['ajustes', 'ajustes', 'Ajustes', 'Noche, calendarios, avisos y espacio']];
     w.appendChild(seccion('Gestión', grupo(items.map(function (i) { return fila({ icono: i[1], titulo: i[2], sub: i[3], flecha: true, onclick: function () { ir(i[0]); } }); }), 'gestion-lista')));
     return w;
   }
@@ -1405,7 +1405,57 @@
     return w;
   }
 
-  /* ============================== Ajustes ============================== */
+  /* ============================== Visitas y rutina ============================== */
+  var DIAS_SEMANA = [['1', 'Lunes'], ['2', 'Martes'], ['3', 'Miércoles'], ['4', 'Jueves'], ['5', 'Viernes'], ['6', 'Sábado'], ['0', 'Domingo']];
+  function hoyISO() { var n = new Date(); return n.getFullYear() + '-' + dos(n.getMonth() + 1) + '-' + dos(n.getDate()); }
+  function nombrePersona(id) { var f = (S.datos.familia || []).filter(function (x) { return x.id === id; })[0]; return f ? f.nombre : ''; }
+  function selectorPersona(id, libre) {
+    var sel = el('select', { id: id, 'aria-label': 'Quién' }, el('option', { value: '' }, libre));
+    (S.datos.familia || []).forEach(function (f) { sel.appendChild(el('option', { value: f.id }, f.nombre)); });
+    return sel;
+  }
+  function vistaVisitas() {
+    var d = S.datos, w = document.createDocumentFragment();
+    w.appendChild(cabecera('Visitas y rutina', 'Salen en "Lo próximo" de la tele. Si viene alguien de la familia, con su foto.'));
+    // visitas
+    var lv = el('div', { class: 'grupo', id: 'lista-visitas' });
+    if (!d.visitas.length) lv.appendChild(el('p', { class: 'vacio' }, 'No hay visitas apuntadas.'));
+    d.visitas.forEach(function (v) {
+      var quien = v.texto || ('Viene ' + (nombrePersona(v.persona) || 'alguien')), f = v.fecha.split('-');
+      lv.appendChild(el('div', { class: 'fl' }, el('div', { class: 't' }, quien, el('small', {}, (v.fecha === hoyISO() ? 'Hoy' : Number(f[2]) + ' de ' + MESES[Number(f[1]) - 1]) + (v.hora ? ', ' + mayus(aLas(Number(v.hora.split(':')[0]), Number(v.hora.split(':')[1]))) : ' · todo el día'))),
+        el('button', { class: 'enlace peligro', type: 'button', 'aria-label': 'Borrar la visita: ' + quien, onclick: function (e) { accion('admVisitaBorrar', [v.id], 'Visita borrada', e.currentTarget); } }, 'Borrar')));
+    });
+    w.appendChild(seccion('Visitas', lv));
+    var vf = el('input', { type: 'date', id: 'v-fecha', value: hoyISO(), 'aria-label': 'Día' }), vh = el('input', { type: 'time', id: 'v-hora', 'aria-label': 'Hora' });
+    var vp = selectorPersona('v-persona', 'Otra persona…'), vt = el('input', { type: 'text', id: 'v-texto', maxlength: '60', placeholder: 'Si no es de la familia: "Viene el fontanero"', 'aria-label': 'Quién viene' });
+    w.appendChild(seccion('Apuntar una visita', el('div', { class: 'grupo' },
+      el('div', { class: 'fl' }, el('div', { class: 't' }, 'Día'), vf), el('div', { class: 'fl' }, el('div', { class: 't' }, 'Hora (opcional)'), vh),
+      el('div', { class: 'fl' }, el('div', { class: 't' }, 'Quién'), vp), el('div', { class: 'fl' }, vt)),
+      'Con "Otra persona…" escribe quién es. Con alguien de la familia sale "Viene Ana" y su foto.'));
+    w.appendChild(el('button', { class: 'btn', type: 'button', id: 'v-guardar', style: 'margin-top:12px', onclick: function (e) {
+      accion('admVisitaGuardar', [{ fecha: vf.value, hora: vh.value, persona: vp.value, texto: vt.value }], 'Visita apuntada', e.currentTarget);
+    } }, icono('mas2'), 'Apuntar la visita'));
+    // rutina
+    var lr = el('div', { class: 'grupo', id: 'lista-rutina' });
+    if (!d.rutina.length) lr.appendChild(el('p', { class: 'vacio' }, 'No hay tareas semanales.'));
+    d.rutina.forEach(function (r) {
+      var dn = DIAS_SEMANA.filter(function (x) { return Number(x[0]) === Number(r.dia); })[0][1], tx = r.texto || ('Viene ' + (nombrePersona(r.persona) || 'alguien'));
+      lr.appendChild(el('div', { class: 'fl' }, el('div', { class: 't' }, tx, el('small', {}, 'Cada ' + dn.toLowerCase() + (r.hora ? ', ' + mayus(aLas(Number(r.hora.split(':')[0]), Number(r.hora.split(':')[1]))) : ''))),
+        el('button', { class: 'enlace peligro', type: 'button', 'aria-label': 'Borrar la tarea: ' + tx, onclick: function (e) { accion('admRutinaBorrar', [r.id], 'Tarea borrada', e.currentTarget); } }, 'Borrar')));
+    });
+    w.appendChild(seccion('Rutina de cada semana', lr));
+    var rd = el('select', { id: 'r-dia', 'aria-label': 'Día de la semana' }); DIAS_SEMANA.forEach(function (x) { rd.appendChild(el('option', { value: x[0] }, x[1])); });
+    rd.value = String(new Date().getDay());
+    var rh = el('input', { type: 'time', id: 'r-hora', 'aria-label': 'Hora' }), rp = selectorPersona('r-persona', 'Nadie en concreto'), rt = el('input', { type: 'text', id: 'r-texto', maxlength: '60', placeholder: 'Viene la asistenta', 'aria-label': 'Qué pasa' });
+    w.appendChild(seccion('Añadir a la rutina', el('div', { class: 'grupo' },
+      el('div', { class: 'fl' }, el('div', { class: 't' }, 'Todos los'), rd), el('div', { class: 'fl' }, el('div', { class: 't' }, 'Hora (opcional)'), rh),
+      el('div', { class: 'fl' }, el('div', { class: 't' }, 'Persona'), rp), el('div', { class: 'fl' }, rt))));
+    w.appendChild(el('button', { class: 'btn', type: 'button', id: 'r-guardar', style: 'margin-top:12px', onclick: function (e) {
+      accion('admRutinaGuardar', [{ dia: Number(rd.value), hora: rh.value, persona: rp.value, texto: rt.value }], 'Tarea añadida', e.currentTarget);
+    } }, icono('mas2'), 'Añadir a la rutina'));
+    return w;
+  }
+
   function vistaAjustes() {
     var d = S.datos, w = document.createDocumentFragment(), ciudad = { nombre: d.ciudad, latitud: d.latitud, longitud: d.longitud };
     w.appendChild(cabecera('Ajustes', null, 'mas'));
@@ -1442,6 +1492,41 @@
       }));
     });
     w.appendChild(el('div', { class: 'tarjeta' }, el('h2', {}, 'Calendarios de Google'), cals, el('p', { class: 'ayuda' }, 'Si no marcas ninguno, se usa tu calendario principal.')));
+    var ic = el('input', { type: 'url', id: 'icloud', maxlength: '480', autocomplete: 'off', inputmode: 'url', placeholder: 'webcal://p00-caldav.icloud.com/published/…', value: d.icloud || '', 'aria-label': 'Enlace del calendario de iCloud' });
+    var icRes = el('p', { class: 'ayuda', id: 'icloud-res' });
+    w.appendChild(el('div', { class: 'tarjeta', id: 'icloud-tarjeta' }, el('h2', {}, 'Calendario de iCloud'),
+      el('p', { class: 'ayuda', style: 'margin:0 0 10px' }, 'En el iPhone: Calendario › ⓘ junto al calendario › Calendario público › Copiar enlace. Se junta con Google en "Lo próximo". El enlace se guarda solo en el script.'),
+      ic, icRes,
+      el('div', { class: 'fila', style: 'margin-top:10px' },
+        el('button', { class: 'btn suave', type: 'button', id: 'icloud-probar', onclick: function (e) {
+          var b = e.currentTarget; b.disabled = true; icRes.textContent = 'Comprobando…';
+          llamar('admProbarICloud', ic.value.trim()).then(function (r) { b.disabled = false; icRes.textContent = 'Funciona: ' + r.total + ' evento' + (r.total === 1 ? '' : 's') + ' hoy y mañana' + (r.primero ? '. El primero: ' + r.primero : '') + '.'; },
+            function (er) { b.disabled = false; icRes.textContent = mensajeError(er); });
+        } }, 'Probar'),
+        el('button', { class: 'btn', type: 'button', id: 'icloud-guardar', onclick: function (e) { accion('admAjustes', [{ icloud: ic.value.trim() }], ic.value.trim() ? 'Calendario de iCloud guardado' : 'Calendario de iCloud quitado', e.currentTarget); } }, 'Guardar'))));
+    w.appendChild(el('div', { class: 'tarjeta', id: 'avisos-tele' }, el('h2', {}, 'La tele'),
+      interruptor('Leer los mensajes en voz alta', 'Mensaje nuevo: "Mensaje de Ana: …". Nunca de noche.', 'sonido', !!d.leerVoz, function (v) { d.leerVoz = v; accion('admAjustes', [{ leerVoz: v }], v ? 'La tele leerá los mensajes nuevos' : 'La tele ya no lee en voz alta'); }),
+      interruptor('Avisarme si la tele no responde', 'Un correo si lleva más de 30 minutos sin consultar y otro cuando vuelve (como mucho cada 6 horas).', 'campana', d.avisoTV !== false, function (v) { d.avisoTV = v; accion('admAjustes', [{ avisoTV: v }], v ? 'Te avisaremos' : 'Aviso apagado'); })));
+    var mb = function (b) { return b >= 1073741824 ? (b / 1073741824).toFixed(2).replace('.', ',') + ' GB' : b >= 1048576 ? (b / 1048576).toFixed(1).replace('.', ',') + ' MB' : Math.max(0, Math.round(b / 1024)) + ' KB'; };
+    var esp = d.espacio, espTxt = el('div', { id: 'espacio-txt' });
+    var pintaEsp = function (e) {
+      espTxt.innerHTML = '';
+      if (!e) { espTxt.appendChild(el('p', { class: 'ayuda', style: 'margin:0' }, 'Todavía no se ha calculado.')); return; }
+      espTxt.appendChild(el('div', { style: 'font-size:28px;font-weight:700' }, mb(e.total)));
+      espTxt.appendChild(el('p', { class: 'ayuda' }, 'Envíos (audios, vídeos y fotos): ' + mb(e.medios) + ' · Copias: ' + mb(e.copias) + ' · Datos y fotos: ' + mb(Math.max(0, e.total - e.medios - e.copias)) + '. Calculado ' + hace(Math.round(e.t / 1000)).replace('hace', 'hace') + '.'));
+    };
+    pintaEsp(esp);
+    var bEsp = el('button', { class: 'btn suave', type: 'button', style: 'margin-top:10px', id: 'espacio-calcular', onclick: function () {
+      bEsp.disabled = true; llamar('admEspacio').then(function (r) { bEsp.disabled = false; d.espacio = r.espacio; pintaEsp(r.espacio); }, function (e) { bEsp.disabled = false; aviso(mensajeError(e), 'error'); });
+    } }, 'Calcular ahora');
+    w.appendChild(el('div', { class: 'tarjeta', id: 'espacio' }, el('h2', {}, 'Espacio en Drive (carpeta Pizarra)'), espTxt,
+      el('p', { class: 'ayuda' }, 'Cada madrugada se guarda una copia de los datos (las últimas 7) y se borran los audios, vídeos y fotos que se pusieron en la tele hace más de 30 días. Las fotos de perfil y las de los recordatorios nunca se borran.'), bEsp));
+    var horasTv = d.tvHoras || [], maxTv = Math.max(60, horasTv.reduce(function (m, x) { return Math.max(m, x.n); }, 0)), totalTv = horasTv.reduce(function (a, x) { return a + x.n; }, 0);
+    var barras = el('div', { id: 'tele-horas', style: 'display:flex;align-items:flex-end;gap:2px;height:64px;margin-top:8px' });
+    horasTv.forEach(function (x) { barras.appendChild(el('div', { title: x.h.slice(8) + ' h: ' + x.n, 'aria-label': x.h.slice(8) + ' h: ' + x.n + ' consultas', style: 'flex:1;border-radius:2px 2px 0 0;min-height:2px;background:' + (x.n >= 40 ? 'var(--primario)' : x.n > 0 ? '#E0A100' : 'var(--borde)') + ';height:' + Math.max(3, Math.round(x.n / maxTv * 64)) + 'px' })); });
+    w.appendChild(el('div', { class: 'tarjeta', id: 'consultas' }, el('h2', {}, 'La tele pregunta (últimas 24 horas)'),
+      el('p', { class: 'ayuda', style: 'margin:0' }, totalTv + ' consultas. Con la tele encendida deberían ser unas 60 por hora (barra azul). Los huecos son horas con la tele apagada o sin internet.'), barras,
+      el('div', { style: 'display:flex;justify-content:space-between;font-size:12px;color:var(--sub);margin-top:4px' }, el('span', {}, horasTv.length ? horasTv[0].h.slice(8) + ' h' : ''), el('span', {}, 'ahora'))));
     var av = S.avisos || {};
     var correo = el('input', { type: 'email', id: 'a-correo', maxlength: '100', autocomplete: 'off', inputmode: 'email', placeholder: 'tucorreo@ejemplo.com', value: d.correoAviso || av.destino || '' });
     var bCorreo = el('button', { class: 'btn', type: 'button', style: 'margin-top:12px', onclick: function () { var v = correo.value.trim(); if (v === av.destino && !d.correoAviso) v = ''; accion('admCorreoAviso', [v], 'Correo guardado', bCorreo); } }, 'Guardar correo');

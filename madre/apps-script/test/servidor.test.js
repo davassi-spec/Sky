@@ -573,7 +573,15 @@ const JPEG = 'data:image/jpeg;base64,' + Buffer.from('foto-de-prueba').toString(
   const antes = Object.values(s.archivos).filter((a) => /^[0-9a-f]{16}\./.test(a.nombre) && !a.papelera).length;
   s.run(`admMedioBorrar(${J(ana)}, ${J(audio)})`);
   const despues = Object.values(s.archivos).filter((a) => /^[0-9a-f]{16}\./.test(a.nombre) && !a.papelera).length;
-  t('al borrar se tiran sus trozos de Drive', antes - despues === 2 && estadoPanel(ana).medios.lista.length === 0);
+  t('al borrar se esconde (se puede deshacer) y sus trozos siguen en Drive unos minutos', antes - despues === 0 && estadoPanel(ana).medios.lista.length === 0);
+  s.run(`admMedioRestaurar(${J(ana)}, ${J(audio)})`);
+  t('Deshacer lo devuelve a Preparados', estadoPanel(ana).medios.lista.length === 1);
+  s.run(`admMedioBorrar(${J(ana)}, ${J(audio)})`);
+  s.fijar(new Date(2026, 9, 20, 17, 40).getTime());
+  s.run(`admMedioNuevo(${J(ana)}, ${J({ tipo: 'audio', mime: 'audio/wav', bytes: 10, partes: 1 })})`);
+  const despues2 = Object.values(s.archivos).filter((a) => /^[0-9a-f]{16}\./.test(a.nombre) && !a.papelera).length;
+  t('pasados 10 minutos ya no se puede deshacer y se tiran sus trozos de Drive', antes - despues2 === 2 && falla(() => s.run(`admMedioRestaurar(${J(ana)}, ${J(audio)})`)));
+  s.fijar(new Date(2026, 9, 20, 17, 15).getTime());
   t('el administrador borra lo de cualquiera', (s.run(`admMedioBorrar('ADMINKEY', ${J(foto)})`), estadoPanel('ADMINKEY').medios.lista.length === 1));
   t('los trozos se quedan privados (sin compartir)', Object.values(s.archivos).every((a) => !a.compartido));
 }
@@ -882,6 +890,68 @@ const JPEG = 'data:image/jpeg;base64,' + Buffer.from('foto-de-prueba').toString(
   t('el interruptor se guarda y se ve en Ajustes', s3.run("admEstado('ADMINKEY')").datos.avisoTV === false);
   t('el activador diario se crea con autorizar (una sola vez)', (() => { const s4 = crear(); s4.run('autorizar()'); s4.run('autorizar()'); return s4.disparadores.filter((f) => f === 'limpiezaDiaria').length === 1; })());
   t('leer en voz alta: por defecto sí, y se puede apagar', (() => { const s5 = crear(); const a = JSON.parse(s5.run("servir_({parameter:{a:'estado',k:'ADMINKEY'}}).s")).leerVoz; s5.run("admAjustes('ADMINKEY', {leerVoz:false})"); return a === true && JSON.parse(s5.run("servir_({parameter:{a:'estado',k:'ADMINKEY'}}).s")).leerVoz === false; })());
+}
+
+/* ---------- 24. Mejoras de uso: nombres, fecha concreta, fijar, deshacer y miniaturas ---------- */
+{
+  const h = (d, hh, mm = 0) => new Date(2026, 9, d, hh, mm).getTime();
+  const s = crear({ ahora: h(20, 17, 15) });
+  let n_ = 0; const paso = () => s.fijar(h(20, 17, 15) + (++n_) * 2000);        // cada mensaje con su segundo (como en la vida real)
+  t('bonito: DANIEL -> Daniel; daniel -> Daniel; María José se queda; PEP DEL PINO -> Pep Del Pino', s.run("[bonito_('DANIEL'), bonito_('daniel'), bonito_('María José'), bonito_('PEP DEL PINO'), bonito_('Ana'), bonito_('A'), bonito_('ÁNGELES')]").join('|') === 'Daniel|Daniel|María José|Pep Del Pino|Ana|A|Ángeles');
+  s.run("admFamiliaAnadir('ADMINKEY','MARÍA')");
+  t('un nombre en mayúsculas se guarda bien', s.run('leer_().familia[0].nombre') === 'María');
+  paso(); s.run("admEnviar('ADMINKEY', 'DANIEL', 'Buenos días', 'hoy', null)");
+  t('la firma del administrador también', s.run('leer_().mensajes[0].de') === 'Daniel');
+  s.run("modificar_(function (d) { d.mensajes[0].de = 'JAVIER'; })");
+  t('lo guardado antiguo en mayúsculas se enseña bien en la tele', JSON.parse(s.run("servir_({parameter:{a:'estado',k:'ADMINKEY'}}).s")).mensajes[0].de === 'Javier');
+  // programar para una fecha
+  const env = (cuando) => (paso(), s.run(`admEnviar('ADMINKEY', 'Daniel', 'Buenos días, mamá', 'hoy', ${J(cuando)})`));
+  env({ fecha: '2026-10-25', hora: '09:00' });
+  const m = s.run('leer_().mensajes[0]');
+  t('programar para una fecha concreta (el 25 a las 9:00)', m.desde * 1000 === h(25, 9) && m.hasta === Math.floor(new Date(2026, 9, 25, 23, 59, 59).getTime() / 1000));
+  t('una fecha pasada se rechaza', falla(() => env({ fecha: '2026-10-19', hora: '09:00' })));
+  t('más de 60 días también', falla(() => env({ fecha: '2027-03-01', hora: '09:00' })));
+  t('una fecha mal escrita', falla(() => env({ fecha: '25/10/2026', hora: '09:00' })));
+  // fijar
+  paso(); s.run("admEnviar('ADMINKEY', 'Daniel', 'Hoy viene Ana', 'hoy', null)");
+  const ids = s.run('leer_().mensajes.map(function (m) { return m.id + "|" + m.texto; })');
+  const idBuenos = ids.find((x) => x.endsWith('|Buenos días')).split('|')[0];
+  paso(); s.run("admEnviar('ADMINKEY', 'Daniel', 'Otro más nuevo', 'hoy', null)");
+  const tv = () => JSON.parse(s.run("servir_({parameter:{a:'estado',k:'ADMINKEY'}}).s")).mensajes.map((x) => x.texto);
+  t('sin fijar, salen los dos más nuevos', tv().join() === 'Otro más nuevo,Hoy viene Ana');
+  s.run(`admFijar('ADMINKEY', ${J(idBuenos)}, true)`);
+  t('el mensaje fijado se queda arriba aunque haya otros más nuevos', tv()[0] === 'Buenos días' && tv().length === 2);
+  const id2 = s.run('leer_().mensajes.find(function (m) { return m.texto === "Hoy viene Ana"; }).id');
+  s.run(`admFijar('ADMINKEY', ${J(id2)}, true)`);
+  t('solo hay uno fijado a la vez', s.run('leer_().mensajes.filter(function (m) { return m.fijado; }).length') === 1 && tv()[0] === 'Hoy viene Ana');
+  s.run(`admFijar('ADMINKEY', ${J(id2)}, false)`);
+  t('se puede soltar', s.run('leer_().mensajes.filter(function (m) { return m.fijado; }).length') === 0);
+  s.run("admFamiliaAnadir('ADMINKEY','Ana')"); const ka = s.run('leer_().familia[1].clave');
+  t('un familiar no puede fijar', falla(() => s.run(`admFijar(${J(ka)}, ${J(id2)}, true)`)));
+  // deshacer "quitar"
+  const antes = s.run('leer_().mensajes.find(function (m) { return m.id === ' + J(id2) + '; })').hasta;
+  s.run(`admBorrar('ADMINKEY', ${J(id2)})`);
+  t('quitado: ya no sale en la tele', !tv().includes('Hoy viene Ana'));
+  s.run(`admMensajeRestaurar('ADMINKEY', ${J([{ id: id2, hasta: antes }])})`);
+  t('Deshacer lo devuelve con su duración de antes', tv().includes('Hoy viene Ana') && s.run('leer_().mensajes.find(function (m) { return m.id === ' + J(id2) + '; })').hasta === antes);
+  paso(); s.run(`admEnviar(${J(ka)}, '', 'De Ana', 'hoy', null)`);
+  const idAna = s.run('leer_().mensajes.find(function (m) { return m.texto === "De Ana"; }).id');
+  s.run(`admBorrar(${J(ka)}, ${J(idAna)})`);
+  s.run(`admMensajeRestaurar(${J(ka)}, ${J([{ id: idAna, hasta: null }])})`);
+  t('una familiar deshace lo suyo (sin límite si no tenía)', s.run('leer_().mensajes.find(function (m) { return m.id === ' + J(idAna) + '; })').hasta === null);
+  t('pero no lo de otro', (() => { s.run(`admMensajeRestaurar(${J(ka)}, ${J([{ id: id2, hasta: 5 }])})`); return s.run('leer_().mensajes.find(function (m) { return m.id === ' + J(id2) + '; })').hasta === antes; })());
+  // miniaturas
+  const JPG = 'data:image/jpeg;base64,/9j/' + 'A'.repeat(300);
+  const nuevo = s.run(`admMedioNuevo(${J(ka)}, ${J({ tipo: 'foto', mime: 'image/jpeg', bytes: 600, partes: 1, mini: JPG })})`).id;
+  s.run(`admMedioParte(${J(ka)}, ${J(nuevo)}, 0, ${J(Buffer.alloc(600, 1).toString('base64'))})`); s.run(`admMedioFin(${J(ka)}, ${J(nuevo)})`);
+  t('una foto con miniatura lo dice en la lista', s.run(`admEstado(${J(ka)})`).medios.lista[0].mini === true);
+  t('y la miniatura se puede pedir (solo el dueño y el administrador)', s.run(`admMedioMini(${J(ka)}, ${J(nuevo)})`) === JPG.replace('/9j/AAAA', '/9j/AAAA') || /^data:image\/jpeg;base64,\/9j\//.test(s.run(`admMedioMini(${J(ka)}, ${J(nuevo)})`)));
+  t('el administrador también', /^data:image\/jpeg/.test(s.run(`admMedioMini('ADMINKEY', ${J(nuevo)})`)));
+  s.run("admFamiliaAnadir('ADMINKEY','Pep')"); const kp = s.run('leer_().familia[2].clave');
+  t('otro familiar no', s.run(`admMedioMini(${J(kp)}, ${J(nuevo)})`) === null);
+  t('una miniatura que no es un JPEG se ignora', (() => { const x = s.run(`admMedioNuevo(${J(ka)}, ${J({ tipo: 'foto', mime: 'image/jpeg', bytes: 10, partes: 1, mini: 'data:text/html;base64,PHNjcmlwdD4=' })})`).id; return s.run('medioPorId_(leer_(), ' + J(x) + ').mini') === false; })());
+  const calendarios = s.run('calendarios_()');
+  t('los calendarios dicen cuál es el principal', calendarios.length === 1 && calendarios[0].principal === false || calendarios.some((c) => 'principal' in c));
 }
 
 console.log(bien + ' bien, ' + mal + ' fallos');
