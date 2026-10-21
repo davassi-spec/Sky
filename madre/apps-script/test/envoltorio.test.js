@@ -43,6 +43,7 @@ const espera = (ms) => new Promise((r) => setTimeout(r, ms));
   t('manifiesto: nombre, pantalla completa e iconos', man.name === 'La tele de mamá' && man.display === 'fullscreen' && man.icons.length === 3);
   t('el icono de Android abre con el enlace completo (con su clave)', man.start_url === url('#u=IDDEPRUEBA&k=ADMINKEY'));
   t('iconos para iPhone y nombre', await p.evaluate(() => !!document.querySelector('link[rel=apple-touch-icon]') && document.querySelector('meta[name=apple-mobile-web-app-title]').content === 'La tele de mamá' && document.querySelector('meta[name=apple-mobile-web-app-capable]').content === 'yes'));
+  t('iconos de Android (192 y 512) enlazados además del manifiesto', await p.evaluate(() => !!document.querySelector('link[rel=icon][sizes="192x192"]') && !!document.querySelector('link[rel=icon][sizes="512x512"]')));
   t('la imagen del icono existe', (await fetch(base + '/web-app/iconos/apple-touch-icon.png')).status === 200 && (await fetch(base + '/web-app/iconos/icono-512.png')).status === 200);
   t('no se indexa ni se manda la dirección a nadie', await p.evaluate(() => document.querySelector('meta[name=robots]').content.includes('noindex') && document.querySelector('meta[name=referrer]').content === 'no-referrer'));
   await p.evaluate(() => ir('familia')); await espera(300);
