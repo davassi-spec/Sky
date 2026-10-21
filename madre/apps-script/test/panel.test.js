@@ -419,6 +419,17 @@ const PRUEBAS = {
     await rpc('doGet', { parameter: { k: 'ADMINKEY', v: '6.0' } });
     await llamar('admEstado'); S = await llamar('admEstado'); ir('inicio'); await espera(300);
     t('con versión, la enseña', texto().indexOf('Conectada') >= 0 && texto().indexOf('app 6.0') >= 0);`,
+  'admin: un vídeo cuya duración el móvil no llega a leer se acepta (iPhone con ahorro de batería)': `
+    ir('mandar'); await espera(100);
+    const desc = Object.getOwnPropertyDescriptor(HTMLMediaElement.prototype, 'src');
+    Object.defineProperty(HTMLMediaElement.prototype, 'src', { configurable: true, get() { return ''; }, set() { /* el iPhone no carga nada: ni metadatos ni error */ } });
+    const b = new Uint8Array(6000); [0, 0, 0, 24, 102, 116, 121, 112, 105, 115, 111, 109].forEach((x, i) => (b[i] = x));
+    const mp4 = new File([b], 'IMG_0001.mp4', { type: 'video/mp4' });
+    procesarArchivo(mp4);
+    for (let i = 0; i < 40 && !document.querySelector('.dialogo'); i++) await espera(500);
+    Object.defineProperty(HTMLMediaElement.prototype, 'src', desc);
+    t('en vez de dar error, se abre la revisión del vídeo', !!document.querySelector('.dialogo') && document.getElementById('err-contenido').hidden !== false);
+    t('y no queda ningún vídeo suelto en la página', document.querySelectorAll('body > video').length === 0);`,
   'admin: errores junto a lo que falló': `
     ir('mandar'); await espera(100);
     procesarArchivo(new File([new Uint8Array(10)], 'v.mkv', { type: 'video/x-matroska' })); await espera(500);
