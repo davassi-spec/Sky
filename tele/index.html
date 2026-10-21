@@ -1550,19 +1550,25 @@
   /* ============================== Familia ============================== */
   /** Enlace de una persona: apunta a la app del móvil (el envoltorio) si ya se ha dicho dónde está; si no, al panel de Google. La clave va tras el #. */
   var EN_APP = typeof window.PIZARRA === 'object';
-  function idDeLaWeb() { var m = /\/s\/([^\/]+)\/exec/.exec(BASE); return m ? m[1] : ''; }
+  function idDeLaWeb() {
+    if (typeof window.PIZARRA === 'object' && window.PIZARRA.u) return window.PIZARRA.u;
+    var m = /\/s\/([^\/]+)\/exec/.exec(BASE);
+    return m ? m[1] : (S && ((S.datos && S.datos.idWeb) || S.idWeb)) || '';
+  }
   var APP_POR_DEFECTO = 'https://davassi-spec.github.io/Sky/tele/';       // la app publicada (es pública y no lleva claves)
   function direccionApp() { return (EN_APP ? window.PIZARRA.envoltorio : (S && S.datos && S.datos.enlaceApp)) || APP_POR_DEFECTO; }
   var EN_IFRAME = (function () { try { return window.self !== window.top; } catch (e) { return true; } })();
   /** Un botón grande que abre la app (en su propia página, donde el móvil sí deja grabar) con el enlace de esta persona. */
   function botonAbrirApp() {
+    if (!enlaceConClave(K)) return null;
     return el('a', { class: 'btn', href: enlaceConClave(K), target: '_blank', rel: 'noopener', style: 'text-decoration:none;margin-top:10px' }, icono('micro'), 'Abrir la app para grabar');
   }
   function enlaceConClave(clave) {
     var app = direccionApp(), id = idDeLaWeb();
-    return app && id ? app.replace(/#.*$/, '') + '#u=' + id + '&k=' + clave : BASE + '?a=admin&k=' + clave;
+    return app && id ? app.replace(/#.*$/, '') + '#u=' + id + '&k=' + clave : '';       // nunca el enlace del panel de Google: a la familia siempre la app
   }
   function enlaceDe(f) { return enlaceConClave(f.clave); }
+  var SIN_ENLACE = 'Todavía no sé la dirección de la app. Abre una vez el panel desde la app (…/Sky/tele/#u=…&k=…) y vuelve a intentarlo.';
   /** Cómo poner el icono en la pantalla de inicio (iPhone y Samsung). */
   function ayudaIcono() {
     return el('details', { class: 'ayuda-icono' }, el('summary', {}, 'Cómo poner el icono en la pantalla de inicio'),
@@ -1596,9 +1602,11 @@
           el('div', { class: 'cuerpo' }, el('div', { class: 'texto' }, bonito(f.nombre)), el('div', { class: 'meta' }, ult), el('div', { class: 'meta' }, f.activos + (f.activos === 1 ? ' mensaje' : ' mensajes') + ' en la TV'))),
         el('div', { class: 'fila', style: 'margin-top:12px' },
           el('button', { class: 'btn suave', type: 'button', 'aria-label': 'Copiar enlace de ' + bonito(f.nombre), onclick: function () {
+            if (!enlaceDe(f)) { aviso(SIN_ENLACE, 'error'); return; }
             copiar(enlaceDe(f)).then(function (ok) { aviso(ok ? 'Enlace copiado. Mándaselo solo a ' + bonito(f.nombre) + '.' : 'No se pudo copiar. Usa "Enviar por WhatsApp".', ok ? 'ok' : 'error'); });
           } }, icono('copiar'), 'Copiar enlace'),
           el('button', { class: 'btn suave', type: 'button', 'aria-label': 'Enviar por WhatsApp a ' + bonito(f.nombre), onclick: function () {
+            if (!enlaceDe(f)) { aviso(SIN_ENLACE, 'error'); return; }
             window.open('https://wa.me/?text=' + encodeURIComponent('Hola ' + bonito(f.nombre) + ': con este enlace puedes escribir mensajes y mandar audios, vídeos y fotos a la tele de mamá. No lo reenvíes. ' + enlaceDe(f)), '_blank');
           } }, icono('compartir'), 'Enviar por WhatsApp')),
         foto,
@@ -1766,7 +1774,7 @@
       el('p', { class: 'ayuda', style: 'margin-top:0' }, EN_APP ? 'Estás usando la app. Los enlaces de la familia salen ya con su dirección.'
         : 'Con la app, grabar audio y vídeo funciona bien y queda un icono propio. Ya apunta a la publicada; cambia la dirección solo si la pones en otro sitio.'),
       EN_APP ? null : el('label', { class: 'eti', for: 'app-dir' }, 'Dirección de la app'), EN_APP ? null : app,
-      el('button', { class: 'btn', type: 'button', style: 'margin-top:10px', onclick: function () { copiar(miEnlace).then(function (ok) { aviso(ok ? 'Tu enlace de administrador está copiado. Ábrelo en el móvil y añade el icono. No lo compartas.' : 'No se pudo copiar', ok ? 'ok' : 'error'); }); } }, icono('copiar'), 'Copiar mi enlace de la app'),
+      el('button', { class: 'btn', type: 'button', style: 'margin-top:10px', onclick: function () { if (!miEnlace) { aviso(SIN_ENLACE, 'error'); return; } copiar(miEnlace).then(function (ok) { aviso(ok ? 'Tu enlace de administrador está copiado. Ábrelo en el móvil y añade el icono. No lo compartas.' : 'No se pudo copiar', ok ? 'ok' : 'error'); }); } }, icono('copiar'), 'Copiar mi enlace de la app'),
       el('button', { class: 'btn suave', type: 'button', style: 'margin-top:10px', onclick: function () { window.open('https://wa.me/?text=' + encodeURIComponent('Mi enlace de la app de la tele de mamá (no lo compartas): ' + miEnlace), '_blank'); } }, icono('compartir'), 'Enviármelo por WhatsApp'),
       ayudaIcono()));
     w.appendChild(el('div', { class: 'tarjeta' }, el('h2', {}, 'Aspecto'), aspecto, el('p', { class: 'ayuda' }, 'Solo cambia cómo ves este panel en tu móvil.')));
@@ -2177,7 +2185,7 @@
       S = r;
       if (EN_APP && window.PIZARRA.iconosPara) window.PIZARRA.iconosPara(r.rol);      // cada persona, su icono en la pantalla de inicio
       if (!ROL) { ROL = r.rol; if (ROL === 'admin') { var v0 = leerLocal('vista'); if (v0 === 'inicio' || v0 === 'mensajes' || v0 === 'mas') vista = v0; } }
-      if (EN_APP && r.rol === 'admin' && r.datos.enlaceApp !== window.PIZARRA.envoltorio) llamar('admAjustes', { enlaceApp: window.PIZARRA.envoltorio }).then(function (n) { if (n && n.datos) S.datos.enlaceApp = n.datos.enlaceApp; }, function () {});
+      if (EN_APP && r.rol === 'admin' && (r.datos.enlaceApp !== window.PIZARRA.envoltorio || r.datos.idWeb !== window.PIZARRA.u)) llamar('admAjustes', { enlaceApp: window.PIZARRA.envoltorio, idWeb: window.PIZARRA.u }).then(function (n) { if (n && n.datos) { S.datos.enlaceApp = n.datos.enlaceApp; S.datos.idWeb = n.datos.idWeb; } }, function () {});
       if (ROL === 'familia' && !S.miId) S.miId = 'yo';
       if (r.rol === 'admin' && !r.datos.mensajes) r.datos.mensajes = [];
       pintar();
