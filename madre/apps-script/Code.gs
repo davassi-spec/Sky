@@ -342,7 +342,7 @@ function servir_(e) {
   if (a === 'foto') return salida_(fotoParaTV_(e.parameter.p));       // foto de una persona o de un recordatorio
   if (a === 'medio') return salida_(parteMedioParaTV_(e.parameter.id, e.parameter.n));
   if (a === 'medioEstado') return salida_(medioEstadoDeLaTV_(e.parameter.o, e.parameter.e, e.parameter.m));
-  marcarTV_();
+  marcarTV_(e.parameter.v);
   var est = estado_();
   anotarVistos_(est.mensajes);
   return salida_(est);
@@ -398,10 +398,15 @@ function metricas_() {
  *  Lo que ve la TV
  * ============================================================ */
 
-function marcarTV_() {
+function marcarTV_(version) {
   var ahora = Math.floor(Date.now() / 1000);
   var cache = CacheService.getScriptCache();
   cache.put('tv', String(ahora), 21600);
+  version = String(version || '').replace(/[^0-9A-Za-z.\-]/g, '').slice(0, 12);
+  if (version && cache.get('tvv') !== version) {          // la versión de la app de la tele, para enseñarla en el panel
+    cache.put('tvv', version, 21600);
+    props_().setProperty('TV_VERSION', version);
+  }
   var ultimaProp = Number(cache.get('tv_prop') || 0);
   if (ahora - ultimaProp > 300) {                  // se anota en las propiedades como mucho cada 5 min
     props_().setProperty('TV_ULTIMA', String(ahora));
@@ -441,6 +446,13 @@ function tvHoras_() {
 function tvUltima_() {
   var c = CacheService.getScriptCache().get('tv');
   return Number(c || props_().getProperty('TV_ULTIMA') || 0);
+}
+
+/** Lo que se sabe de la tele: última consulta, si está conectada y qué versión de la app tiene. */
+function tvEstado_() {
+  var ult = tvUltima_();
+  var v = CacheService.getScriptCache().get('tvv') || props_().getProperty('TV_VERSION') || '';
+  return { ultima: ult, conectada: (Date.now() / 1000 - ult) < TV_CONECTADA_S, version: v };
 }
 
 function bloqueActivo_(d, id) {
@@ -724,7 +736,7 @@ function admEstado(k) {
   var q = alguien_(k);
   var d = leer_();
   var ahora = Date.now();
-  var tv = { ultima: tvUltima_(), conectada: (Date.now() / 1000 - tvUltima_()) < TV_CONECTADA_S };
+  var tv = tvEstado_();
   if (q.rol === 'familia') {
     var yo = fotoDePersona_(d, q.id);
     return {
@@ -798,7 +810,7 @@ function admCapturaTV(k, desde) {
   var cache = CacheService.getScriptCache();
   cache.put('captura_ped', String(Date.now()), 300);
   var t = Number(cache.get('captura_t') || 0);
-  var tv = { ultima: tvUltima_(), conectada: (Date.now() / 1000 - tvUltima_()) < TV_CONECTADA_S };
+  var tv = tvEstado_();
   if (!t) return { t: 0, tv: tv };
   if (desde && t <= Number(desde)) return { t: t, igual: true, tv: tv };
   var b64 = cache.get('captura_jpg');
@@ -1423,7 +1435,7 @@ function admMediosEstado(k) {
   var q = alguien_(k);
   var d = leer_();
   var ahora = Date.now();
-  var r = { rol: q.rol, ahora: ahora, medios: mediosParaPanel_(d, q, ahora), tv: { ultima: tvUltima_(), conectada: (ahora / 1000 - tvUltima_()) < TV_CONECTADA_S } };
+  var r = { rol: q.rol, ahora: ahora, medios: mediosParaPanel_(d, q, ahora), tv: tvEstado_() };
   if (q.rol === 'admin') r.histMedios = d.histMedios.slice(0, 50);
   return r;
 }

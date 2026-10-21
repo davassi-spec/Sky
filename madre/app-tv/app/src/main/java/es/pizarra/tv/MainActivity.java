@@ -163,6 +163,10 @@ public class MainActivity extends Activity {
         if (i == null) return;
         String url = i.getStringExtra("url");
         String k = i.getStringExtra("k");
+        if (url != null && k != null && !(url.trim().startsWith("https://") && k.trim().length() >= 8)) {
+            Log.w(TAG, "Dirección o clave no válidas: no se guardan");     // p. ej. el texto de ejemplo "TU_DIRECCION_EXEC"
+            url = null;
+        }
         if (url != null && k != null) {
             prefs.edit().putString("url", url.trim()).putString("k", k.trim()).remove("cache").apply();
             datos = null;
@@ -183,6 +187,14 @@ public class MainActivity extends Activity {
         }
     }
 
+    private String versionApp() {
+        try {
+            return getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
+        } catch (Exception e) {
+            return "";
+        }
+    }
+
     private void buscar() {
         final String url = prefs.getString("url", "");
         final String k = prefs.getString("k", "");
@@ -191,7 +203,7 @@ public class MainActivity extends Activity {
             @Override public void run() {
                 HttpURLConnection c = null;
                 try {
-                    c = (HttpURLConnection) new URL(url + "?a=estado&k=" + URLEncoder.encode(k, "UTF-8")).openConnection();
+                    c = (HttpURLConnection) new URL(url + "?a=estado&k=" + URLEncoder.encode(k, "UTF-8") + "&v=" + URLEncoder.encode(versionApp(), "UTF-8")).openConnection();
                     c.setConnectTimeout(15000);
                     c.setReadTimeout(25000);
                     if (c.getResponseCode() != 200) throw new Exception("HTTP " + c.getResponseCode());
@@ -844,7 +856,25 @@ public class MainActivity extends Activity {
         recView.setVisibility(View.GONE);
         raiz.setBackgroundColor(p.fondo);
         marco.setBackgroundColor(p.fondo);
-        construirRaiz(datos != null ? datos.distribucionAhora() : "clasica");
+        String dist = datos != null ? datos.distribucionAhora() : "clasica";
+        try {
+            pintarDistribucion(ahora, hora, dist);
+        } catch (Exception e) {
+            Log.w(TAG, "Falló la distribución " + dist + "; se pone la Clásica", e);
+            try {
+                pintarDistribucion(ahora, hora, "clasica");
+            } catch (Exception e2) {
+                Log.w(TAG, "Falló también la Clásica", e2);
+            }
+        }
+    }
+
+    /** Dibuja la cabecera y el cuerpo con una distribución. Si algo falla, quien la llama vuelve a intentarlo con la Clásica. */
+    static String fallaDePrueba;      // solo para las pruebas: una distribución que se obliga a fallar
+
+    private void pintarDistribucion(Calendar ahora, int hora, String dist) {
+        construirRaiz(dist);
+        if (dist.equals(fallaDePrueba)) throw new IllegalStateException("fallo de prueba");
         tvDia.setTextColor(p.texto);
         tvFecha.setTextColor(p.sub);
         tvH.setTextColor(compactoHora ? p.acentoTexto : p.texto);
@@ -896,6 +926,17 @@ public class MainActivity extends Activity {
         col.addView(v, l);
     }
 
+    /** Una tarjeta con un aviso grande: nunca se deja el cuerpo en blanco si no hay datos. */
+    private View tarjetaAviso(String texto) {
+        LinearLayout t = tarjeta(false);
+        t.setGravity(Gravity.CENTER_VERTICAL);
+        TextView x = texto(76, true);
+        x.setTextColor(p.texto);
+        x.setText(texto);
+        t.addView(x);
+        return t;
+    }
+
     private void pintarCuerpo(Calendar ahora, int hora) {
         colIzq.removeAllViews();
         colDer.removeAllViews();
@@ -913,6 +954,8 @@ public class MainActivity extends Activity {
             x.setText("Falta conectar la pizarra.");
             t.addView(x);
             izq.add(t);
+        } else if (datos == null) {
+            izq.add(tarjetaAviso("Esperando a la pizarra…"));
         } else if (datos != null && noche) {
             boolean deManana = hora >= 12;      // pasada la medianoche, "lo de mañana" ya es lo de hoy
             int nm = datos.verMensajes ? Math.min(2, datos.mensajes.size()) : 0;
@@ -964,6 +1007,8 @@ public class MainActivity extends Activity {
         TextPaint tpnt = new TextPaint(Paint.ANTI_ALIAS_FLAG);
         tpnt.setTypeface(tf);
         int elegido = tamanos[tamanos.length - 1];
+        boolean encontrado = false;
+        int cupo = 0;                                               // el menor tamaño en el que cabe (aunque quede una palabra suelta)
         int anchoElegido = ancho;
         for (int z : tamanos) {
             tpnt.setTextSize(z * s);
@@ -984,12 +1029,19 @@ public class MainActivity extends Activity {
                 w = hi;
                 sl = new StaticLayout(txt, tpnt, w, Layout.Alignment.ALIGN_NORMAL, interlineado, 0, false);
             }
+            cupo = z;
             boolean huerfana = sl.getLineCount() > 1 && sl.getLineWidth(sl.getLineCount() - 1) < w * 0.3f;
             if (!huerfana) {
                 elegido = z;
                 anchoElegido = w;
+                encontrado = true;
                 break;
             }
+        }
+        if (!encontrado && cupo > 0) elegido = cupo;
+        else if (!encontrado) {                                     // ni al mínimo cabe: se recorta por palabras con "…", nunca a mitad de palabra
+            tpnt.setTextSize(elegido * s);
+            tx.setText(TextoAjustado.recortar(txt, tpnt, ancho, Math.max(1, (int) (alto / (elegido * s * interlineado * 1.2f))), alto));
         }
         tx.setTextSize(TypedValue.COMPLEX_UNIT_PX, elegido * s);
         ViewGroup.LayoutParams lt = tx.getLayoutParams();
@@ -1189,7 +1241,9 @@ public class MainActivity extends Activity {
             x.setText("Falta conectar la pizarra.");
             t.addView(x);
             msgs.add(t);
-        } else if (datos != null) {
+        } else if (datos == null) {
+            msgs.add(tarjetaAviso("Esperando a la pizarra…"));
+        } else {
             int nm = datos.verMensajes ? Math.min(maxMsgs, datos.mensajes.size()) : 0;
             for (int i = 0; i < nm; i++) {
                 Datos.Mensaje m = datos.mensajes.get(i);
@@ -1279,7 +1333,11 @@ public class MainActivity extends Activity {
     private View tarjetaProximoCompacto() {
         Datos.Evento e = null;
         for (Datos.Evento x : datos.eventos) if (!x.manana) { e = x; break; }
-        if (e == null) return null;                      // sin nada apuntado hoy, no se enseña
+        boolean deManana = false;
+        if (e == null) {                                  // sin nada apuntado hoy, se enseña lo primero de mañana
+            for (Datos.Evento x : datos.eventos) if (x.manana) { e = x; deManana = true; break; }
+        }
+        if (e == null) return null;
         LinearLayout t = tarjeta(false);
         t.setBackgroundDrawable(caja(p.proximoFondo, 28, p.acentoTexto, 3));
         t.setOrientation(LinearLayout.HORIZONTAL);
@@ -1299,7 +1357,8 @@ public class MainActivity extends Activity {
         TextView hora = texto(44, true);
         hora.setTextColor(p.acentoTexto);
         hora.setMaxLines(2);
-        hora.setText(e.hora.isEmpty() || Texto.aLas(e.hora).isEmpty() ? "Todo el día" : Texto.mayus(Texto.aLas(e.hora)));
+        String cuando = e.hora.isEmpty() || Texto.aLas(e.hora).isEmpty() ? "Todo el día" : Texto.mayus(Texto.aLas(e.hora));
+        hora.setText(deManana ? "Mañana · " + cuando : cuando);
         TextView nombre = texto(56, true);
         nombre.setTextColor(p.texto);
         nombre.setMaxLines(2);

@@ -744,7 +744,8 @@
   function cabecera(titulo, sub) { return sub ? el('p', { class: 'intro' }, sub) : document.createDocumentFragment(); }
   function textoTele() {
     var tv = S.tv || {};
-    return tv.conectada ? 'Conectada ' + hace(tv.ultima) : tv.ultima ? 'Sin conexión ' + hace(tv.ultima) : 'La tele todavía no se ha conectado';
+    var ver = tv.version ? ' · app ' + tv.version : tv.ultima ? ' · app anterior a la 6.0' : '';
+    return tv.conectada ? 'Conectada ' + hace(tv.ultima) + ver : tv.ultima ? 'Sin conexión ' + hace(tv.ultima) + ver : 'La tele todavía no se ha conectado';
   }
   function estadoTV() {
     var tv = S.tv || {};
@@ -2006,10 +2007,13 @@
       document.body.appendChild(i); i.click();
     });
   }
+  var turnoArchivo = 0;      // si se elige otro archivo mientras se prepara el anterior, solo cuenta el último
   function procesarArchivo(f) {
     if (!f) return;
+    var turno = ++turnoArchivo;
     aviso('Preparando…', 'ok');
-    prepararArchivo(f).then(function (r) { dialogoRevisar(r.blob, r.tipo); }, function (e) { errorEn('err-contenido', errorLegible(e)); });
+    prepararArchivo(f).then(function (r) { if (turno === turnoArchivo) dialogoRevisar(r.blob, r.tipo); },
+      function (e) { if (turno === turnoArchivo) errorEn('err-contenido', errorLegible(e)); });
   }
 
   /** Grabar con el micrófono o la cámara del móvil, con cuenta atrás hasta el máximo. */

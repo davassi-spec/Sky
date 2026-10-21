@@ -231,6 +231,77 @@ public class CapturasTest {
         }
     }
 
+
+    /** El caso real de la TV: sin mensajes, un solo evento (de mañana), tiempo y cuenta atrás; en las cuatro distribuciones. */
+    @Test
+    public void casoRealSinMensajesSoloManana() throws Exception {
+        foto();
+        String ev = "[{\"dia\":1,\"titulo\":\"Talleres\",\"hora\":\"12:00\",\"orden\":1}]";
+        String cuenta = "{\"id\":\"c1\",\"texto\":\"Faltan 11 días para Tots Sants\",\"icono\":\"calendario\",\"dias\":11}";
+        for (String d : new String[]{"clasica", "reloj", "lista", "sencillo"}) {
+            captura("r1-" + d + "-calido-caso-real", conDistribucion(json("calido", "", ev, TIEMPO, cuenta), d), 20, 17, 15);
+            captura("r1-" + d + "-calido-solo-la-hora", conDistribucion(json("calido", "", "[]", "null", "null"), d), 20, 17, 15);
+        }
+    }
+
+
+    /** Porcentaje de píxeles del cuerpo (debajo de la cabecera) que no son del color de fondo: si es ~0, la pantalla está en blanco. */
+    private static double contenidoDelCuerpo(File png) {
+        Bitmap b = BitmapFactory.decodeFile(png.getPath());
+        int fondo = b.getPixel(4, 4), n = 0, total = 0;
+        for (int y = 700; y < 1040; y += 4) for (int x = 60; x < 1860; x += 4) { total++; if (b.getPixel(x, y) != fondo) n++; }
+        return 100.0 * n / total;
+    }
+
+    /** Ninguna distribución se queda en blanco: con todo vacío, sin datos, o si una de ellas falla al dibujar. */
+    @Test
+    public void ningunaDistribucionEnBlanco() throws Exception {
+        foto();
+        File dir = new File(System.getProperty("capturas.dir"));
+        String ev = "[{\"dia\":1,\"titulo\":\"Talleres\",\"hora\":\"12:00\",\"orden\":1}]";
+        String cuenta = "{\"id\":\"c1\",\"texto\":\"Faltan 11 días para Tots Sants\",\"icono\":\"calendario\",\"dias\":11}";
+        for (String d : new String[]{"clasica", "reloj", "lista", "sencillo"}) {
+            captura("r2-" + d + "-caso-real", conDistribucion(json("calido", "", ev, TIEMPO, cuenta), d), 20, 17, 15);
+            assertTrue(d + " caso real: el cuerpo no está vacío", contenidoDelCuerpo(new File(dir, "r2-" + d + "-caso-real.png")) > 3);
+            captura("r2-" + d + "-sin-datos", "", 20, 17, 15);
+            assertTrue(d + " sin datos: dice algo", contenidoDelCuerpo(new File(dir, "r2-" + d + "-sin-datos.png")) > 1);
+        }
+        MainActivity.fallaDePrueba = "reloj";
+        try {
+            captura("r2-reloj-que-falla-se-ve-clasica", conDistribucion(json("calido", DANIEL, EV_DIA, TIEMPO, cuenta), "reloj"), 20, 17, 15);
+        } finally {
+            MainActivity.fallaDePrueba = null;
+        }
+        assertTrue("si falla, se ve la Clásica con su contenido", contenidoDelCuerpo(new File(dir, "r2-reloj-que-falla-se-ve-clasica.png")) > 5);
+    }
+
+    /** Nunca se parte una palabra: recordatorios y textos que no caben. */
+    @Test
+    public void palabrasEnterasEnElRecordatorio() throws Exception {
+        foto();
+        String[] frases = {"Toma Medicina Mamá", "Hora de la fisioterapia", "Recuerda llamar a la farmacia", "Anticonstitucionalmente electroencefalografista"};
+        int i = 0;
+        for (String f : frases) {
+            String rec = "{\"id\":\"rec9\",\"clave\":\"rec9|2026-10-20\",\"texto\":\"" + f + "\",\"texto2\":\"\",\"foto\":null,\"confirmar\":true,\"segundos\":600,\"prueba\":false}";
+            for (String e : new String[]{"calido", "lavanda"})
+                captura("r3-" + e + "-recordatorio-" + (++i), json(e, "", EV_DIA, TIEMPO, "null", rec), 20, 17, 15);
+        }
+    }
+
+    @Test
+    public void recortarNuncaParteUnaPalabra() {
+        android.text.TextPaint tp = new android.text.TextPaint();
+        tp.setTextSize(40);
+        int ancho = 400;
+        String r = TextoAjustado.recortar("Hoy viene la prima Maricarmen con los niños a merendar y luego se van al cine todos juntos", tp, ancho, 2, 0);
+        assertTrue(r, r.endsWith("…"));
+        for (String w : r.replace("…", "").trim().split(" ")) assertTrue(w, "Hoy viene la prima Maricarmen con los niños a merendar y luego se van al cine todos juntos".contains(w));
+        assertTrue(new android.text.StaticLayout(r, tp, ancho, android.text.Layout.Alignment.ALIGN_NORMAL, 1f, 0, false).getLineCount() <= 2);
+        String larga = TextoAjustado.recortar("Anticonstitucionalmente", tp, 200, 2, 0);
+        assertTrue(larga, larga.endsWith("…") && tp.measureText(larga) <= 200);
+        assertTrue("lo que cabe no se toca", TextoAjustado.recortar("Toma Medicina", tp, ancho, 2, 0).equals("Toma Medicina"));
+    }
+
     private static String conMedio(String json, String medio) {
         return json.replace("\"version\":2", "\"version\":2,\"rapido\":true,\"medio\":" + medio);
     }

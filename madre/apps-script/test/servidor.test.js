@@ -954,5 +954,19 @@ const JPEG = 'data:image/jpeg;base64,' + Buffer.from('foto-de-prueba').toString(
   t('los calendarios dicen cuál es el principal', calendarios.length === 1 && calendarios[0].principal === false || calendarios.some((c) => 'principal' in c));
 }
 
+/* ---------- Versión de la app de la tele ---------- */
+{
+  const s = crear();
+  t('al principio no se sabe la versión', JSON.parse(J(s.run("admEstado('ADMINKEY')"))).tv.version === '');
+  s.run("doGet({parameter:{k:'ADMINKEY',v:'6.0'}})");
+  t('la tele dice su versión y el panel la recibe', s.run("admEstado('ADMINKEY')").tv.version === '6.0');
+  s.vaciarCache();
+  t('la versión sobrevive a la caché', s.run("admEstado('ADMINKEY')").tv.version === '6.0');
+  s.run("doGet({parameter:{k:'ADMINKEY',v:'<script>x'}})");
+  t('una versión rara se limpia', /^[0-9A-Za-z.\-]*$/.test(s.run("admEstado('ADMINKEY')").tv.version));
+  s.run("doGet({parameter:{k:'ADMINKEY'}})");
+  t('una consulta sin versión no la borra', s.run("admEstado('ADMINKEY')").tv.version !== '');
+}
+
 console.log(bien + ' bien, ' + mal + ' fallos');
 process.exit(mal ? 1 : 0);

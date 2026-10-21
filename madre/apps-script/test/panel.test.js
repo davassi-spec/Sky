@@ -413,6 +413,12 @@ const PRUEBAS = {
     await clic('Borrar la tarea: Viene la asistenta'); await espera(400);
     t('y la tarea', S.datos.rutina.length === 0);
     await clic('Apuntar la visita'); t('sin quién ni qué avisa', toast().length > 0);`,
+  'admin: la versión de la app de la tele junto a "Conectada hace…"': `
+    ir('inicio'); await espera(300);
+    t('si la tele no dice su versión, lo avisa', texto().indexOf('app anterior a la 6.0') >= 0);
+    await rpc('doGet', { parameter: { k: 'ADMINKEY', v: '6.0' } });
+    await llamar('admEstado'); S = await llamar('admEstado'); ir('inicio'); await espera(300);
+    t('con versión, la enseña', texto().indexOf('Conectada') >= 0 && texto().indexOf('app 6.0') >= 0);`,
   'admin: errores junto a lo que falló': `
     ir('mandar'); await espera(100);
     procesarArchivo(new File([new Uint8Array(10)], 'v.mkv', { type: 'video/x-matroska' })); await espera(500);
@@ -420,8 +426,11 @@ const PRUEBAS = {
     t('el error sale justo debajo de las opciones de contenido', !e.hidden && e.textContent.indexOf('no lo entiende') >= 0 && e.closest('section').textContent.indexOf('Añadir una foto') >= 0);
     t('y no tapa nada con un cartel rojo', document.getElementById('aviso').className !== 'error');
     const falso = new File([(() => { const b = new Uint8Array(5000); [0, 0, 0, 24, 102, 116, 121, 112].forEach((x, i) => (b[i] = x)); 'hvc1'.split('').forEach((c, i) => (b[3000 + i] = c.charCodeAt(0))); return b; })()], 'IMG.MOV', { type: 'video/quicktime' });
-    procesarArchivo(falso); await espera(9000);
-    t('un vídeo HEVC explica la solución: Ajustes › Cámara › Formatos › Más compatible', e.textContent.indexOf('Más compatible') >= 0 && e.textContent.indexOf('HEVC') >= 0);
+    procesarArchivo(falso);
+    const msgErr = () => document.getElementById('err-contenido').textContent;      // el panel se repinta solo: se vuelve a buscar el aviso
+    for (let i = 0; i < 60 && msgErr().indexOf('Más compatible') < 0; i++) await espera(500);   // convertir puede tardar un rato variable
+    const okHevc = msgErr().indexOf('Más compatible') >= 0 && msgErr().indexOf('HEVC') >= 0;
+    t('un vídeo HEVC explica la solución: Ajustes › Cámara › Formatos › Más compatible' + (okHevc ? '' : ' [salió: ' + msgErr() + ']'), okHevc);
     e.querySelector('button').click(); t('y se cierra con Cerrar', e.hidden === true);
     t('hay otro sitio para los errores del micrófono, junto al micrófono', !!document.getElementById('err-mic') && document.getElementById('err-mic').closest('section').querySelector('#mic') !== null);`,
   'nombres con mayúscula inicial': `
