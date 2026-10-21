@@ -65,6 +65,44 @@ final class Fotos {
         for (File x : todos) if (x.getName().startsWith(pref) && !x.equals(actual)) x.delete();
     }
 
+    /** Ancho y alto de la foto guardada, o null si no está. */
+    static int[] dimensiones(Context c, String id, int version) {
+        if (id.isEmpty() || version <= 0) return null;
+        File f = archivo(c, id, version);
+        if (!f.exists()) return null;
+        BitmapFactory.Options o = new BitmapFactory.Options();
+        o.inJustDecodeBounds = true;
+        BitmapFactory.decodeFile(f.getPath(), o);
+        return o.outWidth > 0 ? new int[]{o.outWidth, o.outHeight} : null;
+    }
+
+    /** La foto entera (sin recortar) a w x h px, con las esquinas redondeadas. Se pide con la proporción de la foto. */
+    static Bitmap redondeada(Context c, String id, int version, int w, int h, float radio) {
+        if (id.isEmpty() || version <= 0 || w <= 0 || h <= 0) return null;
+        File f = archivo(c, id, version);
+        if (!f.exists()) return null;
+        BitmapFactory.Options o = new BitmapFactory.Options();
+        o.inJustDecodeBounds = true;
+        BitmapFactory.decodeFile(f.getPath(), o);
+        int muestreo = 1;
+        while (o.outWidth / (muestreo * 2) >= w && o.outHeight / (muestreo * 2) >= h) muestreo *= 2;   // se lee ya reducida: poca memoria en Android 5.1
+        o = new BitmapFactory.Options();
+        o.inSampleSize = muestreo;
+        Bitmap src = BitmapFactory.decodeFile(f.getPath(), o);
+        if (src == null) return null;
+        Bitmap out = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
+        Canvas cv = new Canvas(out);
+        Paint p = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG);
+        BitmapShader sh = new BitmapShader(src, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP);
+        android.graphics.Matrix m = new android.graphics.Matrix();
+        m.setScale(w / (float) src.getWidth(), h / (float) src.getHeight());
+        sh.setLocalMatrix(m);
+        p.setShader(sh);
+        cv.drawRoundRect(new android.graphics.RectF(0, 0, w, h), radio, radio, p);
+        src.recycle();
+        return out;
+    }
+
     /** La foto recortada en círculo, del tamaño pedido, o null si no está. */
     static Bitmap circulo(Context c, String autor, int version, int tam) {
         if (autor.isEmpty() || version <= 0 || tam <= 0) return null;
