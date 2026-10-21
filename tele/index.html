@@ -1886,15 +1886,23 @@
     var K4 = 4 * 1024 * 1024, n = archivo.size;
     return leer(archivo.slice(0, Math.min(n, K4))).then(function (a) { return a || (n > K4 ? leer(archivo.slice(Math.max(K4, n - K4), n)) : false); });
   }
+  /**
+   * Duración del vídeo en segundos. Si el móvil no llega a leerla (el iPhone no carga vídeos "de fondo" con el ahorro de
+   * batería o si el elemento no está en la página) devuelve NaN en lugar de fallar: solo falla si el móvil dice que no puede
+   * abrir el vídeo.
+   */
   function duracionVideo(archivo) {
     return new Promise(function (ok, ko) {
-      var url = URL.createObjectURL(archivo), v = document.createElement('video');
-      v.preload = 'metadata'; v.muted = true; v.setAttribute('playsinline', '');
-      var fin = function (f) { URL.revokeObjectURL(url); f(); };
+      var url = URL.createObjectURL(archivo), v = document.createElement('video'), fuera = false;
+      v.preload = 'metadata'; v.muted = true; v.setAttribute('playsinline', ''); v.setAttribute('muted', '');
+      v.style.cssText = 'position:fixed;left:-9999px;top:0;width:2px;height:2px;opacity:0;pointer-events:none';
+      var fin = function (f) { if (fuera) return; fuera = true; clearTimeout(t); URL.revokeObjectURL(url); try { v.removeAttribute('src'); v.load(); if (v.parentNode) v.parentNode.removeChild(v); } catch (e) { /* ya está */ } f(); };
       v.onloadedmetadata = function () { var d = v.duration; fin(function () { ok(d); }); };
       v.onerror = function () { fin(function () { ko(new Error('x')); }); };
+      var t = setTimeout(function () { fin(function () { ok(NaN); }); }, 6000);
+      document.body.appendChild(v);                      // en la página, el iPhone sí carga los datos del vídeo
       v.src = url;
-      setTimeout(function () { fin(function () { ko(new Error('x')); }); }, 8000);
+      try { v.load(); } catch (e) { /* sin load */ }
     });
   }
   var AYUDA_HEVC = 'Ese vídeo está en formato HEVC (el de los iPhone recientes) y la tele no lo entiende, y este móvil no ha podido convertirlo. En el iPhone: Ajustes › Cámara › Formatos › "Más compatible", y vuelve a grabarlo. O grábalo desde aquí con "Grabar vídeo".';
