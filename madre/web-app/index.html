@@ -2088,7 +2088,7 @@
       var galeria = el('button', { class: 'btn suave', type: 'button', onclick: function () { soltar(); cerrarDialogo(); pedirArchivo(tipo === 'video' ? 'video/*' : 'audio/*', tipo === 'video' ? 'user' : null).then(procesarArchivo); } },
         icono('camara'), tipo === 'video' ? 'Usar la cámara del móvil' : 'Elegir un audio del móvil');
       empezar.replaceWith(galeria);
-      if (!EN_APP) msg.after(botonAbrirApp());
+      if (!EN_APP && !EN_IFRAME) msg.after(botonAbrirApp());       // en el iframe de Google el botón ya está en el diálogo
     };
     empezar.onclick = function () {
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || mime === null) { alternativa('Este navegador no deja grabar desde aquí. Puedes usar lo que ya tengas en el móvil.'); return; }
@@ -2117,8 +2117,8 @@
         }, 1000);
       }, function (e) {
         alternativa(e && /Denied|NotAllowed|Permission/i.test(e.name + e.message)
-          ? 'No hay permiso para el ' + (tipo === 'video' ? 'cámara y micrófono' : 'micrófono') + '. Actívalo en los ajustes del navegador, o usa lo que ya tengas en el móvil.'
-          : 'No se ha podido usar el ' + (tipo === 'video' ? 'cámara y micrófono' : 'micrófono') + ' desde aquí. Puedes usar lo que ya tengas en el móvil.');
+          ? 'No hay permiso para ' + (tipo === 'video' ? 'la cámara y el micrófono' : 'el micrófono') + '. Actívalo en los ajustes del navegador, o usa lo que ya tengas en el móvil.'
+          : 'No se ha podido usar ' + (tipo === 'video' ? 'la cámara y el micrófono' : 'el micrófono') + ' desde aquí. Puedes usar lo que ya tengas en el móvil.');
       });
     };
     parar.onclick = function () { if (rec && rec.state === 'recording') rec.stop(); };
