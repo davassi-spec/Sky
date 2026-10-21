@@ -664,5 +664,34 @@ const JPEG = 'data:image/jpeg;base64,' + Buffer.from('foto-de-prueba').toString(
   t('lo programado cuenta en la lista de la TV hasta que salga (el panel lo marca)', todos().filter((m) => m.desde && m.desde * 1000 > hoy(17, 15)).length >= 3);
 }
 
+/* ---------- 19. "Visto en la tele a las…" y duración de los envíos ---------- */
+{
+  const s = crear({ ahora: new Date(2026, 9, 20, 18, 2).getTime() });
+  s.run("admFamiliaAnadir('ADMINKEY','Ana')"); const ka = s.run('leer_().familia[0].clave');
+  s.run(`admEnviar(${J(ka)}, '', 'Hoy comemos juntos', 'hoy', null)`);
+  const m = () => s.run('leer_().mensajes[0]');
+  s.run("vistaPreviaTV_(leer_())"); s.run("admCapturaTV('ADMINKEY', 0)");
+  t('mirar la vista previa en el panel no cuenta como visto en la tele', !m().visto);
+  s.run("servir_({parameter:{a:'estado',k:'ADMINKEY'}})");
+  const v1 = m().visto;
+  t('cuando la TV lo recibe, se apunta la hora', v1 && Math.abs(v1 * 1000 - new Date(2026, 9, 20, 18, 2).getTime()) < 5000);
+  s.fijar(new Date(2026, 9, 20, 19, 0).getTime()); s.run("servir_({parameter:{a:'estado',k:'ADMINKEY'}})");
+  t('y no se cambia después (es la primera vez que se vio)', m().visto === v1);
+  t('el familiar ve esa hora en lo suyo', s.run(`admEstado(${J(ka)})`).mensajes[0].visto === v1);
+  // duración de los envíos
+  const sube = (k, meta, n) => { const { id } = s.run(`admMedioNuevo(${J(k)}, ${J(meta)})`); s.run(`admMedioParte(${J(k)}, ${J(id)}, 0, ${J(Buffer.alloc(n, 1).toString('base64'))})`); s.run(`admMedioFin(${J(k)}, ${J(id)})`); return id; };
+  sube(ka, { tipo: 'audio', mime: 'audio/wav', bytes: 44 + 32000 * 32, partes: 1, seg: 99 }, 44 + 32000 * 32);
+  sube(ka, { tipo: 'video', mime: 'video/mp4', bytes: 5000, partes: 1, seg: 27.6 }, 5000);
+  const l = s.run(`admEstado(${J(ka)})`).medios.lista;
+  t('un audio WAV dice su duración por su tamaño (0:32)', l.find((x) => x.tipo === 'audio').seg === 32);
+  t('un vídeo, la que midió el móvil', l.find((x) => x.tipo === 'video').seg === 28);
+  const id = l[0].id;
+  s.run(`admMedioReproducir(${J(ka)}, ${J(id)}, 0)`);
+  const o = s.run(`leer_().repro.orden`);
+  s.run(`servir_({parameter:{a:'medioEstado',k:'ADMINKEY',o:${J(String(o))},e:'reproduciendo'}})`);
+  const l2 = s.run(`admEstado(${J(ka)})`).medios.lista.find((x) => x.id === id);
+  t('y cuando se pone en la tele, queda cuándo y quién', l2.vistoT > 0 && l2.puso === 'Ana');
+}
+
 console.log(bien + ' bien, ' + mal + ' fallos');
 process.exit(mal ? 1 : 0);

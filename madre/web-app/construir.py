@@ -57,7 +57,7 @@ ARRANQUE = r'''<script>
   /* Manifiesto con el enlace completo como dirección de inicio: así el icono de Android (Chrome) abre ya con su clave. A pantalla completa. */
   try {
     var m = { name: 'La tele de mamá', short_name: 'La tele de mamá', start_url: location.href, scope: envoltorio, display: 'fullscreen',
-      display_override: ['fullscreen', 'standalone'], orientation: 'portrait', background_color: '#F4F1FA', theme_color: '#5B4A9E',
+      display_override: ['fullscreen', 'standalone'], orientation: 'portrait', background_color: '#F2F2F7', theme_color: '#F2F2F7',
       icons: [{ src: new URL('iconos/icono-192.png', location.href).href, sizes: '192x192', type: 'image/png' },
         { src: new URL('iconos/icono-512.png', location.href).href, sizes: '512x512', type: 'image/png' },
         { src: new URL('iconos/icono-maskable-512.png', location.href).href, sizes: '512x512', type: 'image/png', purpose: 'maskable' }] };

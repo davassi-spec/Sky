@@ -4,204 +4,268 @@
 <base target="_top">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#5B4A9E">
+<meta name="theme-color" content="#F2F2F7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
 <title>La tele de mamá</title>
 <style>
-  /* Panel de la pizarra. Móvil primero (390 px), botones de al menos 48 px, claro y oscuro. */
+  /* Panel de la pizarra: estilo de los Ajustes del iPhone (listas agrupadas), letra del sistema y un solo acento azul. Claro y oscuro según el móvil. */
   :root {
-    --fondo: #E6EAF7; --fondo2: #ECE6F7;
-    --tarjeta: #FFFFFF; --tarjeta2: #F4F2FB;
-    --texto: #202235; --sub: #565874; --borde: #D6D3E8;
-    --primario: #5B4A9E; --sobre: #FFFFFF; --suave: #E9E4F7; --suave-texto: #4A3B88;
-    --peligro: #B3261E; --peligro-fondo: #FBE9E7; --ok: #1B6E45; --ok-fondo: #E4F3EA;
-    --aviso: #8A5A00; --aviso-fondo: #FBF0D9;
-    --sombra: 0 1px 2px rgba(32,34,53,.08), 0 6px 18px rgba(32,34,53,.06);
+    --fondo: #F2F2F7; --tarjeta: #FFFFFF; --tarjeta2: #F2F2F7; --barra: rgba(249,249,251,.88);
+    --texto: #000000; --sub: #6C6C70; --borde: #E1E1E6;
+    --primario: #0A66D6; --boton: #0A66D6; --sobre: #FFFFFF; --suave: #E7F0FC; --suave-texto: #0A66D6;
+    --peligro: #C9170B; --peligro-fondo: #FCEBE9; --ok: #1E7B34; --ok-fondo: #E5F4E9;
+    --aviso: #8A5A00; --aviso-fondo: #FBF0D9; --verde: #34C759;
     color-scheme: light;
   }
   @media (prefers-color-scheme: dark) {
     :root:not([data-tema="claro"]) {
-      --fondo: #12121C; --fondo2: #1A1730;
-      --tarjeta: #1F2033; --tarjeta2: #272943; --texto: #EEEAF7; --sub: #B9B7CF; --borde: #3A3B58;
-      --primario: #B3A6EF; --sobre: #14131F; --suave: #34315A; --suave-texto: #DCD5FA;
-      --peligro: #FF9C93; --peligro-fondo: #3C2220; --ok: #86D8AB; --ok-fondo: #1D3328;
-      --aviso: #F0C874; --aviso-fondo: #3A301A; --sombra: 0 1px 2px rgba(0,0,0,.4); color-scheme: dark;
+      --fondo: #000000; --tarjeta: #1C1C1E; --tarjeta2: #2C2C2E; --barra: rgba(28,28,30,.88);
+      --texto: #FFFFFF; --sub: #A1A1A8; --borde: #38383A;
+      --primario: #4C9AFF; --suave: #112A4A; --suave-texto: #7DB6FF;
+      --peligro: #FF8A80; --peligro-fondo: #3A1E1C; --ok: #7BD890; --ok-fondo: #17301D;
+      --aviso: #F0C874; --aviso-fondo: #3A301A; color-scheme: dark;
     }
   }
   :root[data-tema="oscuro"] {
-    --fondo: #12121C; --fondo2: #1A1730;
-    --tarjeta: #1F2033; --tarjeta2: #272943; --texto: #EEEAF7; --sub: #B9B7CF; --borde: #3A3B58;
-    --primario: #B3A6EF; --sobre: #14131F; --suave: #34315A; --suave-texto: #DCD5FA;
-    --peligro: #FF9C93; --peligro-fondo: #3C2220; --ok: #86D8AB; --ok-fondo: #1D3328;
-    --aviso: #F0C874; --aviso-fondo: #3A301A; --sombra: 0 1px 2px rgba(0,0,0,.4); color-scheme: dark;
+    --fondo: #000000; --tarjeta: #1C1C1E; --tarjeta2: #2C2C2E; --barra: rgba(28,28,30,.88);
+    --texto: #FFFFFF; --sub: #A1A1A8; --borde: #38383A;
+    --primario: #4C9AFF; --suave: #112A4A; --suave-texto: #7DB6FF;
+    --peligro: #FF8A80; --peligro-fondo: #3A1E1C; --ok: #7BD890; --ok-fondo: #17301D;
+    --aviso: #F0C874; --aviso-fondo: #3A301A; color-scheme: dark;
   }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-  html { background: var(--fondo); }
+  html { background: var(--fondo); -webkit-text-size-adjust: 100%; }
   body {
-    margin: 0; min-height: 100vh; color: var(--texto);
-    background: linear-gradient(165deg, var(--fondo), var(--fondo2));
-    font: 17px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-    padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px));
+    margin: 0; min-height: 100vh; color: var(--texto); background: var(--fondo);
+    font: 17px/1.35 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, system-ui, sans-serif;
+    padding-top: calc(52px + env(safe-area-inset-top, 0px));
+    padding-bottom: calc(76px + env(safe-area-inset-bottom, 0px));
   }
-  main { max-width: 520px; margin: 0 auto; padding: 16px max(16px, env(safe-area-inset-left, 0px)) 24px max(16px, env(safe-area-inset-right, 0px)); }
+  main { max-width: 560px; margin: 0 auto; padding: 8px max(16px, env(safe-area-inset-left, 0px)) 24px max(16px, env(safe-area-inset-right, 0px)); }
   h1, h2, h3, p { margin: 0; }
-  .marca { font-weight: 700; font-size: 20px; padding-top: 4px; display: flex; align-items: center; justify-content: space-between; }
-  h1 { font-size: 32px; line-height: 1.1; letter-spacing: -.01em; margin-top: 8px; }
-  .sub { color: var(--sub); margin-top: 6px; }
-  h2 { font-size: 19px; margin-bottom: 12px; }
   button, input, select, textarea { font: inherit; color: inherit; }
   :focus-visible { outline: 3px solid var(--primario); outline-offset: 2px; }
+  [hidden] { display: none !important; }
 
-  .tarjeta { background: var(--tarjeta); border: 1px solid var(--borde); border-radius: 20px; padding: 18px 16px; margin-top: 16px; box-shadow: var(--sombra); }
-  .tarjeta > h2:first-child { margin-top: 0; }
-  label.eti { display: block; font-weight: 600; margin: 14px 0 6px; }
+  /* barra de arriba y de abajo */
+  #barra { position: fixed; top: 0; left: 0; right: 0; z-index: 30; padding-top: env(safe-area-inset-top, 0px); background: var(--barra);
+    -webkit-backdrop-filter: saturate(180%) blur(20px); backdrop-filter: saturate(180%) blur(20px); border-bottom: .5px solid var(--borde); }
+  #barra .in { max-width: 560px; margin: 0 auto; height: 52px; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; padding: 0 max(8px, env(safe-area-inset-left, 0px)); }
+  #barra .t { font-weight: 600; font-size: 17px; text-align: center; }
+  #barra .izq { justify-self: start; } #barra .der { justify-self: end; }
+  .atras, .icono-barra { display: inline-flex; align-items: center; gap: 2px; min-height: 48px; min-width: 48px; padding: 0 8px; background: none; border: 0; color: var(--primario); font-size: 17px; cursor: pointer; }
+  .icono-barra { justify-content: center; } .icono-barra svg { width: 26px; height: 26px; }
+  .atras svg { width: 22px; height: 22px; }
+  .nav { position: fixed; left: 0; right: 0; bottom: 0; z-index: 30; background: var(--barra); -webkit-backdrop-filter: saturate(180%) blur(20px); backdrop-filter: saturate(180%) blur(20px);
+    border-top: .5px solid var(--borde); padding: 4px max(8px, env(safe-area-inset-left, 0px)) calc(4px + env(safe-area-inset-bottom, 0px)); }
+  .nav ul { list-style: none; margin: 0 auto; padding: 0; max-width: 560px; display: grid; grid-template-columns: repeat(3, 1fr); }
+  .nav button { width: 100%; min-height: 52px; border: 0; background: none; color: var(--sub); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; font-size: 11px; font-weight: 500; cursor: pointer; }
+  .nav button[aria-current="page"] { color: var(--primario); }
+  .nav svg { width: 26px; height: 26px; }
+
+  /* secciones y listas agrupadas */
+  .seccion { margin-top: 24px; }
+  .seccion:first-child { margin-top: 8px; }
+  .seccion-t { font-size: 13px; text-transform: uppercase; color: var(--sub); padding: 0 16px 6px; letter-spacing: .02em; display: flex; justify-content: space-between; align-items: center; }
+  .seccion-p { font-size: 13px; color: var(--sub); padding: 6px 16px 0; }
+  .insignia { background: var(--tarjeta2); color: var(--sub); border-radius: 10px; padding: 0 8px; font-size: 13px; min-width: 22px; text-align: center; }
+  .grupo, .tarjeta { background: var(--tarjeta); border-radius: 12px; overflow: hidden; }
+  .tarjeta { padding: 16px; margin-top: 16px; }
+  .tarjeta > h2:first-child { font-size: 13px; text-transform: uppercase; color: var(--sub); font-weight: 400; letter-spacing: .02em; margin: 0 0 10px; }
+  .fl { display: flex; align-items: center; gap: 12px; min-height: 52px; padding: 8px 16px; width: 100%; background: none; border: 0; text-align: left; color: inherit; position: relative; }
+  .fl + .fl::before, .item + .item::before { content: ""; position: absolute; top: 0; left: 16px; right: 0; border-top: .5px solid var(--borde); }
+  button.fl { cursor: pointer; }
+  .fl .t { flex: 1; min-width: 0; }
+  .fl .t small { display: block; font-size: 14px; color: var(--sub); }
+  .fl .ico { width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; color: var(--primario); flex: none; }
+  .fl .ico svg { width: 24px; height: 24px; }
+  .fl .valor { color: var(--sub); }
+  .fl .flecha, .flecha { color: var(--sub); width: 18px; height: 18px; flex: none; opacity: .7; }
+  .fl select { width: auto; max-width: 62%; min-height: 44px; margin-left: auto; padding: 0 4px; background: none; border: 0; color: var(--sub); text-align: right; text-align-last: right; -webkit-appearance: none; appearance: none; font-size: 17px; }
+  .fl input[type=text], .fl input[type=time] { width: auto; flex: 1; min-height: 44px; padding: 0; background: none; border: 0; text-align: right; color: var(--primario); font-size: 17px; }
+  .fl input::placeholder { color: var(--sub); }
+
+  label.eti { display: block; font-size: 13px; text-transform: uppercase; color: var(--sub); margin: 14px 0 6px; }
   label.eti:first-child { margin-top: 0; }
-  input[type=text], input[type=tel], input[type=date], input[type=time], input[type=email], select, textarea {
-    width: 100%; min-height: 48px; padding: 11px 14px; background: var(--tarjeta2); border: 2px solid var(--borde); border-radius: 12px;
+  input[type=text], input[type=tel], input[type=date], input[type=time], input[type=email], input[type=url], select, textarea {
+    width: 100%; min-height: 48px; padding: 10px 12px; background: var(--tarjeta2); border: 0; border-radius: 10px;
   }
+  .grupo textarea, .grupo .caja { background: none; border-radius: 0; padding: 14px 16px 4px; min-height: 120px; }
   textarea { min-height: 112px; resize: vertical; }
-  .contador { text-align: right; color: var(--sub); font-size: 14px; margin-top: 4px; }
-  .ayuda { color: var(--sub); font-size: 15px; margin-top: 8px; }
+  textarea:focus-visible, input:focus-visible { outline-offset: -2px; }
+  .contador { color: var(--sub); font-size: 13px; }
+  .ayuda { color: var(--sub); font-size: 14px; margin-top: 8px; }
+  .sub, .intro { color: var(--sub); font-size: 14px; padding: 0 16px; margin-top: 4px; }
 
-  .btn { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; min-height: 52px; padding: 12px 18px; border: 0; border-radius: 14px; font-weight: 700; cursor: pointer; background: var(--primario); color: var(--sobre); }
+  /* botones */
+  .btn { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; min-height: 50px; padding: 12px 18px; border: 0; border-radius: 12px; font-weight: 600; cursor: pointer; background: var(--boton); color: #fff; }
   .btn.suave { background: var(--suave); color: var(--suave-texto); }
-  .btn.borde { background: transparent; color: var(--texto); border: 2px solid var(--borde); }
-  .btn.peligro { background: var(--peligro); color: #fff; }
-  .btn:disabled { opacity: .55; cursor: default; }
+  .btn.borde { background: transparent; color: var(--primario); border: 1.5px solid var(--primario); }
+  .btn.peligro { background: var(--peligro-fondo); color: var(--peligro); }
+  .btn:disabled { opacity: .5; cursor: default; }
   .btn svg { width: 22px; height: 22px; flex: none; }
   .btn + .btn { margin-top: 10px; }
   .fila { display: flex; gap: 10px; }
   .fila > * { flex: 1; min-width: 0; }
   .fila > .btn { margin-top: 0; }
-  .enlace { background: none; border: 0; min-height: 48px; padding: 0 8px; font-weight: 600; color: var(--primario); text-decoration: underline; cursor: pointer; }
+  .enlace { background: none; border: 0; min-height: 48px; padding: 0 10px; font-weight: 500; color: var(--primario); cursor: pointer; }
   .enlace.peligro { color: var(--peligro); }
+  .pastilla { min-height: 48px; padding: 0 18px; border-radius: 24px; border: 0; background: var(--peligro-fondo); color: var(--peligro); font-weight: 600; cursor: pointer; }
+  .pastilla.azul { background: var(--suave); color: var(--suave-texto); }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; padding: 10px 16px 14px; }
+  .chip { min-height: 44px; padding: 8px 14px; border-radius: 22px; border: 0; background: var(--suave); color: var(--suave-texto); cursor: pointer; }
+  .segmentos { display: grid; grid-template-columns: 1fr 1fr; background: var(--tarjeta2); border-radius: 10px; padding: 2px; gap: 2px; margin-top: 8px; }
+  .segmentos button { min-height: 44px; border-radius: 8px; border: 0; background: none; font-weight: 500; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; }
+  .segmentos button[aria-pressed="true"] { background: var(--tarjeta); box-shadow: 0 1px 2px rgba(0,0,0,.15); font-weight: 600; }
+  .segmentos svg { width: 18px; height: 18px; }
 
-  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
-  .chip { min-height: 44px; padding: 8px 14px; border-radius: 999px; border: 1.5px solid var(--borde); background: var(--tarjeta2); cursor: pointer; }
-  .segmentos { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 14px; }
-  .segmentos button { min-height: 52px; border-radius: 14px; border: 2px solid transparent; background: var(--tarjeta); font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: var(--sombra); }
-  .segmentos button[aria-pressed="true"] { background: var(--primario); color: var(--sobre); }
-  .segmentos svg { width: 20px; height: 20px; }
+  .estado { display: inline-flex; align-items: center; gap: 10px; }
+  .punto { width: 10px; height: 10px; border-radius: 50%; background: var(--sub); flex: none; display: inline-block; }
+  .punto.on { background: var(--verde); }
+  .punto.off { background: #D9453B; }
+  .punto.esp { background: #E0A100; }
 
-  .estado { display: inline-flex; align-items: center; gap: 10px; margin-top: 10px; font-size: 17px; }
-  .punto { width: 14px; height: 14px; border-radius: 50%; background: var(--sub); flex: none; }
-  .punto.on { background: #2EAE62; box-shadow: 0 0 0 4px rgba(46,174,98,.22); }
-  .punto.off { background: #D9534F; }
+  /* lo que se ve ahora en la tele */
+  .ahora { padding: 12px; }
+  .miniatura { border-radius: 8px; overflow: hidden; position: relative; background: #000; }
+  .miniatura .pantalla { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; transform-origin: 0 0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; font-weight: 700; overflow: hidden; }
+  .captura { width: 100%; display: block; border-radius: 8px; aspect-ratio: 16 / 9; background: #000; }
+  .ahora + .grupo { margin-top: 8px; }
+  .controles { display: grid; grid-template-columns: 1fr 1fr 1.5fr; gap: 8px; margin-top: 10px; }
+  .controles > * { min-height: 56px; border: 0; border-radius: 12px; background: var(--tarjeta2); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; font-size: 13px; color: var(--texto); cursor: pointer; }
+  .controles button:disabled { opacity: .4; cursor: default; }
+  .controles svg { width: 22px; height: 22px; }
+  .controles .quitar { color: var(--peligro); background: var(--peligro-fondo); }
+  .controles .vol { flex-direction: row; justify-content: space-between; padding: 0 4px; cursor: default; }
+  .controles .vol button { border: 0; min-width: 48px; min-height: 52px; background: none; flex-direction: row; font-size: 24px; color: var(--primario); }
+  .estado-repro { display: flex; align-items: center; gap: 10px; }
 
+  /* filas con avatar */
   .lista { display: flex; flex-direction: column; }
-  .item { display: flex; gap: 12px; align-items: flex-start; padding: 14px 0; border-top: 1px solid var(--borde); }
-  .item:first-child { border-top: 0; padding-top: 0; }
+  .item { display: flex; gap: 12px; align-items: flex-start; padding: 12px 16px; position: relative; }
   .item .cuerpo { flex: 1; min-width: 0; }
-  .item .quien { font-size: 15px; color: var(--sub); }
-  .item .texto { font-weight: 700; font-size: 19px; overflow-wrap: anywhere; }
+  .item .quien { font-weight: 600; display: flex; justify-content: space-between; gap: 8px; }
+  .item .quien .hora { color: var(--sub); font-weight: 400; font-size: 14px; }
+  .item .texto { overflow-wrap: anywhere; }
   .item .meta { font-size: 14px; color: var(--sub); margin-top: 2px; }
-  .item .acciones { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 2px; }
-  .avatar { width: 48px; height: 48px; border-radius: 50%; background: var(--suave); color: var(--suave-texto); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 22px; flex: none; overflow: hidden; }
+  .item .acciones { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 4px; justify-content: flex-end; }
+  .tarjeta .item { padding-left: 0; padding-right: 0; }
+  .tarjeta .item + .item::before { left: 0; }
+  .avatar { width: 44px; height: 44px; border-radius: 50%; background: var(--suave); color: var(--suave-texto); display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 20px; flex: none; overflow: hidden; }
   .avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
-  .avatar.grande { width: 64px; height: 64px; font-size: 28px; }
-  .vacio { color: var(--sub); }
+  .avatar.grande { width: 60px; height: 60px; font-size: 26px; }
+  .avatar svg { width: 22px; height: 22px; }
+  .estado-pila { display: inline-block; padding: 1px 10px; border-radius: 12px; font-size: 13px; background: var(--ok-fondo); color: var(--ok); font-weight: 500; }
+  .estado-pila.gris { background: var(--tarjeta2); color: var(--sub); }
+  .estado-pila.azul { background: var(--suave); color: var(--suave-texto); }
+  .programado { color: var(--primario); font-weight: 500; }
+  .vacio { color: var(--sub); padding: 14px 16px; }
+  .dia-t { font-size: 13px; text-transform: uppercase; color: var(--sub); padding: 18px 16px 6px; }
 
-  .menu { padding: 4px 0; }
-  .menu button { display: flex; align-items: center; gap: 14px; width: 100%; min-height: 60px; padding: 8px 4px; background: none; border: 0; border-top: 1px solid var(--borde); text-align: left; cursor: pointer; }
-  .menu button:first-child { border-top: 0; }
-  .menu .ico { width: 40px; height: 40px; border-radius: 12px; background: var(--suave); color: var(--suave-texto); display: flex; align-items: center; justify-content: center; flex: none; }
-  .menu .ico svg { width: 22px; height: 22px; }
-  .menu .t { flex: 1; font-weight: 700; }
-  .menu .t small { display: block; font-weight: 400; color: var(--sub); font-size: 14px; }
-  .menu .flecha { color: var(--sub); width: 20px; height: 20px; }
-  .atras { display: inline-flex; align-items: center; gap: 6px; min-height: 48px; padding: 0 6px 0 0; background: none; border: 0; font-weight: 700; color: var(--primario); cursor: pointer; }
-  .atras svg { width: 22px; height: 22px; }
+  .mic { width: 56px; height: 56px; border-radius: 50%; border: 0; background: var(--boton); color: #fff; display: flex; align-items: center; justify-content: center; flex: none; cursor: pointer;
+    touch-action: none; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+  .mic svg { width: 26px; height: 26px; }
+  .mic.grabando { background: #D9453B; transform: scale(1.12); }
+  .compositor-pie { display: flex; align-items: center; gap: 12px; padding: 4px 16px 12px; }
+  .compositor-pie .t { flex: 1; font-size: 13px; color: var(--sub); }
+  #nota { position: fixed; left: 12px; right: 12px; bottom: calc(80px + env(safe-area-inset-bottom, 0px)); z-index: 45; max-width: 536px; margin: 0 auto; border-radius: 16px; background: var(--tarjeta); padding: 14px 16px;
+    box-shadow: 0 6px 24px rgba(0,0,0,.25); display: flex; align-items: center; gap: 12px; }
+  #nota .rojo { width: 14px; height: 14px; border-radius: 50%; background: #D9453B; animation: lat 1s infinite; flex: none; }
+  #nota b { font-variant-numeric: tabular-nums; font-size: 20px; }
+  #nota span { color: var(--sub); font-size: 14px; }
+  #nota.cancelar { background: var(--peligro-fondo); }
+  @keyframes lat { 50% { opacity: .25; } }
 
-  .interruptor { display: flex; align-items: center; gap: 12px; min-height: 60px; padding: 6px 0; border-top: 1px solid var(--borde); }
-  .interruptor:first-child { border-top: 0; }
-  .interruptor .ico { width: 38px; height: 38px; border-radius: 12px; background: var(--suave); color: var(--suave-texto); display: flex; align-items: center; justify-content: center; flex: none; }
-  .interruptor .ico svg { width: 21px; height: 21px; }
-  .interruptor .t { flex: 1; font-weight: 700; min-width: 0; }
-  .interruptor .t small { display: block; font-weight: 400; color: var(--sub); font-size: 14px; }
+  .envio { position: sticky; bottom: calc(60px + env(safe-area-inset-bottom, 0px)); z-index: 5; margin: 20px -16px 0; padding: 10px 16px 12px; background: var(--fondo); }
+  .envio .btn { min-height: 54px; font-size: 17px; }
+
+  /* interruptores y ajustes antiguos (Pantalla, Recordatorios, Familia, Ajustes) */
+  .menu { padding: 0; }
+  .menu button { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 54px; padding: 8px 16px; background: none; border: 0; text-align: left; cursor: pointer; position: relative; }
+  .menu button + button::before { content: ""; position: absolute; top: 0; left: 16px; right: 0; border-top: .5px solid var(--borde); }
+  .menu .ico { width: 30px; height: 30px; color: var(--primario); display: flex; align-items: center; justify-content: center; flex: none; }
+  .menu .ico svg { width: 24px; height: 24px; }
+  .menu .t { flex: 1; } .menu .t small { display: block; color: var(--sub); font-size: 14px; }
+  .menu .flecha { color: var(--sub); width: 18px; height: 18px; opacity: .7; }
+  .tarjeta.menu { padding: 0; margin-top: 16px; }
+  .interruptor { display: flex; align-items: center; gap: 12px; min-height: 56px; padding: 6px 0; position: relative; }
+  .interruptor + .interruptor::before, .bloque + .bloque::before { content: ""; position: absolute; top: 0; left: 0; right: 0; border-top: .5px solid var(--borde); }
+  .interruptor .ico { width: 28px; height: 28px; color: var(--primario); display: flex; align-items: center; justify-content: center; flex: none; }
+  .interruptor .ico svg { width: 22px; height: 22px; }
+  .interruptor .t { flex: 1; min-width: 0; }
+  .interruptor .t small { display: block; color: var(--sub); font-size: 14px; }
   .sw { position: relative; width: 56px; height: 48px; border: 0; background: none; padding: 0; cursor: pointer; flex: none; }
-  .sw::before { content: ""; position: absolute; left: 0; top: 8px; width: 56px; height: 32px; border-radius: 16px; background: var(--borde); transition: background .15s; }
-  .sw::after { content: ""; position: absolute; left: 4px; top: 12px; width: 24px; height: 24px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.3); transition: transform .15s; }
-  .sw[aria-checked="true"]::before { background: var(--primario); }
-  .sw[aria-checked="true"]::after { transform: translateX(24px); }
-
+  .sw::before { content: ""; position: absolute; left: 3px; top: 9px; width: 51px; height: 31px; border-radius: 16px; background: #C7C7CC; transition: background .15s; }
+  .sw::after { content: ""; position: absolute; left: 5px; top: 11px; width: 27px; height: 27px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.3); transition: transform .15s; }
+  .sw[aria-checked="true"]::before { background: var(--verde); }
+  .sw[aria-checked="true"]::after { transform: translateX(20px); }
+  .bloque { padding: 10px 0; position: relative; }
+  .bloque-t { display: flex; gap: 12px; align-items: center; }
+  .bloque-t .ico { width: 28px; height: 28px; color: var(--primario); display: flex; align-items: center; justify-content: center; flex: none; }
+  .bloque-t .ico svg { width: 22px; height: 22px; }
+  .bloque-t .t { flex: 1; min-width: 0; } .bloque-t .t small { display: block; color: var(--sub); font-size: 14px; }
+  .bloque-c { display: flex; justify-content: flex-end; align-items: center; gap: 8px; margin-top: 4px; }
   .estilos { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 10px; }
-  .estilo { border: 3px solid transparent; border-radius: 16px; padding: 0; background: none; cursor: pointer; text-align: center; font-weight: 700; }
+  .estilo { border: 2px solid transparent; border-radius: 12px; padding: 0; background: none; cursor: pointer; text-align: center; font-weight: 500; }
   .estilo[aria-pressed="true"] { border-color: var(--primario); }
-  .estilo .mini { display: block; height: 66px; border-radius: 12px 12px 0 0; padding: 8px; position: relative; overflow: hidden; }
+  .estilo .mini { display: block; height: 66px; border-radius: 10px 10px 0 0; padding: 8px; position: relative; overflow: hidden; }
   .estilo .mini i { display: block; height: 22px; border-radius: 6px; margin-bottom: 5px; }
   .estilo .mini b { position: absolute; left: 10px; bottom: 6px; font-size: 18px; line-height: 1; }
   .estilo .mini u { position: absolute; right: 10px; bottom: 9px; width: 24px; height: 8px; border-radius: 4px; }
-  [hidden] { display: none !important; }
-  .ayuda-icono { margin-top: 12px; font-size: 16px; }
-  .ayuda-icono summary { cursor: pointer; font-weight: 700; color: var(--suave-texto); min-height: 44px; display: flex; align-items: center; }
-  .ayuda-icono p { margin: 8px 0 0; }
-  .programado { color: var(--suave-texto); font-weight: 700; }
-  .barra-subida { height: 10px; border-radius: 5px; background: var(--borde); overflow: hidden; margin-top: 10px; --pct: 0%; }
-  .barra-subida::after { content: ''; display: block; height: 100%; width: var(--pct); background: var(--primario); transition: width .3s; }
-  .cuenta-grab { font-size: 22px; font-weight: 800; text-align: center; margin: 12px 0 4px; }
-  .estado-repro { display: flex; align-items: center; gap: 10px; font-size: 20px; }
-  .punto.esp { background: #E0A100; }
+  .estilo span { display: block; padding: 8px 4px; background: var(--tarjeta2); border-radius: 0 0 10px 10px; font-size: 15px; }
   .dists { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
-  .dist { border: 3px solid transparent; border-radius: 16px; padding: 0; background: var(--tarjeta2); cursor: pointer; text-align: center; font-weight: 700; overflow: hidden; }
+  .dist { border: 2px solid transparent; border-radius: 12px; padding: 0; background: var(--tarjeta2); cursor: pointer; text-align: center; font-weight: 500; overflow: hidden; }
   .dist[aria-pressed="true"] { border-color: var(--primario); }
   .dist img { display: block; width: 100%; height: auto; }
   .dist span { display: block; padding: 8px 4px; font-size: 15px; }
-  .estilo span { display: block; padding: 8px 4px; background: var(--tarjeta2); border-radius: 0 0 12px 12px; font-size: 15px; }
 
-  .bloque { padding: 10px 0; border-top: 1px solid var(--borde); }
-  .bloque:first-of-type { border-top: 0; padding-top: 0; }
-  .bloque-t { display: flex; gap: 12px; align-items: center; }
-  .bloque-t .ico { width: 38px; height: 38px; border-radius: 12px; background: var(--suave); color: var(--suave-texto); display: flex; align-items: center; justify-content: center; flex: none; }
-  .bloque-t .ico svg { width: 21px; height: 21px; }
-  .bloque-t .t { font-weight: 700; flex: 1; min-width: 0; }
-  .bloque-t .t small { display: block; font-weight: 400; color: var(--sub); font-size: 14px; }
-  .bloque-c { display: flex; justify-content: flex-end; align-items: center; gap: 8px; margin-top: 4px; }
-  .nav { position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; background: var(--tarjeta); border-top: 1px solid var(--borde); padding: 6px max(8px, env(safe-area-inset-left, 0px)) calc(6px + env(safe-area-inset-bottom, 0px)); }
-  .nav ul { list-style: none; margin: 0 auto; padding: 0; max-width: 520px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
-  .nav button { width: 100%; min-height: 56px; border: 0; border-radius: 14px; background: none; color: var(--sub); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; font-size: 13px; font-weight: 600; cursor: pointer; }
-  .nav button[aria-current="page"] { background: var(--suave); color: var(--suave-texto); }
-  .nav svg { width: 24px; height: 24px; }
+  .ayuda-icono { margin-top: 12px; font-size: 16px; }
+  .ayuda-icono summary { cursor: pointer; font-weight: 500; color: var(--primario); min-height: 44px; display: flex; align-items: center; }
+  .ayuda-icono p { margin: 8px 0 0; }
+  .barra-subida { height: 8px; border-radius: 4px; background: var(--tarjeta2); overflow: hidden; margin-top: 10px; --pct: 0%; }
+  .barra-subida::after { content: ''; display: block; height: 100%; width: var(--pct); background: var(--primario); transition: width .3s; }
+  .cuenta-grab { font-size: 22px; font-weight: 700; text-align: center; margin: 12px 0 4px; }
 
-  #aviso { position: fixed; left: 16px; right: 16px; bottom: calc(92px + env(safe-area-inset-bottom, 0px)); z-index: 40; max-width: 488px; margin: 0 auto; padding: 14px 16px; border-radius: 14px; font-weight: 600; display: none; box-shadow: var(--sombra); }
-  #aviso.ok { display: block; background: var(--ok-fondo); color: var(--ok); border: 1px solid var(--ok); }
-  #aviso.error { display: block; background: var(--peligro-fondo); color: var(--peligro); border: 1px solid var(--peligro); }
-  .velo { position: fixed; inset: 0; z-index: 50; background: rgba(10,10,25,.55); display: flex; align-items: flex-end; justify-content: center; padding: 16px; }
-  .dialogo { width: 100%; max-width: 480px; background: var(--tarjeta); border-radius: 22px; padding: 20px 18px; margin-bottom: env(safe-area-inset-bottom, 0px); }
-  .dialogo h2 { margin-bottom: 6px; }
+  #aviso { position: fixed; left: 16px; right: 16px; bottom: calc(84px + env(safe-area-inset-bottom, 0px)); z-index: 60; max-width: 528px; margin: 0 auto; padding: 12px 16px; border-radius: 14px; font-weight: 500; display: none; box-shadow: 0 4px 16px rgba(0,0,0,.2); }
+  #aviso.ok { display: block; background: var(--tarjeta); color: var(--texto); border: .5px solid var(--borde); }
+  #aviso.error { display: block; background: var(--peligro-fondo); color: var(--peligro); }
+  .velo { position: fixed; inset: 0; z-index: 50; background: rgba(0,0,0,.4); display: flex; align-items: flex-end; justify-content: center; padding: 12px; }
+  .dialogo { width: 100%; max-width: 480px; background: var(--tarjeta); border-radius: 16px; padding: 18px 16px; margin-bottom: env(safe-area-inset-bottom, 0px); max-height: 92vh; overflow: auto; }
+  .dialogo h2 { font-size: 17px; font-weight: 600; margin-bottom: 6px; }
   .dialogo .fila { margin-top: 16px; }
+  .dialogo .sub { padding: 0; }
 
-  .miniatura { margin-top: 12px; border-radius: 14px; overflow: hidden; position: relative; border: 1px solid var(--borde); background: #000; }
-  .miniatura .pantalla { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; transform-origin: 0 0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; font-weight: 700; overflow: hidden; }
-  .previa-cuenta { display: flex; align-items: center; gap: 14px; padding: 14px 16px; border-radius: 14px; background: var(--suave); margin-top: 8px; font-weight: 700; }
-  .previa-cuenta .ico { width: 48px; height: 48px; border-radius: 12px; background: var(--primario); color: var(--sobre); display: flex; align-items: center; justify-content: center; flex: none; }
-  .previa-cuenta .ico svg { width: 26px; height: 26px; }
-  .iconos { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
-  .iconos button { min-height: 60px; border-radius: 14px; border: 3px solid transparent; background: var(--tarjeta2); color: var(--suave-texto); cursor: pointer; display: flex; align-items: center; justify-content: center; }
+  .previa-cuenta { display: flex; align-items: center; gap: 14px; padding: 12px 14px; border-radius: 12px; background: var(--suave); margin-top: 8px; font-weight: 600; }
+  .previa-cuenta .ico { width: 44px; height: 44px; border-radius: 10px; background: var(--primario); color: #fff; display: flex; align-items: center; justify-content: center; flex: none; }
+  .previa-cuenta .ico svg { width: 24px; height: 24px; }
+  .iconos { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .iconos button { min-height: 56px; border-radius: 12px; border: 2px solid transparent; background: var(--tarjeta2); color: var(--suave-texto); cursor: pointer; display: flex; align-items: center; justify-content: center; }
   .iconos button[aria-pressed="true"] { border-color: var(--primario); }
-  .iconos svg { width: 28px; height: 28px; }
+  .iconos svg { width: 26px; height: 26px; }
   .pista { display: flex; gap: 10px; align-items: flex-start; padding: 12px; border-radius: 12px; background: var(--aviso-fondo); color: var(--aviso); font-size: 15px; margin-top: 12px; }
   .dias { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
-  .dias button { min-height: 52px; border-radius: 12px; border: 2px solid var(--borde); background: var(--tarjeta2); font-weight: 700; cursor: pointer; }
-  .dias button[aria-pressed="true"] { background: var(--primario); color: var(--sobre); border-color: var(--primario); }
-  .foto-rec { width: 100%; height: 200px; border-radius: 14px; background: var(--tarjeta2); border: 2px dashed var(--borde); display: flex; align-items: center; justify-content: center; color: var(--sub); overflow: hidden; margin-top: 8px; }
+  .dias button { min-height: 48px; border-radius: 10px; border: 0; background: var(--tarjeta2); font-weight: 600; cursor: pointer; }
+  .dias button[aria-pressed="true"] { background: var(--boton); color: #fff; }
+  .foto-rec { width: 100%; height: 200px; border-radius: 12px; background: var(--tarjeta2); border: 1.5px dashed var(--borde); display: flex; align-items: center; justify-content: center; color: var(--sub); overflow: hidden; }
   .foto-rec img { width: 100%; height: 100%; object-fit: contain; display: block; background: #000; }
-  .mini-foto { width: 56px; height: 56px; border-radius: 12px; background: var(--suave); color: var(--suave-texto); display: flex; align-items: center; justify-content: center; flex: none; overflow: hidden; }
+  .mini-foto { width: 52px; height: 52px; border-radius: 10px; background: var(--suave); color: var(--suave-texto); display: flex; align-items: center; justify-content: center; flex: none; overflow: hidden; }
   .mini-foto img { width: 100%; height: 100%; object-fit: cover; display: block; }
-  .mini-foto svg { width: 26px; height: 26px; }
-  .rec-cuerpo { background: none; border: 0; padding: 0; text-align: left; cursor: pointer; min-height: 56px; }
-  .hora-grande { font-size: 26px; font-weight: 800; line-height: 1.1; }
+  .mini-foto svg { width: 24px; height: 24px; }
+  .rec-cuerpo { background: none; border: 0; padding: 0; text-align: left; cursor: pointer; min-height: 52px; }
+  .hora-grande { font-size: 24px; font-weight: 700; line-height: 1.1; }
   .pendiente { border: 2px solid var(--primario); }
-  .pendiente .texto { font-size: 22px; font-weight: 800; overflow-wrap: anywhere; }
-  .recorte { position: relative; width: 280px; height: 280px; margin: 14px auto 6px; border-radius: 50%; overflow: hidden; touch-action: none; background: #000; cursor: grab; box-shadow: 0 0 0 4px var(--primario); }
+  .pendiente .texto { font-size: 20px; font-weight: 700; overflow-wrap: anywhere; }
+  .recorte { position: relative; width: 280px; height: 280px; margin: 14px auto 6px; border-radius: 50%; overflow: hidden; touch-action: none; background: #000; cursor: grab; box-shadow: 0 0 0 3px var(--primario); }
   .recorte canvas { width: 100%; height: 100%; display: block; }
   input[type=range] { width: 100%; min-height: 48px; accent-color: var(--primario); }
-  .captura { width: 100%; display: block; border-radius: 14px; border: 1px solid var(--borde); margin-top: 12px; aspect-ratio: 16 / 9; background: #000; }
   .oculto-visual { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
-  @media (prefers-reduced-motion: reduce) { .sw::before, .sw::after { transition: none; } }
+  @media (prefers-reduced-motion: reduce) { .sw::before, .sw::after { transition: none; } #nota .rojo { animation: none; } }
 </style>
 </head>
 <body>
+<header id="barra"></header>
 <main id="app"><p class="vacio" style="padding-top:40px">Cargando…</p></main>
-<nav class="nav" id="nav" aria-label="Secciones" hidden><ul id="nav-lista"></ul></nav>
+<nav class="nav" id="nav" aria-label="Secciones"><ul id="nav-lista"></ul></nav>
 <div id="aviso" role="status"></div>
 <div id="capa"></div>
 
@@ -253,7 +317,7 @@
     pantalla: '<rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/>',
     reloj: '<circle cx="12" cy="13" r="8"/><path d="M12 9v4l3 2M9 3h6"/>',
     familia: '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.6-4 3.2-6 6.5-6s5.9 2 6.5 6M16 5.2a3.3 3.3 0 0 1 0 5.6M18 14.3c2 .7 3.2 2.5 3.5 5.7"/>',
-    ajustes: '<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/>',
+    ajustes: '<circle cx="12" cy="12" r="3.2"/><path d="M19.4 13.5a7.6 7.6 0 0 0 0-3l1.8-1.4-1.8-3.1-2.1.8a7.5 7.5 0 0 0-2.6-1.5L14.4 3h-3.6l-.3 2.3a7.5 7.5 0 0 0-2.6 1.5l-2.1-.8-1.8 3.1L6.4 10.5a7.6 7.6 0 0 0 0 3l-1.8 1.4 1.8 3.1 2.1-.8a7.5 7.5 0 0 0 2.6 1.5l.3 2.3h3.6l.3-2.3a7.5 7.5 0 0 0 2.6-1.5l2.1.8 1.8-3.1z"/>',
     enviar: '<path d="M21 3L3 10.5l7 2.5 2.5 7z"/><path d="M10 13l11-10"/>',
     atras: '<path d="M15 5l-7 7 7 7"/>',
     flecha: '<path d="M9 5l7 7-7 7"/>',
@@ -271,6 +335,7 @@
     campana: '<path d="M6 17h12l-1.5-2.2V10a4.5 4.5 0 0 0-9 0v4.8zM10 20a2 2 0 0 0 4 0"/>',
     papelera: '<path d="M5 7h14M10 7V4h4v3M7 7l1 13h8l1-13"/>',
     copiar: '<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/>',
+    galeria: '<rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="9" cy="10" r="1.8"/><path d="M4 18l5-5 4 4 3-3 4 4"/>',
     video: '<rect x="2" y="6" width="14" height="12" rx="2"/><path d="M16 10.5l6-3.5v10l-6-3.5"/>',
     sonido: '<path d="M4 9.5v5h3.5L12 18.5v-13L7.5 9.5zM15.5 9a4 4 0 0 1 0 6M18 6.5a8 8 0 0 1 0 11"/>',
     micro: '<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/>',
@@ -618,20 +683,38 @@
   }
 
   /* ============================== piezas comunes ============================== */
-  function cabecera(titulo, sub, atras) {
-    var c = el('div', {});
-    if (atras) c.appendChild(el('button', { class: 'atras', type: 'button', onclick: function () { ir(atras); } }, icono('atras'), 'Atrás'));
-    else c.appendChild(el('div', { class: 'marca' }, 'Pizarra'));
-    c.appendChild(el('h1', {}, titulo));
-    if (sub) c.appendChild(el('p', { class: 'sub' }, sub));
-    return c;
+  /** El título y el botón de volver los pone la barra de arriba; aquí solo queda, si hay, la frase de ayuda. */
+  function cabecera(titulo, sub) { return sub ? el('p', { class: 'intro' }, sub) : document.createDocumentFragment(); }
+  function textoTele() {
+    var tv = S.tv || {};
+    return tv.conectada ? 'Conectada ' + hace(tv.ultima) : tv.ultima ? 'Sin conexión ' + hace(tv.ultima) : 'La tele todavía no se ha conectado';
   }
   function estadoTV() {
     var tv = S.tv || {};
-    var txt = tv.conectada ? 'Conectada ' + hace(tv.ultima) : tv.ultima ? 'Sin conexión ' + hace(tv.ultima) : 'La tele todavía no se ha conectado';
-    return el('div', { class: 'estado' }, el('span', { class: 'punto ' + (tv.conectada ? 'on' : 'off'), 'aria-hidden': 'true' }),
-      el('span', {}, tv.conectada ? el('b', {}, 'Conectada') : null, tv.conectada ? ' ' + hace(tv.ultima) : txt));
+    return el('div', { class: 'estado' }, el('span', { class: 'punto ' + (tv.conectada ? 'on' : 'off'), 'aria-hidden': 'true' }), el('span', {}, textoTele()));
   }
+  /** Una fila de lista agrupada: icono, título, subtítulo, valor y flecha. Si lleva onclick es un botón. */
+  function fila(o) {
+    var c = el(o.onclick ? 'button' : 'div', { class: 'fl' + (o.clase ? ' ' + o.clase : ''), type: o.onclick ? 'button' : null, id: o.id || null, onclick: o.onclick || null, 'aria-label': o.aria || null },
+      o.icono ? el('span', { class: 'ico' }, typeof o.icono === 'string' ? icono(o.icono) : o.icono) : null,
+      o.punto ? el('span', { class: 'punto ' + o.punto, 'aria-hidden': 'true' }) : null,
+      el('div', { class: 't' }, o.titulo, o.sub ? el('small', {}, o.sub) : null),
+      o.valor ? el('span', { class: 'valor' }, o.valor) : null, o.extra || null, o.flecha ? icono('flecha', 'flecha') : null);
+    return c;
+  }
+  function grupo(filas, id) { var g = el('div', { class: 'grupo', id: id || null }); filas.forEach(function (f) { if (f) g.appendChild(f); }); return g; }
+  function seccion(titulo, contenido, pie, insignia) {
+    return el('section', { class: 'seccion' }, titulo ? el('div', { class: 'seccion-t' }, el('span', {}, titulo), insignia !== undefined && insignia !== null ? el('span', { class: 'insignia' }, String(insignia)) : null) : null,
+      contenido, pie ? el('div', { class: 'seccion-p' }, pie) : null);
+  }
+  function hora(t) { var f = new Date(t * 1000); return f.getHours() + ':' + dos(f.getMinutes()); }
+  function etiquetaDia(t) {
+    var f = new Date(t * 1000), n = new Date();
+    if (mismoDia(f, n)) return 'Hoy';
+    if (mismoDia(f, new Date(n.getTime() - 86400000))) return 'Ayer';
+    return f.getDate() + ' de ' + MESES[f.getMonth()];
+  }
+  function duracionTxt(s) { s = Math.round(s || 0); return Math.floor(s / 60) + ':' + dos(s % 60); }
   function interruptor(texto, sub, icon, marcado, alCambiar, extra) {
     var sw = el('button', { class: 'sw', type: 'button', role: 'switch', 'aria-checked': marcado ? 'true' : 'false', 'aria-label': texto, onclick: function () {
       var nuevo = sw.getAttribute('aria-checked') !== 'true'; sw.setAttribute('aria-checked', nuevo ? 'true' : 'false'); alCambiar(nuevo);
@@ -641,17 +724,29 @@
   }
 
   /* ============================== navegación ============================== */
-  var PESTANAS = [['inicio', 'Inicio', 'inicio'], ['mensajes', 'Mensajes', 'mensajes'], ['mas', 'Más', 'mas']];
-  var PADRE = { medios: 'mas', pantalla: 'mas', recordatorios: 'mas', recordatorio: 'mas', cuentas: 'mas', cuenta: 'mas', familia: 'mas', ajustes: 'mas' };
+  var PESTANAS = [['inicio', 'Inicio', 'inicio'], ['mandar', 'Mandar', 'enviar'], ['enviados', 'Enviados', 'reloj']];
+  var TITULOS = { inicio: 'Inicio', mandar: 'Mandar', enviados: 'Enviados', gestion: 'Gestión', pantalla: 'Pantalla', cuentas: 'Cuentas atrás', cuenta: 'Cuenta atrás',
+    recordatorios: 'Recordatorios', recordatorio: 'Recordatorio', familia: 'Familia', ajustes: 'Ajustes' };
+  var PADRE = { gestion: 'inicio', pantalla: 'gestion', cuentas: 'gestion', cuenta: 'cuentas', recordatorios: 'gestion', recordatorio: 'recordatorios', familia: 'gestion', ajustes: 'gestion' };
+  var filtroEnv = 'todos';
+  var previaPedida = false;
   function ir(v) {
     if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+    if (ROL === 'familia' && PADRE[v]) v = 'inicio';             // Pantalla, Familia y Ajustes son solo del administrador
     vista = v; if (PESTANAS.some(function (p) { return p[0] === v; })) guardarLocal('vista', v);
     pintar(); window.scrollTo(0, 0);
   }
+  function pintarBarra() {
+    var b = $('barra'); b.innerHTML = '';
+    var padre = PADRE[vista], izq = null, der = null;
+    if (padre) izq = el('button', { class: 'atras', type: 'button', onclick: function () { ir(padre); } }, icono('atras'), TITULOS[padre]);
+    else if (ROL === 'admin') der = el('button', { class: 'icono-barra', type: 'button', 'aria-label': 'Gestión y ajustes', onclick: function () { ir('gestion'); } }, icono('ajustes'));
+    b.appendChild(el('div', { class: 'in' }, el('div', { class: 'izq' }, izq), el('h1', { class: 't', style: 'margin:0' }, TITULOS[vista] || ''), el('div', { class: 'der' }, der)));
+  }
   function pintarNav() {
     var nav = $('nav'), ul = $('nav-lista');
-    nav.hidden = ROL !== 'admin'; ul.innerHTML = '';
-    var actual = PADRE[vista] || vista;
+    nav.hidden = false; ul.innerHTML = '';
+    var actual = PESTANAS.some(function (p) { return p[0] === vista; }) ? vista : 'inicio';
     PESTANAS.forEach(function (p) {
       var b = el('button', { type: 'button', 'aria-current': actual === p[0] ? 'page' : null, onclick: function () { ir(p[0]); } }, icono(p[2]), p[1]);
       ul.appendChild(el('li', {}, b));
@@ -663,169 +758,322 @@
     var anterior = window.scrollY;
     MINIS = [];
     app.innerHTML = '';
-    var fn = ROL === 'familia' ? vistaFamiliar : ({ inicio: vistaInicio, mensajes: vistaMensajes, mas: vistaMas, pantalla: vistaPantalla,
-      cuentas: vistaCuentas, cuenta: vistaCuenta, medios: vistaMedios, recordatorios: vistaRecordatorios, recordatorio: vistaRecordatorio, familia: vistaFamilia, ajustes: vistaAjustes })[vista] || vistaInicio;
-    app.appendChild(fn());
-    pintarNav();
+    var vistas = { inicio: vistaInicio, mandar: vistaMandar, enviados: vistaEnviados, gestion: vistaGestion, pantalla: vistaPantalla, cuentas: vistaCuentas, cuenta: vistaCuenta,
+      recordatorios: vistaRecordatorios, recordatorio: vistaRecordatorio, familia: vistaFamilia, ajustes: vistaAjustes };
+    app.appendChild((vistas[vista] || vistaInicio)());
+    pintarBarra(); pintarNav();
     window.scrollTo(0, anterior);
     app.querySelectorAll('.miniatura').forEach(function (m) { if (m._ajustar) m._ajustar(); });
     if ($('vista-tv')) arrancarCaptura();
   }
 
+  /* ============================== datos comunes de las tres pantallas ============================== */
+  function medios() { return S.medios || { lista: [], repro: null }; }
+  /** Lo que hay que enseñar como "ahora en la tele": la vista real si la hay y, si no, una aproximada. */
+  function vistaDeLaTele() {
+    if (ROL === 'admin') { var m = modoActual(); return { vista: S.vista, modo: m.modo, estilo: m.estilo, prueba: m.prueba }; }
+    if (!previa) return null;
+    var mp = modoDePrevia(previa); return { vista: previa.vista, modo: mp.modo, estilo: mp.estilo, prueba: mp.prueba };
+  }
+  function mensajesEnLaTele() { var v = ROL === 'admin' ? S.vista : (previa && previa.vista); return (v && v.mensajes) || []; }
+  function misMensajes() { return ROL === 'admin' ? S.datos.mensajes : (S.mensajes || []); }
+  function autorDe(m) {
+    if (ROL === 'familia') return { id: S.miId, tieneFoto: !!S.tieneFoto };
+    return autorInfo(m);
+  }
+  function autorInfo(m) {
+    if (m.autor && m.autor !== 'admin' && S.datos) { var f = S.datos.familia.filter(function (x) { return x.id === m.autor; })[0]; if (f) return { id: f.id, tieneFoto: f.tieneFoto }; }
+    return { id: null, tieneFoto: false };
+  }
+
   /* ============================== Inicio ============================== */
-  function vistaInicio() {
-    var d = S.datos, v = S.vista, w = document.createDocumentFragment();
-    var m = modoActual();
-    w.appendChild(cabecera('La tele de mamá'));
-    w.appendChild(estadoTV());
-    (S.pendientes || []).forEach(function (p) { w.appendChild(tarjetaPendiente(p)); });
-    var hechos = (d.recordatorios || []).filter(function (r) { return r.confirmadoHoy; });
-    if (hechos.length) {
-      var th = el('div', { class: 'tarjeta', id: 'confirmados' }, el('h2', {}, 'Confirmados hoy'));
-      hechos.forEach(function (r) { th.appendChild(el('div', { class: 'item' }, el('span', { class: 'avatar' }, icono('campana')),
-        el('div', { class: 'cuerpo' }, el('div', { class: 'texto' }, r.texto), el('div', { class: 'meta', style: 'color:var(--ok);font-weight:600' }, textoConfirmado(r))))); });
-      w.appendChild(th);
+  function textoEstadoRepro(r) {
+    return r.estado === 'esperando' ? 'Esperando a la TV…' : r.estado === 'reproduciendo' ? (r.tipo === 'foto' ? 'En la tele ahora' : 'Reproduciendo') :
+      r.estado === 'terminado' ? 'Terminado' : r.estado === 'caducado' ? 'La tele no ha contestado a tiempo' : 'No se ha podido poner';
+  }
+  function pendienteRepro(r) { return r && (r.estado === 'esperando' || r.estado === 'reproduciendo'); }
+  function ordenTele(cmd, ok) {
+    return function (e) {
+      var r = medios().repro; if (!r) return;
+      accion('admMedioControl', [r.orden, cmd], ok || null, e.currentTarget).then(function () { sondearMedios(); }, function () { sondearMedios(); });
+    };
+  }
+  function bloqueAhora() {
+    var vt = vistaDeLaTele(), M = medios(), r = M.repro, pend = pendienteRepro(r), reciente = r && (pend || Date.now() - r.t < 600000);
+    var caja = el('div', { class: 'grupo ahora' });
+    if (vt) caja.appendChild(vistaTV(vt.vista, vt.modo, vt.estilo));
+    else { caja.appendChild(el('p', { class: 'vacio', style: 'padding:6px 4px' }, 'Cargando la pantalla de la tele…')); if (!previaPedida) { previaPedida = true; cargarPrevia(true); } }
+    if (vt && vt.prueba) caja.appendChild(el('p', { class: 'ayuda' }, 'Se está probando un estilo: la tele vuelve sola al suyo en menos de un minuto.'));
+    var msgs = mensajesEnLaTele();
+    var suyos = msgs.filter(function (x) { return ROL === 'admin' || x.autor === S.miId; });
+    var quitar = el('button', { class: 'quitar', type: 'button', disabled: !(pend || suyos.length), onclick: function (e) {
+      if (pend) ordenTele('parar', 'La tele vuelve a la pizarra')(e);
+      else if (suyos[0]) accion('admBorrar', [suyos[0].id], 'Mensaje quitado de la tele', e.currentTarget);
+    } }, icono('papelera'), 'Quitar');
+    var repetir = el('button', { type: 'button', disabled: !r || (pend && r.tipo === 'foto'), onclick: function (e) {
+      if (pend) ordenTele('repetir', 'Se repite')(e);
+      else accion('admMedioReproducir', [r.id, r.tipo === 'foto' ? minFoto : 0], 'Mandado a la tele', e.currentTarget).then(sondearMedios);
+    } }, icono('repetir'), 'Repetir');
+    var suena = pend && r.tipo !== 'foto';
+    var volumen = el('div', { class: 'vol' }, el('button', { type: 'button', disabled: !suena, 'aria-label': 'Bajar el volumen', onclick: ordenTele('bajar') }, '−'),
+      el('span', { style: 'display:flex;flex-direction:column;align-items:center' }, icono('sonido'), 'Volumen'),
+      el('button', { type: 'button', disabled: !suena, 'aria-label': 'Subir el volumen', onclick: ordenTele('subir') }, '+'));
+    caja.appendChild(el('div', { class: 'controles' }, quitar, repetir, volumen));
+    var que = [];
+    if (reciente) {
+      que.push(fila({ id: 'repro', punto: r.estado === 'reproduciendo' ? 'on' : r.estado === 'esperando' ? 'esp' : 'off', titulo: nombreMedio(r),
+        sub: textoEstadoRepro(r) + (r.estado === 'error' && r.error ? ': ' + r.error : r.estado === 'esperando' ? '. La tele lo recoge en unos segundos.' : '') }));
+    } else if (msgs[0]) {
+      que.push(fila({ icono: 'mensajes', titulo: msgs[0].texto, sub: 'De ' + (msgs[0].de || 'alguien') + ' · se está viendo ahora en la tele' }));
+    } else que.push(fila({ icono: 'pantalla', titulo: 'No hay nada puesto en la tele', sub: 'Se ve la pizarra con la hora y el día.' }));
+    return el('div', {}, caja, grupo(que));
+  }
+  function filaCola(m) {
+    var a = autorDe(m), r = medios().repro, suena = r && r.id === m.id && pendienteRepro(r);
+    var estado = suena ? textoEstadoRepro(r) : m.vistoT ? 'Visto en la tele a las ' + hora(Math.floor(m.vistoT / 1000)) : 'Preparado';
+    var icn = el('span', { style: 'display:inline-flex;vertical-align:-4px;margin-right:4px;color:var(--primario)' }, icono(iconoMedio(m.tipo)));
+    icn.firstChild.setAttribute('width', '18'); icn.firstChild.setAttribute('height', '18');
+    var boton = el('button', { class: 'enlace', type: 'button', style: 'padding-left:0', onclick: function (e) {
+      accion('admMedioReproducir', [m.id, m.tipo === 'foto' ? minFoto : 0], 'Mandado a la tele', e.currentTarget).then(sondearMedios);
+    } }, m.tipo === 'foto' ? 'Mostrar ahora en la TV' : 'Reproducir ahora en la TV');
+    return el('div', { class: 'item' }, avatar(a.id, m.de, a.tieneFoto),
+      el('div', { class: 'cuerpo' }, el('div', { class: 'quien' }, el('span', {}, m.de || 'Tú')), m.texto ? el('div', { class: 'texto' }, m.texto) : null,
+        el('div', { class: 'meta' }, icn, nombreMedio(m) + (m.seg ? ' · ' + duracionTxt(m.seg) : '') + ' · ' + estado), boton));
+  }
+  function bloqueCola() {
+    var lista = medios().lista, g = el('div', { class: 'grupo', id: 'preparados' });
+    if (!lista.length) g.appendChild(el('p', { class: 'vacio' }, 'No hay nada preparado. Graba o añade algo en Mandar.'));
+    lista.forEach(function (m) { g.appendChild(filaCola(m)); });
+    if (lista.some(function (m) { return m.tipo === 'foto'; })) {
+      var sel = el('select', { id: 'tiempo-foto', 'aria-label': 'Cuánto tiempo se ve una foto', onchange: function (e) { minFoto = Number(e.target.value); } },
+        el('option', { value: '1' }, '1 minuto'), el('option', { value: '5' }, '5 minutos'), el('option', { value: '15' }, '15 minutos'), el('option', { value: '0' }, 'Hasta que la quite'));
+      sel.value = String(minFoto);
+      g.appendChild(el('div', { class: 'fl' }, el('div', { class: 't' }, 'Una foto se queda'), sel));
     }
-    var t = el('div', { class: 'tarjeta' }, el('h2', {}, 'Así se ve ahora en la TV'),
-      vistaTV(v, m.modo, m.estilo),
-      m.prueba ? el('p', { class: 'ayuda' }, 'Estás probando un estilo: la tele vuelve sola a su estilo en menos de un minuto.') : null,
-      el('button', { class: 'btn suave', type: 'button', style: 'margin-top:12px', onclick: function () { ir('pantalla'); } }, icono('pantalla'), 'Cambiar lo que se ve'));
-    w.appendChild(t);
-    w.appendChild(el('button', { class: 'btn', type: 'button', style: 'margin-top:16px', onclick: function () { ir('mensajes'); } }, icono('enviar'), 'Escribir un mensaje'));
-    w.appendChild(el('button', { class: 'btn suave', type: 'button', style: 'margin-top:10px', onclick: function () { ir('medios'); } }, icono('video'), 'Mandar audio, vídeo o foto'));
-    var prox = (v.eventos || []).filter(function (e) { return e.dia === 0; })[0];
-    var hh = prox && prox.hora ? prox.hora.split(':') : null;
-    w.appendChild(el('div', { class: 'tarjeta' }, el('h2', {}, 'Lo próximo'),
-      prox ? el('div', { class: 'item' }, el('span', { class: 'avatar' }, icono('calendario')),
-        el('div', { class: 'cuerpo' }, el('div', { class: 'quien' }, hh ? mayus(aLas(Number(hh[0]), Number(hh[1]))) : 'Todo el día'), el('div', { class: 'texto' }, prox.titulo)))
-        : el('p', { class: 'vacio' }, 'Hoy no hay nada apuntado en el calendario.')));
+    return seccion('A continuación', g, 'Nada se pone solo: tú decides cuándo.', lista.length);
+  }
+  function vistaInicio() {
+    var d = S.datos, w = document.createDocumentFragment();
+    (S.pendientes || []).forEach(function (p) { w.appendChild(tarjetaPendiente(p)); });
+    w.appendChild(seccion('La tele de mamá', grupo([fila({ icono: 'pantalla', punto: S.tv && S.tv.conectada ? 'on' : 'off', titulo: textoTele() })])));
+    w.appendChild(seccion('Ahora en la tele', bloqueAhora()));
+    w.appendChild(bloqueCola());
+    if (ROL === 'admin') {
+      var v = S.vista, prox = (v.eventos || []).filter(function (e) { return e.dia === 0; })[0], hh = prox && prox.hora ? prox.hora.split(':') : null;
+      w.appendChild(seccion('Lo próximo', grupo([prox ? fila({ icono: 'calendario', titulo: prox.titulo, sub: hh ? mayus(aLas(Number(hh[0]), Number(hh[1]))) : 'Todo el día' })
+        : fila({ icono: 'calendario', titulo: 'Hoy no hay nada apuntado en el calendario' })])));
+      var hechos = (d.recordatorios || []).filter(function (r) { return r.confirmadoHoy; });
+      if (hechos.length) w.appendChild(seccion('Confirmados hoy', grupo(hechos.map(function (r) { return fila({ icono: 'campana', titulo: r.texto, sub: textoConfirmado(r) }); }), 'confirmados')));
+    }
     return w;
   }
 
-  /* ============================== Mensajes ============================== */
-  function personasConMensajes() {
-    var out = [{ id: 'admin', nombre: 'Tú' }];
-    S.datos.familia.forEach(function (f) { out.push({ id: f.id, nombre: f.nombre }); });
-    return out;
-  }
-  function autorInfo(m) {
-    if (m.autor && m.autor !== 'admin') { var f = S.datos.familia.filter(function (x) { return x.id === m.autor; })[0]; if (f) return { id: f.id, tieneFoto: f.tieneFoto }; }
-    return { id: null, tieneFoto: false };
-  }
-  function vistaMensajes() {
-    var w = document.createDocumentFragment();
-    w.appendChild(cabecera('Mensajes', 'Escribe algo que se verá en la tele.'));
-    // filtro
-    var sel = el('select', { id: 'filtro', 'aria-label': 'Ver mensajes de' }, el('option', { value: 'todas' }, 'Todas las personas'));
-    personasConMensajes().forEach(function (p) { sel.appendChild(el('option', { value: p.id }, p.nombre)); });
-    sel.value = filtroPersona; sel.onchange = function () { filtroPersona = sel.value; pintarListaMensajes(); };
-    w.appendChild(el('div', { style: 'margin-top:14px' }, sel));
-    // pestañas
-    var segs = el('div', { class: 'segmentos', role: 'group', 'aria-label': 'Qué mensajes ver' });
-    [['tv', 'En la TV', 'pantalla'], ['caducados', 'Caducados', 'reloj']].forEach(function (p) {
-      segs.appendChild(el('button', { type: 'button', 'aria-pressed': pestanaMsg === p[0] ? 'true' : 'false', onclick: function () { pestanaMsg = p[0]; pintar(); } }, icono(p[2]), p[1]));
-    });
-    w.appendChild(segs);
-    w.appendChild(componerMensaje());
-    w.appendChild(el('div', { id: 'lista-mensajes' }));
-    setTimeout(pintarListaMensajes, 0);
-    return w;
-  }
-  var FRASES = ['Te queremos mucho.', 'Hoy comemos juntos.', 'Hoy viene alguien a verte.', 'Te llamamos a las seis.'];
-  /** "¿Cuándo se ve?" (ahora o a una hora) y "¿Cuánto tiempo?" (de una hora a hasta que se quite). Lo usan el administrador y la familia. */
+  /* ============================== Mandar ============================== */
   function selectorCuando() {
     var noche = (S && (S.datos ? S.datos.noche : S.noche)) || { desde: 21, hasta: 6 };
-    var aviso_ = el('p', { class: 'ayuda', id: 'aviso-hora', style: 'margin-top:6px' });
+    var aviso_ = null;
     var esDeNoche = function (h) { return noche.desde === noche.hasta ? false : noche.desde < noche.hasta ? (h >= noche.desde && h < noche.hasta) : (h >= noche.desde || h < noche.hasta); };
+    var texto = el('span', { id: 'aviso-hora' });
     var pinta = function () {
-      var hora = $('hora-prog'), dia = $('dia-prog');
+      var hh = $('hora-prog');
       $('fila-hora').hidden = borrador.cuando !== 'hora';
-      var eb = $('enviar-msg'); if (eb && eb.lastChild) eb.lastChild.textContent = borrador.cuando === 'hora' ? 'Programar para la TV' : 'Enviar a la TV';
-      var h = hora && hora.value ? Number(hora.value.split(':')[0]) : null;
-      aviso_.textContent = borrador.cuando !== 'hora' ? '' : h !== null && esDeNoche(h)
+      var h = hh && hh.value ? Number(hh.value.split(':')[0]) : null;
+      texto.textContent = borrador.cuando !== 'hora' ? '' : h !== null && esDeNoche(h)
         ? 'Esa hora es de noche: la tele duerme. Se verá cuando empiece el día (' + dos(noche.hasta) + ':00).' : 'Saldrá en la tele a esa hora (la tele mira cada minuto).';
+      var eb = $('enviar-msg'); if (eb && eb.lastChild) eb.lastChild.textContent = borrador.cuando === 'hora' ? 'Programar para la TV' : 'Enviar a la TV';
     };
-    var cuando = el('select', { id: 'cuando', onchange: function (e) { borrador.cuando = e.target.value; pinta(); } },
+    var cuando = el('select', { id: 'cuando', 'aria-label': '¿Cuándo se ve?', onchange: function (e) { borrador.cuando = e.target.value; pinta(); } },
       el('option', { value: 'ahora' }, 'Ahora'), el('option', { value: 'hora' }, 'A una hora concreta'));
     cuando.value = borrador.cuando;
     var dia = el('select', { id: 'dia-prog', 'aria-label': 'Día', onchange: function (e) { borrador.dia = e.target.value; } }, el('option', { value: 'hoy' }, 'Hoy'), el('option', { value: 'manana' }, 'Mañana'));
     dia.value = borrador.dia;
-    var hora = el('input', { type: 'time', id: 'hora-prog', 'aria-label': 'Hora', value: borrador.hora, oninput: function (e) { borrador.hora = e.target.value; pinta(); }, onchange: function (e) { borrador.hora = e.target.value; pinta(); } });
-    var fila = el('div', { class: 'fila', id: 'fila-hora', style: 'margin-top:8px' }, dia, hora);
-    var dur = el('select', { id: 'duracion', onchange: function (e) { borrador.duracion = e.target.value; } },
-      el('option', { value: '1h' }, 'Una hora'), el('option', { value: '3h' }, 'Tres horas'), el('option', { value: 'hoy' }, 'Solo hoy (se quita a medianoche)'),
-      el('option', { value: 'manana' }, 'Hoy y mañana'), el('option', { value: 'siempre' }, 'Hasta que yo lo quite'));
+    var hora_ = el('input', { type: 'time', id: 'hora-prog', 'aria-label': 'Hora', value: borrador.hora, oninput: function (e) { borrador.hora = e.target.value; pinta(); }, onchange: function (e) { borrador.hora = e.target.value; pinta(); } });
+    var dur = el('select', { id: 'duracion', 'aria-label': '¿Cuánto tiempo se ve?', onchange: function (e) { borrador.duracion = e.target.value; } },
+      el('option', { value: '1h' }, 'Una hora'), el('option', { value: '3h' }, 'Tres horas'), el('option', { value: 'hoy' }, 'Solo hoy'),
+      el('option', { value: 'manana' }, 'Hoy y mañana'), el('option', { value: 'siempre' }, 'Hasta que lo quite'));
     dur.value = borrador.duracion;
     setTimeout(pinta, 0);
-    return [el('label', { class: 'eti', for: 'cuando' }, '¿Cuándo se ve?'), cuando, fila, aviso_, el('label', { class: 'eti', for: 'duracion' }, '¿Cuánto tiempo se ve?'), dur];
+    return {
+      duracion: seccion('¿Cuánto tiempo se ve?', grupo([el('div', { class: 'fl' }, el('div', { class: 't' }, 'Se ve'), dur)]), 'Cuenta desde que sale en la tele. Solo hoy se quita a medianoche.'),
+      cuando: seccion('¿Cuándo?', grupo([el('div', { class: 'fl' }, el('div', { class: 't' }, 'Salir'), cuando),
+        el('div', { class: 'fl', id: 'fila-hora' }, el('div', { class: 't' }, 'A las'), dia, hora_)]), texto)
+    };
   }
-  /** Lo que se manda al script para "cuando" (null = ahora) y el texto de confirmación. */
   function cuandoElegido() {
     if (borrador.cuando !== 'hora') return { valor: null, ok: 'Enviado. Saldrá en la tele en menos de un minuto.' };
     if (!borrador.hora) return { error: 'Elige la hora a la que quieres que salga' };
     return { valor: { dia: borrador.dia, hora: borrador.hora }, ok: 'Programado: saldrá ' + (borrador.dia === 'manana' ? 'mañana' : 'hoy') + ' a las ' + borrador.hora + '.' };
   }
-  function componerMensaje() {
-    var firma = ROL === 'admin' ? [el('label', { class: 'eti', for: 'de' }, 'Firmas como'),
-      el('input', { type: 'text', id: 'de', maxlength: '30', autocomplete: 'off', placeholder: 'Daniel', value: borrador.de || leerLocal('de'),
-        oninput: function (e) { borrador.de = e.target.value; guardarLocal('de', e.target.value); } })] : [];
-    var ta = el('textarea', { id: 'texto', maxlength: '200', placeholder: 'Hoy comemos juntos.', 'aria-describedby': 'cuenta',
-      oninput: function (e) { borrador.texto = e.target.value; $('cuenta').textContent = e.target.value.length + '/200'; } });
-    ta.value = borrador.texto;
-    var chips = el('div', { class: 'chips' });
-    FRASES.forEach(function (f) { chips.appendChild(el('button', { class: 'chip', type: 'button', onclick: function () { ta.value = f; borrador.texto = f; $('cuenta').textContent = f.length + '/200'; ta.focus(); } }, f)); });
-    var sel = selectorCuando();
-    var enviar = el('button', { class: 'btn', type: 'button', id: 'enviar-msg', style: 'margin-top:16px', onclick: function () {
-      var t = borrador.texto.trim(); if (!t) { aviso('Escribe un mensaje', 'error'); return; }
-      var c = cuandoElegido(); if (c.error) { aviso(c.error, 'error'); return; }
-      accion('admEnviar', [borrador.de || leerLocal('de'), t, borrador.duracion, c.valor], c.ok, enviar).then(function () { borrador.texto = ''; pestanaMsg = 'tv'; pintar(); });
-    } }, icono('enviar'), borrador.cuando === 'hora' ? 'Programar para la TV' : 'Enviar a la TV');
-    return el('div', { class: 'tarjeta' }, el('h2', {}, 'Tu mensaje'), firma[0], firma[1], el('label', { class: 'eti', for: 'texto' }, 'Mensaje'), ta,
-      el('div', { class: 'contador', id: 'cuenta' }, borrador.texto.length + '/200'), chips, sel[0], sel[1], sel[2], sel[3], sel[4], sel[5], enviar);
-  }
-  function pintarListaMensajes() {
-    var cont = $('lista-mensajes'); if (!cont || !S || !S.datos) return;
-    var todos = S.datos.mensajes.filter(function (m) { return filtroPersona === 'todas' || (m.autor || 'admin') === filtroPersona; });
-    var lista = todos.filter(function (m) { return pestanaMsg === 'tv' ? activo(m) : !activo(m); }).sort(function (a, b) { return b.t - a.t; });
-    cont.innerHTML = '';
-    var t = el('div', { class: 'tarjeta' }, el('h2', {}, pestanaMsg === 'tv' ? 'En la TV' : 'Caducados'));
-    if (!lista.length) t.appendChild(el('p', { class: 'vacio' }, pestanaMsg === 'tv' ? 'No hay mensajes en la tele.' : 'Todavía no hay mensajes caducados.'));
-    var l = el('div', { class: 'lista' });
-    lista.forEach(function (m) {
-      var a = autorInfo(m);
-      var acc = el('div', { class: 'acciones' });
-      if (pestanaMsg === 'tv') acc.appendChild(el('button', { class: 'enlace peligro', type: 'button', 'aria-label': 'Quitar el mensaje: ' + m.texto, onclick: function () { accion('admBorrar', [m.id], 'Mensaje quitado de la tele'); } }, 'Quitar'));
-      else {
-        acc.appendChild(el('button', { class: 'enlace', type: 'button', onclick: function () { borrador.texto = m.texto; ir('mensajes'); aviso('Texto copiado: elige cuánto tiempo se ve y envía.', 'ok'); } }, 'Usar otra vez'));
-        if (ROL === 'admin') acc.appendChild(el('button', { class: 'enlace peligro', type: 'button', 'aria-label': 'Borrar del historial: ' + m.texto, onclick: function () {
-          confirmar('¿Borrar este mensaje?', 'Se borra del historial y no se puede recuperar.', 'Borrar', true).then(function (si) { if (si) accion('admEliminarDelHistorial', [m.id], 'Mensaje borrado'); });
-        } }, 'Borrar'));
-      }
-      l.appendChild(el('div', { class: 'item' }, avatar(a.id, m.de, a.tieneFoto),
-        el('div', { class: 'cuerpo' }, el('div', { class: 'quien' }, (m.de || 'Mensaje') + ' dice'), el('div', { class: 'texto' }, m.texto),
-          el('div', { class: 'meta' }, programado(m) ? el('span', { class: 'programado' }, textoProgramado(m)) : cuando(m.t) + (pestanaMsg === 'tv' ? ' · ' + hasta(m.hasta) : '')), programado(m) ? el('div', { class: 'meta' }, hasta(m.hasta)) : null, acc)));
+  var FRASES = ['Te queremos mucho.', 'Hoy comemos juntos.', 'Hoy viene alguien a verte.', 'Te llamamos a las seis.'];
+
+  /** El micrófono de mantener pulsado: se graba mientras se pulsa, al soltar se guarda como nota de voz y se desliza a un lado para cancelar. */
+  function ligarMic(btn) {
+    var st = null;
+    var cartel = function (txt, cancelar) {
+      var n = $('nota');
+      if (!n) { n = el('div', { id: 'nota', role: 'status' }, el('span', { class: 'rojo' }), el('b', {}, '0:00'), el('span', {}, '')); document.body.appendChild(n); }
+      n.className = cancelar ? 'cancelar' : ''; n.lastChild.textContent = txt; return n;
+    };
+    var quitarCartel = function () { var n = $('nota'); if (n) n.remove(); btn.classList.remove('grabando'); };
+    var soltar = function () {
+      if (!st || st.fin) return;
+      st.fin = true; clearInterval(st.reloj);
+      var actual = st, corto = Date.now() - actual.t0 < 800;
+      if (actual.rec && actual.rec.state === 'recording') { actual.rec.stop(); return; }
+      quitarCartel(); st = null; if (actual.flujo) actual.flujo.getTracks().forEach(function (t) { t.stop(); });
+      if (corto) aviso('Mantén pulsado el micrófono mientras hablas.', 'error');
+    };
+    btn.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+    btn.addEventListener('pointerdown', function (ev) {
+      if (st) return;
+      ev.preventDefault();
+      try { btn.setPointerCapture(ev.pointerId); } catch (e) {}
+      var actual = st = { x: ev.clientX, y: ev.clientY, t0: Date.now(), cancelar: false, trozos: [], fin: false };
+      btn.classList.add('grabando');
+      cartel('Suelta para guardar · desliza a un lado para cancelar', false);
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || !window.MediaRecorder) { quitarCartel(); st = null; dialogoSinMic(); return; }
+      navigator.mediaDevices.getUserMedia({ audio: true }).then(function (f) {
+        actual.flujo = f;
+        if (actual.fin) { f.getTracks().forEach(function (t) { t.stop(); }); quitarCartel(); st = null; return; }          // soltó antes de que arrancara el micrófono
+        var mime = mimeGrabacion('audio'), rec = new MediaRecorder(f, mime ? { mimeType: mime } : {});
+        actual.rec = rec;
+        rec.ondataavailable = function (e) { if (e.data && e.data.size) actual.trozos.push(e.data); };
+        rec.onstop = function () {
+          f.getTracks().forEach(function (t) { t.stop(); }); clearInterval(actual.reloj);
+          var cancelar = actual.cancelar, corto = Date.now() - actual.t0 < 800, segs = Math.round((Date.now() - actual.t0) / 1000);
+          quitarCartel(); st = null;
+          if (cancelar) { aviso('Nota de voz cancelada', 'ok'); return; }
+          if (corto || !actual.trozos.length) { aviso('Mantén pulsado el micrófono mientras hablas.', 'error'); return; }
+          aviso('Guardando la nota de voz…', 'ok');
+          aWav(new Blob(actual.trozos, { type: (rec.mimeType || mime || 'audio/mp4').split(';')[0] })).then(function (w) {
+            return subirMedio(w, 'audio', '', function () {}, segs);
+          }).then(function (r) { if (r && r.rol) { S = r; pintar(); } aviso('Nota de voz guardada en "A continuación". Pulsa Reproducir ahora en la TV cuando quieras.', 'ok'); },
+            function (e) { aviso(errorLegible(e), 'error'); });
+        };
+        rec.start(500);
+        actual.reloj = setInterval(function () {
+          var s = Math.floor((Date.now() - actual.t0) / 1000), n = $('nota'); if (n) n.querySelector('b').textContent = duracionTxt(s);
+          if (s >= MAX_AUDIO_S) soltar();
+        }, 250);
+        if (actual.fin) soltar();
+      }, function () { quitarCartel(); st = null; dialogoSinMic(); });
     });
-    t.appendChild(l);
-    if (pestanaMsg === 'tv' && lista.length > 1 && ROL === 'admin' && filtroPersona === 'todas') {
-      t.appendChild(el('button', { class: 'btn suave', type: 'button', style: 'margin-top:8px', onclick: function () {
-        confirmar('¿Quitar todos los mensajes de la tele?', 'Siguen guardados en el historial.', 'Quitar todos', true).then(function (si) { if (si) accion('admBorrar', ['todos'], 'Mensajes quitados'); });
-      } }, icono('papelera'), 'Quitar todos'));
-    }
-    cont.appendChild(t);
+    btn.addEventListener('pointermove', function (ev) {
+      if (!st) return;
+      st.cancelar = Math.hypot(ev.clientX - st.x, ev.clientY - st.y) > 90;
+      cartel(st.cancelar ? 'Suelta para cancelar' : 'Suelta para guardar · desliza a un lado para cancelar', st.cancelar);
+    });
+    btn.addEventListener('pointerup', soltar);
+    btn.addEventListener('pointercancel', soltar);
+  }
+  function dialogoSinMic() {
+    abrirDialogo([el('h2', {}, 'No se puede grabar desde aquí'),
+      el('p', { class: 'sub' }, EN_IFRAME && !EN_APP ? 'Desde esta página el móvil bloquea el micrófono. Con la app sí deja grabar.' : 'No hay permiso para el micrófono. Actívalo en los ajustes del navegador.'),
+      EN_APP ? null : botonAbrirApp(), el('button', { class: 'btn suave', type: 'button', style: 'margin-top:10px', onclick: cerrarDialogo }, 'Cerrar')]);
   }
 
-  /* ============================== Más ============================== */
-  function vistaMas() {
-    var w = document.createDocumentFragment();
-    w.appendChild(cabecera('Más'));
-    var items = [['medios', 'video', 'Audios y vídeos', 'Mandar y poner en la tele'], ['pantalla', 'pantalla', 'Pantalla', 'Qué se ve y con qué estilo'], ['recordatorios', 'campana', 'Recordatorios', 'Con foto, a su hora'], ['cuentas', 'reloj', 'Cuentas atrás', 'Días que faltan para una fecha'],
-      ['familia', 'familia', 'Familia', 'Enlaces y fotos'], ['ajustes', 'ajustes', 'Ajustes', 'Noche, contacto, ciudad y calendarios']];
-    var menu = el('div', { class: 'tarjeta menu' });
-    items.forEach(function (i) {
-      menu.appendChild(el('button', { type: 'button', onclick: function () { ir(i[0]); } }, el('span', { class: 'ico' }, icono(i[1])),
-        el('span', { class: 't' }, i[2], el('small', {}, i[3])), icono('flecha', 'flecha')));
+  function vistaMandar() {
+    var w = document.createDocumentFragment(), sc = selectorCuando();
+    if (ROL === 'admin') {
+      w.appendChild(seccion('Firmas como', grupo([el('div', { class: 'fl' }, el('div', { class: 't' }, 'Nombre'),
+        el('input', { type: 'text', id: 'de', maxlength: '30', autocomplete: 'off', placeholder: 'Daniel', 'aria-label': 'Firmas como', value: borrador.de || leerLocal('de'),
+          oninput: function (e) { borrador.de = e.target.value; guardarLocal('de', e.target.value); } }))])));
+    }
+    var ta = el('textarea', { id: 'texto', maxlength: '200', placeholder: 'Hoy comemos juntos.', 'aria-label': 'Tu mensaje', 'aria-describedby': 'cuenta',
+      oninput: function (e) { borrador.texto = e.target.value; $('cuenta').textContent = e.target.value.length + '/200'; } });
+    ta.value = borrador.texto;
+    var mic = el('button', { class: 'mic', type: 'button', id: 'mic', 'aria-label': 'Mantén pulsado para grabar una nota de voz' }, icono('micro'));
+    ligarMic(mic);
+    w.appendChild(seccion('Tu mensaje', el('div', { class: 'grupo' }, ta,
+      el('div', { class: 'compositor-pie' }, el('span', { class: 'contador', id: 'cuenta' }, borrador.texto.length + '/200'), el('span', { class: 't', style: 'text-align:right' }, 'Nota de voz: mantén pulsado'), mic))));
+    var chips = el('div', { class: 'chips' });
+    FRASES.forEach(function (f) { chips.appendChild(el('button', { class: 'chip', type: 'button', onclick: function () { ta.value = f; borrador.texto = f; $('cuenta').textContent = f.length + '/200'; ta.focus(); } }, f)); });
+    w.appendChild(seccion('Frases rápidas', el('div', { class: 'grupo' }, chips)));
+    w.appendChild(sc.duracion);
+    w.appendChild(sc.cuando);
+    w.appendChild(seccion('Añadir contenido (opcional)', grupo([
+      fila({ icono: 'camara', titulo: 'Añadir una foto', sub: 'Elegirla o hacerla ahora', flecha: true, onclick: function () { pedirArchivo('image/*').then(procesarArchivo); } }),
+      fila({ icono: 'video', titulo: 'Grabar un vídeo', sub: 'Hasta 30 segundos', flecha: true, onclick: function () { dialogoGrabar('video'); } }),
+      fila({ icono: 'micro', titulo: 'Grabar un audio', sub: 'Hasta 1 minuto', flecha: true, onclick: function () { dialogoGrabar('audio'); } }),
+      fila({ icono: 'galeria', titulo: 'Elegir un vídeo o audio del móvil', sub: 'Los vídeos del iPhone se preparan solos', flecha: true, onclick: function () { pedirArchivo('video/*,audio/*').then(procesarArchivo); } })]),
+      'Se guardan en privado y salen en "A continuación" de Inicio. Nada se pone solo.'));
+    if (ROL === 'familia') {
+      var miId = S.miId;
+      w.appendChild(seccion('Tu foto en los mensajes', grupo([
+        el('button', { class: 'fl', type: 'button', onclick: function (e) { elegirFoto(null, e.currentTarget); } }, avatar(miId, S.nombre, S.tieneFoto, true),
+          el('div', { class: 't' }, S.tieneFoto ? 'Cambiar tu foto' : 'Poner tu foto', el('small', {}, 'Es la que sale junto a tus mensajes en la tele')), icono('flecha', 'flecha')),
+        S.tieneFoto ? fila({ icono: 'papelera', titulo: 'Quitar mi foto', onclick: function (e) { accion('admFotoQuitar', [null], 'Foto quitada', e.currentTarget).then(function () { delete fotos[miId]; pintar(); }); } }) : null])));
+    }
+    var enviar = el('button', { class: 'btn', type: 'button', id: 'enviar-msg', onclick: function () {
+      var t = borrador.texto.trim(); if (!t) { aviso('Escribe un mensaje', 'error'); return; }
+      var c = cuandoElegido(); if (c.error) { aviso(c.error, 'error'); return; }
+      accion('admEnviar', [ROL === 'admin' ? (borrador.de || leerLocal('de')) : S.nombre, t, borrador.duracion, c.valor], c.ok, enviar).then(function () { borrador.texto = ''; filtroEnv = 'todos'; pintar(); });
+    } }, icono('enviar'), borrador.cuando === 'hora' ? 'Programar para la TV' : 'Enviar a la TV');
+    w.appendChild(el('div', { class: 'envio' }, enviar));
+    return w;
+  }
+
+  /* ============================== Enviados ============================== */
+  function filaEnvio(x) {
+    var m = x.m, a = autorDe(m), r = medios().repro, cuerpo, estado, quitar = null;
+    if (x.tipo === 'texto') {
+      var prog = programado(m), act = activo(m);
+      cuerpo = el('div', { class: 'texto' }, m.texto);
+      if (prog) estado = el('span', { class: 'programado' }, textoProgramado(m));
+      else if (act) estado = el('span', {}, el('span', { class: 'estado-pila' }, 'En la tele'), m.visto ? ' desde las ' + hora(m.visto) : ' · saldrá en menos de un minuto');
+      else estado = el('span', {}, m.visto ? 'Visto en la tele a las ' + hora(m.visto) : 'No llegó a salir en la tele');
+      if (act) quitar = el('button', { class: 'pastilla', type: 'button', 'aria-label': 'Quitar el mensaje: ' + m.texto, onclick: function (e) { accion('admBorrar', [m.id], 'Mensaje quitado de la tele', e.currentTarget); } }, 'Quitar');
+    } else {
+      var suena = r && r.id === m.id && pendienteRepro(r);
+      var icn = el('span', { style: 'display:inline-flex;vertical-align:-4px;margin-right:6px;color:var(--primario)' }, icono(iconoMedio(m.tipo)));
+      icn.firstChild.setAttribute('width', '20'); icn.firstChild.setAttribute('height', '20');
+      cuerpo = el('div', { class: 'texto' }, icn, nombreMedio(m) + (m.seg ? ' · ' + duracionTxt(m.seg) : ''), m.texto ? el('div', { class: 'meta' }, m.texto) : null);
+      estado = suena ? el('span', {}, el('span', { class: 'estado-pila' }, textoEstadoRepro(r))) : m.vistoT ? el('span', {}, 'Visto en la tele a las ' + hora(Math.floor(m.vistoT / 1000)) + (m.puso ? ' · lo puso ' + m.puso : '')) : el('span', {}, el('span', { class: 'estado-pila gris' }, 'Preparado'));
+      quitar = el('button', { class: 'pastilla', type: 'button', 'aria-label': 'Borrar: ' + nombreMedio(m), onclick: function (e) {
+        var b = e.currentTarget;
+        confirmar('¿Borrar este envío?', nombreMedio(m) + ' se borra de tu Drive y no se podrá volver a poner.', 'Borrar', true).then(function (si) { if (si) accion('admMedioBorrar', [m.id], 'Borrado', b); });
+      } }, suena ? 'Parar' : 'Borrar');
+      if (suena) quitar.onclick = function (e) { ordenTele('parar', 'La tele vuelve a la pizarra')(e); };
+    }
+    return el('div', { class: 'item', 'data-tipo': x.tipo },
+      avatar(a.id, m.de, a.tieneFoto),
+      el('div', { class: 'cuerpo' }, el('div', { class: 'quien' }, el('span', {}, m.de || 'Tú'), el('span', { class: 'hora' }, hora(x.t))), cuerpo,
+        el('div', { class: 'meta' }, estado), quitar ? el('div', { class: 'acciones' }, quitar) : null));
+  }
+  function vistaEnviados() {
+    var w = document.createDocumentFragment(), M = medios(), r = M.repro;
+    var segs = el('div', { class: 'segmentos', role: 'group', 'aria-label': 'Qué ver' });
+    [['todos', 'Todos'], ['tele', 'En la tele']].forEach(function (p) {
+      segs.appendChild(el('button', { type: 'button', 'aria-pressed': filtroEnv === p[0] ? 'true' : 'false', onclick: function () { filtroEnv = p[0]; pintar(); } }, p[1]));
     });
-    w.appendChild(menu);
+    w.appendChild(el('div', { style: 'margin-top:8px' }, segs));
+    var items = [];
+    misMensajes().forEach(function (m) { items.push({ tipo: 'texto', m: m, t: m.t, vivo: activo(m) && !programado(m) }); });
+    M.lista.forEach(function (m) { items.push({ tipo: m.tipo, m: m, t: Math.floor(m.t / 1000), vivo: !!(r && r.id === m.id && pendienteRepro(r)) }); });
+    if (filtroEnv === 'tele') items = items.filter(function (x) { return x.vivo; });
+    items.sort(function (a, b) { return b.t - a.t; });
+    if (!items.length) w.appendChild(el('div', { class: 'seccion' }, el('div', { class: 'grupo' }, el('p', { class: 'vacio' }, filtroEnv === 'tele' ? 'No hay nada en la tele ahora.' : 'Todavía no se ha enviado nada.'))));
+    var dia = null, g = null;
+    items.forEach(function (x) {
+      var d = etiquetaDia(x.t);
+      if (d !== dia) { dia = d; w.appendChild(el('div', { class: 'dia-t' }, d)); g = el('div', { class: 'grupo' }); w.appendChild(g); }
+      g.appendChild(filaEnvio(x));
+    });
+    var activos = items.filter(function (x) { return x.tipo === 'texto' && x.vivo; });
+    if (ROL === 'admin' && activos.length > 1) {
+      w.appendChild(el('button', { class: 'btn peligro', type: 'button', style: 'margin-top:16px', onclick: function () {
+        confirmar('¿Quitar todos los mensajes de la tele?', 'Siguen guardados en el historial.', 'Quitar todos', true).then(function (si) { if (si) accion('admBorrar', ['todos'], 'Mensajes quitados'); });
+      } }, icono('papelera'), 'Quitar todos los mensajes'));
+    }
+    return w;
+  }
+
+  /* ============================== Gestión (el engranaje) ============================== */
+  function vistaGestion() {
+    var w = document.createDocumentFragment();
+    var items = [['pantalla', 'pantalla', 'Pantalla', 'Qué se ve, distribución y estilo'], ['recordatorios', 'campana', 'Recordatorios', 'Con foto, a su hora'], ['cuentas', 'reloj', 'Cuentas atrás', 'Días que faltan para una fecha'],
+      ['familia', 'familia', 'Familia', 'Enlaces y fotos'], ['ajustes', 'ajustes', 'Ajustes', 'Noche, contacto, ciudad y calendarios']];
+    w.appendChild(seccion('Gestión', grupo(items.map(function (i) { return fila({ icono: i[1], titulo: i[2], sub: i[3], flecha: true, onclick: function () { ir(i[0]); } }); }), 'gestion-lista')));
     return w;
   }
 
@@ -1269,65 +1517,9 @@
     cargarCaptura();
   }
 
-  /** Para los familiares: "Ver cómo se ve la tele ahora" (solo mirar; no cambia nada). */
+  /** Para los familiares: la vista de la tele (solo mirar; no cambia nada). */
   function cargarPrevia(silencioso) {
     return llamar('admVistaPrevia').then(function (p) { previa = p; pintar(); }, function (e) { if (!silencioso) aviso(mensajeError(e), 'error'); });
-  }
-  function tarjetaPrevia() {
-    var t = el('div', { class: 'tarjeta', id: 'previa-tv' }, el('h2', {}, 'La pantalla de la tele'));
-    if (!previa) {
-      t.appendChild(el('p', { class: 'sub', style: 'margin:0' }, 'Si quieres, mira cómo se ve ahora en casa de mamá.'));
-      var ver = el('button', { class: 'btn suave', type: 'button', style: 'margin-top:12px', onclick: function () { ver.disabled = true; cargarPrevia(false).then(function () { ver.disabled = false; }); } }, icono('pantalla'), 'Ver cómo se ve la tele');
-      t.appendChild(ver);
-      return t;
-    }
-    var m = modoDePrevia(previa);
-    t.appendChild(vistaTV(previa.vista, m.modo, m.estilo));
-    if (m.prueba) t.appendChild(el('p', { class: 'ayuda' }, 'Ahora se está probando un estilo: la tele vuelve sola al suyo en menos de un minuto.'));
-    t.appendChild(el('p', { class: 'ayuda' }, 'Es solo para mirar. Se actualiza sola.'));
-    t.appendChild(el('div', { class: 'fila', style: 'margin-top:8px' },
-      el('button', { class: 'btn suave', type: 'button', onclick: function (e) { e.currentTarget.disabled = true; cargarPrevia(false); } }, 'Actualizar'),
-      el('button', { class: 'btn suave', type: 'button', onclick: function () { previa = null; pintar(); } }, 'Ocultar')));
-    return t;
-  }
-  function vistaFamiliar() {
-    var w = document.createDocumentFragment();
-    w.appendChild(cabecera('Hola, ' + S.nombre, 'Lo que mandes aparece en la tele de mamá.'));
-    w.appendChild(estadoTV());
-    (S.pendientes || []).forEach(function (p) { w.appendChild(tarjetaPendiente(p)); });
-    w.appendChild(tarjetaPrevia());
-    w.appendChild(el('div', { class: 'tarjeta' }, ayudaIcono()));
-    var ta = el('textarea', { id: 'texto', maxlength: '200', placeholder: 'Hoy comemos juntos.', oninput: function (e) { borrador.texto = e.target.value; $('cuenta').textContent = e.target.value.length + '/200'; } });
-    ta.value = borrador.texto;
-    var chips = el('div', { class: 'chips' });
-    FRASES.forEach(function (f) { chips.appendChild(el('button', { class: 'chip', type: 'button', onclick: function () { ta.value = f; borrador.texto = f; $('cuenta').textContent = f.length + '/200'; ta.focus(); } }, f)); });
-    var sel = selectorCuando();
-    var enviar = el('button', { class: 'btn', type: 'button', id: 'enviar-msg', style: 'margin-top:16px', onclick: function () {
-      var t = borrador.texto.trim(); if (!t) { aviso('Escribe un mensaje', 'error'); return; }
-      var c = cuandoElegido(); if (c.error) { aviso(c.error, 'error'); return; }
-      accion('admEnviar', [S.nombre, t, borrador.duracion, c.valor], c.ok, enviar).then(function () { borrador.texto = ''; pintar(); });
-    } }, icono('enviar'), borrador.cuando === 'hora' ? 'Programar para la TV' : 'Enviar a la TV');
-    w.appendChild(el('div', { class: 'tarjeta' }, el('h2', {}, 'Tu mensaje'), el('label', { class: 'eti', for: 'texto' }, 'Mensaje'), ta, el('div', { class: 'contador', id: 'cuenta' }, borrador.texto.length + '/200'),
-      chips, sel[0], sel[1], sel[2], sel[3], sel[4], sel[5], enviar));
-    w.appendChild(bloqueMedios());
-    var miId = S.miId;
-    w.appendChild(el('div', { class: 'tarjeta' }, el('h2', {}, 'Tu foto para la tele de mamá'),
-      el('div', { class: 'item', style: 'padding:0;border:0;align-items:center' }, avatar(miId, S.nombre, S.tieneFoto, true),
-        el('div', { class: 'cuerpo' }, el('p', { class: 'sub', style: 'margin:0' }, 'Sale junto a tus mensajes.'))),
-      el('div', { class: 'fila', style: 'margin-top:12px' },
-        el('button', { class: 'btn suave', type: 'button', onclick: function (e) { elegirFoto(null, e.currentTarget); } }, icono('camara'), S.tieneFoto ? 'Cambiar foto' : 'Poner foto'),
-        S.tieneFoto ? el('button', { class: 'btn suave', type: 'button', onclick: function (e) { accion('admFotoQuitar', [null], 'Foto quitada', e.currentTarget).then(function () { delete fotos[miId]; pintar(); }); } }, 'Quitar foto') : null)));
-    var mios = S.mensajes.slice().sort(function (a, b) { return b.t - a.t; }).slice(0, 20);
-    var t = el('div', { class: 'tarjeta' }, el('h2', {}, 'Tus envíos'));
-    if (!mios.length) t.appendChild(el('p', { class: 'vacio' }, 'Todavía no has enviado nada.'));
-    var l = el('div', { class: 'lista' });
-    mios.forEach(function (m) {
-      l.appendChild(el('div', { class: 'item' }, el('div', { class: 'cuerpo' }, el('div', { class: 'texto' }, m.texto),
-        el('div', { class: 'meta' }, programado(m) ? el('span', { class: 'programado' }, textoProgramado(m)) : cuando(m.t) + (activo(m) ? ' · En la TV · ' + hasta(m.hasta) : ' · Ya caducó')),
-        activo(m) ? el('div', { class: 'acciones' }, el('button', { class: 'enlace peligro', type: 'button', 'aria-label': 'Quitar el mensaje: ' + m.texto, onclick: function () { accion('admBorrar', [m.id], 'Mensaje quitado de la tele'); } }, 'Quitar')) : null)));
-    });
-    t.appendChild(l); w.appendChild(t);
-    return w;
   }
 
   /* ============================== Audios, vídeos y fotos a distancia ============================== */
@@ -1525,9 +1717,9 @@
   function conReintentos(fn, veces) {
     return fn().catch(function (e) { if (veces <= 0) throw e; return new Promise(function (r) { setTimeout(r, 800); }).then(function () { return conReintentos(fn, veces - 1); }); });
   }
-  function subirMedio(blob, tipo, texto, alAvanzar) {
+  function subirMedio(blob, tipo, texto, alAvanzar, seg) {
     var mime = String(blob.type || '').split(';')[0], partes = Math.max(1, Math.ceil(blob.size / TROZO));
-    return llamar('admMedioNuevo', { tipo: tipo, mime: mime, bytes: blob.size, partes: partes, texto: texto || '', de: borrador.de || leerLocal('de') }).then(function (r) {
+    return llamar('admMedioNuevo', { tipo: tipo, mime: mime, bytes: blob.size, partes: partes, texto: texto || '', seg: seg || 0, de: borrador.de || leerLocal('de') }).then(function (r) {
       var id = r.id, n = 0;
       var siguiente = function () {
         if (n >= partes) return llamar('admMedioFin', id);
@@ -1548,11 +1740,12 @@
   function cerrarDialogo() { $('capa').innerHTML = ''; }
 
   /** Ver y escuchar lo que se va a mandar, y mandarlo. */
-  function dialogoRevisar(blob, tipo) {
-    var url = URL.createObjectURL(blob), vista;
-    if (tipo === 'foto') vista = el('img', { src: url, alt: 'La foto que vas a mandar', style: 'width:100%;border-radius:14px;max-height:50vh;object-fit:contain;background:#000' });
+  function dialogoRevisar(blob, tipo, segs) {
+    var url = URL.createObjectURL(blob), vista, seg = segs || 0;
+    if (tipo === 'foto') vista = el('img', { src: url, alt: 'La foto que vas a mandar', style: 'width:100%;border-radius:12px;max-height:50vh;object-fit:contain;background:#000' });
     else if (tipo === 'video') vista = el('video', { src: url, controls: true, playsinline: true, style: 'width:100%;border-radius:14px;max-height:50vh;background:#000' });
     else vista = el('audio', { src: url, controls: true, style: 'width:100%' });
+    if (tipo === 'video') vista.addEventListener('loadedmetadata', function () { if (isFinite(vista.duration) && vista.duration > 0) seg = vista.duration; });
     var texto = tipo === 'foto' ? el('input', { type: 'text', id: 'medio-texto', maxlength: '200', placeholder: 'Un mensaje con la foto (si quieres)', 'aria-label': 'Mensaje con la foto' }) : null;
     var barra = el('div', { class: 'barra-subida', hidden: true, 'aria-live': 'polite' });
     var estado = el('p', { class: 'sub', id: 'medio-estado' }, 'Mírala' + (tipo === 'foto' ? '' : ' o escúchala') + ' antes de mandarla.');
@@ -1561,7 +1754,7 @@
     enviar.onclick = function () {
       enviar.disabled = cancelar.disabled = true; barra.hidden = false;
       estado.textContent = 'Subiendo… no cierres esta pantalla.';
-      subirMedio(blob, tipo, texto ? texto.value : '', function (f) { barra.style.setProperty('--pct', Math.round(f * 100) + '%'); estado.textContent = 'Subiendo… ' + Math.round(f * 100) + ' %'; }).then(function (r) {
+      subirMedio(blob, tipo, texto ? texto.value : '', function (f) { barra.style.setProperty('--pct', Math.round(f * 100) + '%'); estado.textContent = 'Subiendo… ' + Math.round(f * 100) + ' %'; }, seg).then(function (r) {
         URL.revokeObjectURL(url); cerrarDialogo();
         if (r && r.rol) { S = r; pintar(); }
         aviso('Listo. Está preparado: tú decides cuándo se ve en la tele.', 'ok');
@@ -1633,7 +1826,7 @@
           cerrarDialogo();
           if (!blob.size) { aviso('No se ha grabado nada. Prueba otra vez.', 'error'); return; }
           if (tipo === 'audio') { aviso('Preparando el audio…', 'ok'); aWav(blob).then(function (w) { dialogoRevisar(w, 'audio'); }, function (e) { aviso(errorLegible(e), 'error'); }); }
-          else esHEVC(blob).then(function (hevc) { return hevc ? comprobarVideo(blob) : blob; }).then(function (b) { dialogoRevisar(b, 'video'); }, function (e) { aviso(errorLegible(e), 'error'); });
+          else esHEVC(blob).then(function (hevc) { return hevc ? comprobarVideo(blob) : blob; }).then(function (b) { dialogoRevisar(b, 'video', seg); }, function (e) { aviso(errorLegible(e), 'error'); });
         };
         rec.start(1000);
         empezar.hidden = true; parar.hidden = false; msg.textContent = tipo === 'video' ? 'Grabando… habla a la cámara.' : 'Grabando… habla cerca del micrófono.';
@@ -1650,77 +1843,6 @@
     parar.onclick = function () { if (rec && rec.state === 'recording') rec.stop(); };
     if (EN_IFRAME && !EN_APP) { msg.textContent = 'Desde esta página el móvil suele bloquear el micrófono y la cámara. Con la app sí deja grabar.'; }
     abrirDialogo([titulo, vista, cuenta, msg, EN_IFRAME && !EN_APP ? botonAbrirApp() : null, el('div', { class: 'fila', style: 'margin-top:12px' }, cancelar, empezar, parar)]);
-  }
-
-  /* ---- la tarjeta que usan el administrador y la familia ---- */
-  function textoEstadoRepro(r) {
-    return r.estado === 'esperando' ? 'Esperando a la TV…' : r.estado === 'reproduciendo' ? (r.tipo === 'foto' ? 'En la tele ahora' : 'Reproduciendo') :
-      r.estado === 'terminado' ? 'Terminado' : r.estado === 'caducado' ? 'La tele no ha contestado a tiempo' : 'No se ha podido poner';
-  }
-  function pendienteRepro(r) { return r && (r.estado === 'esperando' || r.estado === 'reproduciendo'); }
-  function tarjetaRepro(r) {
-    var t = el('div', { class: 'tarjeta repro', id: 'repro', 'aria-live': 'polite' }, el('h2', {}, nombreMedio(r)),
-      el('div', { class: 'estado-repro ' + r.estado }, el('span', { class: 'punto ' + (r.estado === 'reproduciendo' ? 'on' : r.estado === 'esperando' ? 'esp' : 'off'), 'aria-hidden': 'true' }), el('b', {}, textoEstadoRepro(r))));
-    if (r.estado === 'error' && r.error) t.appendChild(el('p', { class: 'sub', style: 'color:var(--peligro)' }, r.error));
-    if (r.estado === 'esperando') t.appendChild(el('p', { class: 'ayuda' }, 'La tele lo recoge en unos segundos. Si está apagada, esto caduca en 15 minutos.'));
-    if (pendienteRepro(r)) {
-      var orden = r.orden, ctl = function (c, ok) { return function (e) { accion('admMedioControl', [orden, c], ok || null, e.currentTarget).then(function () { sondearMedios(); }, function () { sondearMedios(); }); }; };
-      if (r.tipo !== 'foto') {
-        t.appendChild(el('div', { class: 'fila', style: 'margin-top:10px' },
-          el('button', { class: 'btn suave', type: 'button', onclick: ctl('bajar'), 'aria-label': 'Bajar el volumen' }, icono('menos'), 'Volumen'),
-          el('button', { class: 'btn suave', type: 'button', onclick: ctl('subir'), 'aria-label': 'Subir el volumen' }, icono('masv'), 'Volumen')));
-        t.appendChild(el('div', { class: 'fila', style: 'margin-top:10px' }, el('button', { class: 'btn suave', type: 'button', onclick: ctl('repetir', 'Se repite') }, icono('repetir'), 'Repetir')));
-      }
-      t.appendChild(el('button', { class: 'btn peligro', type: 'button', style: 'margin-top:10px', onclick: ctl('parar', 'La tele vuelve a la pizarra') }, icono('parar'), r.tipo === 'foto' ? 'Quitar de la tele' : 'Parar'));
-    }
-    return t;
-  }
-  function bloqueMedios() {
-    var w = document.createDocumentFragment(), M = S.medios || { lista: [], repro: null };
-    var env = el('div', { class: 'tarjeta' }, el('h2', {}, 'Mandar a la tele'),
-      el('p', { class: 'ayuda', style: 'margin-top:0' }, 'Un audio de hasta 1 minuto, un vídeo de hasta 30 segundos o una foto. Queda guardado y privado; nada se pone solo.'),
-      el('div', { class: 'fila' },
-        el('button', { class: 'btn', type: 'button', onclick: function () { dialogoGrabar('audio'); } }, icono('micro'), 'Grabar audio'),
-        el('button', { class: 'btn', type: 'button', onclick: function () { dialogoGrabar('video'); } }, icono('video'), 'Grabar vídeo')),
-      el('button', { class: 'btn suave', type: 'button', style: 'margin-top:10px', onclick: function () { pedirArchivo('image/*,video/*,audio/*').then(procesarArchivo); } }, icono('camara'), 'Elegir foto, vídeo o audio del móvil'));
-    w.appendChild(env);
-    var r = M.repro;
-    if (r && (pendienteRepro(r) || Date.now() - r.t < 600000)) w.appendChild(tarjetaRepro(r));
-    var t = el('div', { class: 'tarjeta', id: 'preparados' }, el('h2', {}, 'Preparados'));
-    if (!M.lista.length) t.appendChild(el('p', { class: 'vacio' }, 'Todavía no hay nada preparado.'));
-    M.lista.forEach(function (m) {
-      var sel = m.tipo === 'foto' ? el('select', { 'aria-label': 'Cuánto tiempo se ve la foto', onchange: function (e) { minFoto = Number(e.target.value); } },
-        el('option', { value: '1' }, 'Se ve 1 minuto'), el('option', { value: '5' }, 'Se ve 5 minutos'), el('option', { value: '15' }, 'Se ve 15 minutos'), el('option', { value: '0' }, 'Hasta que la quite')) : null;
-      if (sel) sel.value = String(minFoto);
-      t.appendChild(el('div', { class: 'item' }, el('span', { class: 'avatar' }, icono(iconoMedio(m.tipo))),
-        el('div', { class: 'cuerpo' }, el('div', { class: 'quien' }, nombreMedio(m)), m.texto ? el('div', { class: 'texto' }, m.texto) : null,
-          el('div', { class: 'meta' }, cuando(Math.floor(m.t / 1000)) + ' · ' + pesoMedio(m.bytes)),
-          sel ? el('div', { style: 'margin-top:8px' }, sel) : null,
-          el('div', { class: 'fila', style: 'margin-top:10px' },
-            el('button', { class: 'btn', type: 'button', onclick: function (e) { accion('admMedioReproducir', [m.id, m.tipo === 'foto' ? minFoto : 0], m.tipo === 'foto' ? 'Mandada a la tele' : 'Mandado a la tele', e.currentTarget).then(sondearMedios); } },
-              icono(m.tipo === 'foto' ? 'pantalla' : 'play'), m.tipo === 'foto' ? 'Mostrar ahora en la TV' : 'Reproducir ahora'),
-            el('button', { class: 'btn suave', type: 'button', 'aria-label': 'Borrar: ' + nombreMedio(m), onclick: function (e) {
-              var b = e.currentTarget;
-              confirmar('¿Borrar este envío?', nombreMedio(m) + ' se borra de tu Drive y no se podrá volver a poner.', 'Borrar', true).then(function (si) { if (si) accion('admMedioBorrar', [m.id], 'Borrado', b); });
-            } }, icono('papelera'))))));
-    });
-    w.appendChild(t);
-    return w;
-  }
-  function vistaMedios() {
-    var w = document.createDocumentFragment();
-    w.appendChild(cabecera('Audios y vídeos', 'Manda algo para que mamá lo vea o lo escuche en la tele.', 'mas'));
-    w.appendChild(estadoTV());
-    w.appendChild(bloqueMedios());
-    var h = S.histMedios || [];
-    var t = el('div', { class: 'tarjeta', id: 'historial-medios' }, el('h2', {}, 'Historial'));
-    if (!h.length) t.appendChild(el('p', { class: 'vacio' }, 'Todavía no se ha puesto nada en la tele.'));
-    h.forEach(function (x) {
-      t.appendChild(el('div', { class: 'item' }, el('span', { class: 'avatar' }, icono(iconoMedio(x.tipo))),
-        el('div', { class: 'cuerpo' }, el('div', { class: 'quien' }, nombreMedio(x)), el('div', { class: 'meta' }, 'Lo puso ' + (x.quien || 'alguien') + ' · ' + cuando(Math.floor(x.t / 1000))))));
-    });
-    w.appendChild(t);
-    return w;
   }
 
   /** Mientras algo se pone en la tele, el estado se mira cada 3 segundos (y solo eso: es una llamada ligera). */

@@ -322,7 +322,9 @@ function servir_(e) {
   if (a === 'medio') return salida_(parteMedioParaTV_(e.parameter.id, e.parameter.n));
   if (a === 'medioEstado') return salida_(medioEstadoDeLaTV_(e.parameter.o, e.parameter.e, e.parameter.m));
   marcarTV_();
-  return salida_(estado_());
+  var est = estado_();
+  anotarVistos_(est.mensajes);
+  return salida_(est);
 }
 
 /* ============================================================
@@ -434,6 +436,16 @@ function capturaPedida_() {
   var ped = Number(c.get('captura_ped') || 0);
   if (!ped || Date.now() - ped > 150000) return false;
   return Date.now() - Number(c.get('captura_t') || 0) > 5000;
+}
+
+/** La TV acaba de recibir estos mensajes: se apunta cuándo los vio por primera vez ("Visto en la tele a las 18:02"). */
+function anotarVistos_(msgs) {
+  var ids = {};
+  (msgs || []).forEach(function (m) { ids[m.id] = 1; });
+  var faltan = leer_().mensajes.some(function (m) { return ids[m.id] && !m.visto; });
+  if (!faltan) return;
+  var ahora = Math.floor(Date.now() / 1000);
+  modificar_(function (d) { d.mensajes.forEach(function (m) { if (ids[m.id] && !m.visto) m.visto = ahora; }); });
 }
 
 function mensajeParaTV_(m, d) {
@@ -1150,7 +1162,7 @@ function admMedioNuevo(k, meta) {
     d.medios = d.medios.filter(function (m) { if (!m.listo && m.t < limite) { desechar.push(m.id); return false; } return true; });
     if (d.medios.length >= MAX_MEDIOS) throw new Error('Hay demasiados envíos preparados. Borra alguno antes de mandar otro.');
     d.medios.unshift({ id: id, tipo: tipo, de: q.rol === 'familia' ? q.nombre : String(meta.de || '').trim().slice(0, 30), autor: q.id, texto: String(meta.texto || '').trim().slice(0, 200),
-      t: Date.now(), mime: mime, bytes: bytes, partes: partes, listo: false });
+      t: Date.now(), mime: mime, bytes: bytes, partes: partes, seg: Math.max(0, Math.min(3600, Math.round(Number(meta.seg) || 0))), listo: false });
   });
   desechar.forEach(borrarTrozos_);
   return { id: id };
@@ -1202,7 +1214,10 @@ function admMedioBorrar(k, id) {
 /** Lo que cada persona ve de sus envíos (el administrador, todos). */
 function mediosParaPanel_(d, q, ahora) {
   var lista = d.medios.filter(function (m) { return m.listo && puedeMedio_(q, m); }).map(function (m) {
-    return { id: m.id, tipo: m.tipo, de: m.de, autor: m.autor, texto: m.texto, t: m.t, bytes: m.bytes };
+    var visto = null;
+    for (var i = 0; i < d.histMedios.length; i++) if (d.histMedios[i].id === m.id) { visto = d.histMedios[i]; break; }       // la más reciente
+    return { id: m.id, tipo: m.tipo, de: m.de, autor: m.autor, texto: m.texto, t: m.t, bytes: m.bytes, seg: m.tipo === 'audio' && m.mime.indexOf('wav') >= 0 ? Math.round(Math.max(0, m.bytes - 44) / 32000) : (m.seg || 0),
+             vistoT: visto ? visto.t : null, puso: visto ? visto.quien : '' };
   });
   var rp = null, e = reproEstado_(d, ahora);
   if (d.repro && e) {
