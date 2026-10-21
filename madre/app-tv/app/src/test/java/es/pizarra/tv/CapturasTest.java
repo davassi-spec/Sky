@@ -303,4 +303,21 @@ public class CapturasTest {
         String rec2 = rec.replace("Toma Medicina a Mamá", "Hidratación y medicación después del desayuno");
         captura("lavanda-recordatorio-palabra-larga-2", json("lavanda", DANIEL, EV_DIA, TIEMPO, "null", rec2), 20, 11, 22);
     }
+
+    private static final String EV_VISITAS = "[{\"dia\":0,\"titulo\":\"Viene la asistenta\",\"hora\":\"17:30\",\"orden\":\"17:30\"},"
+            + "{\"dia\":0,\"titulo\":\"Viene Ana\",\"hora\":\"18:00\",\"orden\":\"18:00\",\"autor\":\"p1\",\"foto\":1},"
+            + "{\"dia\":0,\"titulo\":\"Cena\",\"hora\":\"21:00\",\"orden\":\"21:00\"},"
+            + "{\"dia\":1,\"titulo\":\"Viene Javier\",\"hora\":\"11:00\",\"orden\":\"11:00\",\"autor\":\"p1\",\"foto\":1}]";
+
+    /** "Hoy viene…" (con la foto de quien viene) y la rutina de la semana, en las cuatro distribuciones. */
+    @Test
+    public void hoyVieneYRutinaSemanal() throws Exception {
+        foto();
+        for (String d : new String[]{"clasica", "reloj", "lista", "sencillo"}) {
+            captura("d6-" + d + "-lavanda-dia-hoy-viene", conDistribucion(json("lavanda", DANIEL + "," + ANA, EV_VISITAS, TIEMPO, "null"), d), 20, 17, 15);
+            captura("d6-" + d + "-calido-noche-manana-viene", conDistribucion(json("calido", DANIEL, EV_VISITAS, TIEMPO, "null"), d), 20, 22, 10);
+        }
+        String solo = "[{\"dia\":0,\"titulo\":\"Viene Ana\",\"hora\":\"18:00\",\"orden\":\"18:00\",\"autor\":\"p1\",\"foto\":1}]";
+        captura("d6-clasica-lavanda-dia-solo-ana", json("lavanda", DANIEL, solo, TIEMPO, "null"), 20, 17, 15);
+    }
 }

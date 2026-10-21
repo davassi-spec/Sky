@@ -72,6 +72,8 @@ public class MainActivity extends Activity {
     private final List<LinearLayout> tarjetasMsg = new ArrayList<>();
     private LinearLayout recView;        // la pantalla del recordatorio (ocupa todo, sustituye a la pizarra)
     private TextView tvRecTop;
+    private Voz voz;
+    private java.util.Set<String> leidos;
     private PantallaMedio pm;            // foto, audio o vídeo a pantalla completa (null si no hay)
     private String ordenCerrado = "";   // el último envío que ya terminó (para no ponerlo dos veces)
 
@@ -123,6 +125,12 @@ public class MainActivity extends Activity {
         h.removeCallbacks(busca);
         h.post(tic);
         h.post(busca);
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (voz != null) { voz.cerrar(); voz = null; }
     }
 
     @Override
@@ -191,12 +199,14 @@ public class MainActivity extends Activity {
                     final Datos nuevo = Datos.parse(cuerpoJson);
                     prefs.edit().putString("cache", cuerpoJson).putLong("cacheT", System.currentTimeMillis()).apply();
                     for (Datos.Mensaje m : nuevo.mensajes) Fotos.asegurar(MainActivity.this, url, k, m.autor, m.foto);
+                    for (Datos.Evento ev : nuevo.eventos) Fotos.asegurar(MainActivity.this, url, k, ev.autor, ev.foto);
                     if (nuevo.recordatorio != null) Fotos.asegurar(MainActivity.this, url, k, nuevo.recordatorio.id, nuevo.recordatorio.foto);
                     h.post(new Runnable() {
                         @Override public void run() {
                             datos = nuevo;
                             pintarReloj();
                             gestionarMedio();
+                            leerNuevos(nuevo);
                             if (nuevo.pidenCaptura) mandarCaptura(url, k);
                         }
                     });
@@ -207,6 +217,23 @@ public class MainActivity extends Activity {
                 }
             }
         }).start();
+    }
+
+    /* ---------- Leer en voz alta los mensajes nuevos ---------- */
+
+    /** Un mensaje nuevo se lee una sola vez, en español, y nunca de noche (de noche se da por visto en silencio). */
+    private void leerNuevos(Datos nuevo) {
+        if (leidos == null) {
+            leidos = new java.util.LinkedHashSet<>(prefs.getStringSet("leidos", new java.util.HashSet<String>()));
+        }
+        boolean primera = !prefs.contains("leidos");
+        boolean permitido = nuevo.leerVoz && !nuevo.esNocheAhora(Hora.ahora().get(Calendar.HOUR_OF_DAY)) && pm == null && nuevo.recordatorio == null;
+        List<String> frases = Voz.porLeer(nuevo.mensajes, leidos, permitido, primera);
+        while (leidos.size() > 60) leidos.remove(leidos.iterator().next());
+        prefs.edit().putStringSet("leidos", new java.util.HashSet<>(leidos)).apply();
+        if (frases.isEmpty()) return;
+        if (voz == null) voz = new Voz(this);
+        for (String f : frases) voz.decir(f);
     }
 
     /* ---------- Fotos, audios y vídeos que manda la familia ---------- */
@@ -348,6 +375,18 @@ public class MainActivity extends Activity {
         v.setColorFilter(color, PorterDuff.Mode.SRC_IN);
         v.setLayoutParams(lp(px(lado), px(lado)));
         v.setTag(new float[]{lado, lado});
+        return v;
+    }
+
+    /** El círculo de un evento de "Lo próximo": la foto de quien viene si es de la familia y la tenemos; si no, el icono de siempre. */
+    private ImageView iconoEvento(Datos.Evento e, int icono, float diametro, float interior) {
+        Bitmap foto = e.autor.isEmpty() ? null : Fotos.circulo(this, e.autor, e.foto, px(Math.max(diametro, 240)));
+        if (foto == null) return iconoRedondo(icono, p.avatar, diametro, interior);
+        ImageView v = new ImageView(this);
+        v.setImageBitmap(foto);
+        v.setScaleType(ImageView.ScaleType.FIT_CENTER);
+        v.setLayoutParams(lp(px(diametro), px(diametro)));
+        v.setTag(new float[]{diametro, diametro});                 // escalar() lo agranda como a los demás iconos
         return v;
     }
 
@@ -1251,7 +1290,7 @@ public class MainActivity extends Activity {
         if (tl.contains("merienda") || tl.contains("café") || tl.contains("cafe") || tl.contains("desayuno")) icono = R.drawable.ic_taza;
         else if (tl.contains("cena") || tl.contains("comida") || tl.contains("almuerzo") || tl.contains("comer")) icono = R.drawable.ic_cubiertos;
         else if (tl.contains("llamar") || tl.contains("llamada") || tl.contains("teléfono")) icono = R.drawable.ic_telefono;
-        ImageView ic = iconoRedondo(icono, p.avatar, 96, 54);
+        ImageView ic = iconoEvento(e, icono, 96, 54);
         LinearLayout.LayoutParams lpIc = lp(px(96), px(96));
         lpIc.rightMargin = px(28);
         t.addView(ic, lpIc);
@@ -1384,7 +1423,7 @@ public class MainActivity extends Activity {
             caja.setPadding(px(8), px(8), px(8), px(8));
         }
         float lado = proximo || grande ? 80 : 60;
-        ImageView ic = iconoRedondo(icono, p.avatar, lado, lado * 0.56f);
+        ImageView ic = iconoEvento(e, icono, lado, lado * 0.56f);
         LinearLayout.LayoutParams lpIc = lp(px(lado), px(lado));
         lpIc.rightMargin = px(20);
         caja.addView(ic, lpIc);

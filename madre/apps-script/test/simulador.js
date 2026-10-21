@@ -81,7 +81,7 @@ function crear(opciones = {}) {
     },
     ContentService: { createTextOutput: (s) => ({ s, setMimeType() { return this; } }), MimeType: { JSON: 1 } },
     CalendarApp: {
-      getDefaultCalendar: () => ({ getEventsForDay: () => { llamadasCalendario++; return eventosFalsos; } }),
+      getDefaultCalendar: () => ({ getId: () => 'c1', getEventsForDay: () => { llamadasCalendario++; return eventosFalsos; } }),
       getAllCalendars: () => [{ getId: () => 'c1', getName: () => 'Mamá' }],
       getCalendarById: () => null,
     },
