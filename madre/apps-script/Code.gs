@@ -54,6 +54,11 @@ function base_() {
     recEstado: {},                                 // 'idRecordatorio|AAAA-MM-DD' -> { conf: ms, aviso: ms }
     pruebaRec: null,                               // { id, hasta } mientras dura "Probar 1 minuto"
     correoAviso: '',                               // vacío = el correo de tu cuenta de Google
+    icloud: '',                                    // enlace webcal:// del calendario de iCloud (solo en los datos, nunca en el repositorio)
+    avisoTV: true,                                 // correo si la TV lleva más de 30 minutos sin consultar
+    leerVoz: true,                                 // la TV lee en voz alta los mensajes nuevos (nunca de noche)
+    visitas: [],                                   // { id, fecha 'AAAA-MM-DD', hora 'HH:MM'|'', persona (id de la familia)|'', texto }
+    rutina: [],                                    // { id, dia 0..6 (0 = domingo), hora, persona, texto }
     enlaceApp: '',                                 // dirección de la app del móvil (el envoltorio); sirve para los enlaces de la familia
     noche: { desde: 21, hasta: 6 },
     nocheTexto: 'Es hora de dormir.',
@@ -213,6 +218,7 @@ function autorizar() {
   Logger.log('Datos en Drive, carpeta "' + NOMBRE_CARPETA + '". Mensajes guardados: ' + d.mensajes.length +
     '. Personas de la familia: ' + d.familia.length + '.');
   MailApp.getRemainingDailyQuota();                // pide el permiso de enviar correos
+  Logger.log('Copia y limpieza diarias: ' + (activarLimpieza_() ? 'activadas (cada madrugada).' : 'NO se pudieron activar.'));
   Logger.log('Avisos por correo: ' + (activarAvisos_() ? 'activados (se comprueba cada 5 minutos).' : 'NO se pudieron activar.'));
 }
 
@@ -221,6 +227,13 @@ function activarAvisos_() {
   var ts = ScriptApp.getProjectTriggers();
   for (var i = 0; i < ts.length; i++) if (ts[i].getHandlerFunction() === 'revisarAvisos') return true;
   ScriptApp.newTrigger('revisarAvisos').timeBased().everyMinutes(5).create();
+  return true;
+}
+/** El activador diario de la copia y la limpieza (se crea con autorizar). */
+function activarLimpieza_() {
+  var ts = ScriptApp.getProjectTriggers();
+  for (var i = 0; i < ts.length; i++) if (ts[i].getHandlerFunction() === 'limpiezaDiaria') return true;
+  ScriptApp.newTrigger('limpiezaDiaria').timeBased().everyDays(1).atHour(3).create();
   return true;
 }
 
@@ -270,7 +283,8 @@ var RPC_ = {
   admRecordatorioProbar: admRecordatorioProbar, admRecordatorioFoto: admRecordatorioFoto, admCorreoAviso: admCorreoAviso,
   admCorreoPrueba: admCorreoPrueba, admBuscarCiudad: admBuscarCiudad, admMedioNuevo: admMedioNuevo, admMedioParte: admMedioParte,
   admMedioFin: admMedioFin, admMedioBorrar: admMedioBorrar, admMedioReproducir: admMedioReproducir, admMedioControl: admMedioControl,
-  admMediosEstado: admMediosEstado
+  admMediosEstado: admMediosEstado, admVisitaGuardar: admVisitaGuardar, admVisitaBorrar: admVisitaBorrar, admRutinaGuardar: admRutinaGuardar,
+  admRutinaBorrar: admRutinaBorrar, admProbarICloud: admProbarICloud, admEspacio: admEspacio
 };
 
 /** ?a=rpc: el cuerpo es { fn, args } (la clave va dentro de args, nunca en la dirección). Devuelve { valor } o { error }. */
@@ -343,7 +357,7 @@ function anotar_(accion, ms) {
     pend[accion] = m;
     var ahora = Date.now();
     var ultimo = Number(cache.get('met_volcado') || 0);
-    if (ahora - ultimo < 60000) { cache.put('met_pend', JSON.stringify(pend), 21600); return; }
+    if (ahora - ultimo < 600000) { cache.put('met_pend', JSON.stringify(pend), 21600); return; }
     var p = props_();
     var dia = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyyMMdd');
     var todo = JSON.parse(p.getProperty('METRICAS') || '{}');
@@ -386,7 +400,37 @@ function marcarTV_() {
     props_().setProperty('TV_ULTIMA', String(ahora));
     cache.put('tv_prop', String(ahora), 21600);
   }
+  contarConsultaTV_(cache);
 }
+
+/** Cuántas veces ha preguntado la TV en cada hora (las últimas 48): sirve para ver si se apaga o se queda callada. */
+function horaClave_(ms) { return Utilities.formatDate(new Date(ms), Session.getScriptTimeZone(), 'yyyyMMddHH'); }
+function contarConsultaTV_(cache) {
+  try {
+    var h = horaClave_(Date.now());
+    var c = JSON.parse(cache.get('tvn') || 'null');
+    if (c && c.h !== h) {                                       // cambió la hora: lo de la hora anterior pasa a las propiedades
+      var todo = JSON.parse(props_().getProperty('TV_HORAS') || '{}');
+      todo[c.h] = c.n;
+      Object.keys(todo).sort().slice(0, -48).forEach(function (k) { delete todo[k]; });
+      props_().setProperty('TV_HORAS', JSON.stringify(todo));
+      c = null;
+    }
+    if (!c) c = { h: h, n: 0 };
+    c.n++;
+    cache.put('tvn', JSON.stringify(c), 21600);
+  } catch (e) { /* contar nunca debe romper una consulta */ }
+}
+/** Las últimas 24 horas: [{ h: 'aaaammddhh', n }] (la hora en curso incluida). */
+function tvHoras_() {
+  var todo = {};
+  try { todo = JSON.parse(props_().getProperty('TV_HORAS') || '{}'); } catch (e) { /* vacío */ }
+  try { var c = JSON.parse(CacheService.getScriptCache().get('tvn') || 'null'); if (c) todo[c.h] = c.n; } catch (e2) { /* vacío */ }
+  var out = [], ahora = Date.now();
+  for (var i = 23; i >= 0; i--) { var h = horaClave_(ahora - i * 3600000); out.push({ h: h, n: todo[h] || 0 }); }
+  return out;
+}
+
 function tvUltima_() {
   var c = CacheService.getScriptCache().get('tv');
   return Number(c || props_().getProperty('TV_ULTIMA') || 0);
@@ -412,7 +456,7 @@ function estado_() {
     nocheTexto: d.nocheTexto,
     contacto: d.contacto,
     mensajes: verMsg ? vivos.slice(0, 2).map(function (m) { return mensajeParaTV_(m, d); }) : [],
-    eventos: verEv ? eventos_(d.calendarios) : [],
+    eventos: verEv ? eventos_(d) : [],
     tiempo: verT ? tiempo_(d.latitud, d.longitud) : null,
     // Novedades de la versión 2:
     bloques: d.bloques,
@@ -425,6 +469,7 @@ function estado_() {
     recordatorio: recordatorioActivo_(d, ahora),
     captura: capturaPedida_(),
     // Novedades de la versión 5 (audios, vídeos y fotos a distancia):
+    leerVoz: !!d.leerVoz,
     medio: medioParaTV_(d, ahora),
     rapido: reproPendiente_(d, ahora)
   };
@@ -432,10 +477,10 @@ function estado_() {
 
 /** ¿Alguien mira la vista previa en el panel y hace falta una captura nueva? La TV la manda (como mucho cada 5 s). */
 function capturaPedida_() {
-  var c = CacheService.getScriptCache();
-  var ped = Number(c.get('captura_ped') || 0);
+  var v = CacheService.getScriptCache().getAll(['captura_ped', 'captura_t']);
+  var ped = Number(v.captura_ped || 0);
   if (!ped || Date.now() - ped > 150000) return false;
-  return Date.now() - Number(c.get('captura_t') || 0) > 5000;
+  return Date.now() - Number(v.captura_t || 0) > 5000;
 }
 
 /** La TV acaba de recibir estos mensajes: se apunta cuándo los vio por primera vez ("Visto en la tele a las 18:02"). */
@@ -454,39 +499,6 @@ function mensajeParaTV_(m, d) {
   return { id: m.id, de: m.de, texto: m.texto, t: m.t, hasta: m.hasta, autor: m.autor, foto: f && f.foto ? f.foto.v : null };
 }
 
-/** Eventos de hoy y de mañana. Se guardan 55 s en caché: la TV y el panel preguntan a menudo. */
-function eventos_(ids) {
-  var cache = CacheService.getScriptCache();
-  var clave = 'eventos_' + (ids || []).join(',');
-  var hit = cache.get(clave);
-  if (hit) return JSON.parse(hit);
-  var cals = [];
-  if (ids && ids.length) {
-    ids.forEach(function (id) { var c = CalendarApp.getCalendarById(id); if (c) cals.push(c); });
-  } else {
-    cals.push(CalendarApp.getDefaultCalendar());
-  }
-  var tz = Session.getScriptTimeZone();
-  var ahora = new Date();
-  var dias = [ahora, new Date(ahora.getTime() + 86400000)];
-  var out = [];
-  dias.forEach(function (dia, i) {
-    cals.forEach(function (c) {
-      c.getEventsForDay(dia).forEach(function (ev) {
-        var todo = ev.isAllDayEvent();
-        if (i === 0 && !todo && ev.getEndTime() < ahora) return;   // ya terminó
-        var hora = todo ? '' : Utilities.formatDate(ev.getStartTime(), tz, 'HH:mm');
-        out.push({ dia: i, titulo: ev.getTitle(), hora: hora, orden: todo ? '00:00' : hora });
-      });
-    });
-  });
-  out.sort(function (a, b) { return a.dia - b.dia || a.orden.localeCompare(b.orden); });
-  out = out.slice(0, 6);
-  try { cache.put(clave, JSON.stringify(out), 55); } catch (e) { /* sin caché */ }
-  return out;
-}
-
-/** Tiempo de ahora, de hoy y de mañana (Open-Meteo, sin clave). Caché de 30 min. */
 function tiempo_(lat, lon) {
   var cache = CacheService.getScriptCache();
   var clave = 'tiempo2_' + lat + '_' + lon;
@@ -624,6 +636,7 @@ function pendientes_(d, ahora) {
 function revisarAvisos() {
   var d = leer_();
   var ahora = Date.now();
+  try { avisoTV_(d); } catch (e0) { Logger.log('Aviso de la TV: ' + e0); }
   var debidos = ocurrencias_(d, ahora).filter(function (o) {
     var est = d.recEstado[o.clave];
     return o.rec.confirmar && !(est && est.conf) && !(est && est.aviso) &&
@@ -729,7 +742,8 @@ function admEstado(k) {
       ciudad: d.ciudad, latitud: d.latitud, longitud: d.longitud, calendarios: d.calendarios,
       recordatorios: d.recordatorios.map(function (r) { return recParaPanel_(d, r, ahora); }),
       correoAviso: d.correoAviso,
-      enlaceApp: d.enlaceApp,
+      enlaceApp: d.enlaceApp, icloud: d.icloud, avisoTV: d.avisoTV !== false, leerVoz: !!d.leerVoz,
+      visitas: d.visitas, rutina: d.rutina, espacio: espacioGuardado_(), tvHoras: tvHoras_(),
       familia: d.familia.map(function (f) {
         var propios = d.mensajes.filter(function (m) { return m.autor === f.id; });
         return { id: f.id, nombre: f.nombre, clave: f.clave, tieneFoto: !!f.foto,
@@ -894,12 +908,20 @@ function admAjustes(k, aj) {
       if (ea && !/^https:\/\/[^\s?#]{4,190}$/.test(ea)) throw new Error('La dirección de la app tiene que empezar por https:// y no llevar ? ni #');
       d.enlaceApp = ea;
     }
+    if (aj.icloud !== undefined) {
+      var ic = String(aj.icloud || '').trim();
+      if (ic && !/^(webcal|https):\/\/[^\s]{6,480}$/i.test(ic)) throw new Error('El enlace del calendario de iCloud tiene que empezar por webcal:// o https://');
+      d.icloud = ic;
+    }
+    if (aj.avisoTV !== undefined) d.avisoTV = !!aj.avisoTV;
+    if (aj.leerVoz !== undefined) d.leerVoz = !!aj.leerVoz;
     if (aj.nocheTexto !== undefined) d.nocheTexto = String(aj.nocheTexto).trim().slice(0, 120) || 'Es hora de dormir.';
     if (aj.contactoNombre !== undefined) {
       d.contacto = { nombre: String(aj.contactoNombre).trim().slice(0, 30), telefono: String(aj.contactoTelefono || '').trim().slice(0, 25) };
     }
   });
   CacheService.getScriptCache().removeAll(['calendarios']);
+  invalidarEventos_();
   return admEstado(k);
 }
 
@@ -1333,4 +1355,443 @@ function admMediosEstado(k) {
   var r = { rol: q.rol, ahora: ahora, medios: mediosParaPanel_(d, q, ahora), tv: { ultima: tvUltima_(), conectada: (ahora / 1000 - tvUltima_()) < TV_CONECTADA_S } };
   if (q.rol === 'admin') r.histMedios = d.histMedios.slice(0, 50);
   return r;
+}
+
+/* ============================================================
+ *  Lo próximo: calendarios de Google, calendario de iCloud (webcal), visitas y rutina semanal.
+ *  Los calendarios (lo lento) se guardan 10 minutos y se vuelven a pedir si se cambian los calendarios en Ajustes.
+ *  Lo que "ya terminó" se quita al servir, no al guardar, para que no se quede viejo.
+ * ============================================================ */
+
+var CACHE_EVENTOS_S = 600;
+
+function versionEventos_() {
+  var c = CacheService.getScriptCache();
+  return c.get('ev_ver') || '0';
+}
+function invalidarEventos_() {
+  try { CacheService.getScriptCache().put('ev_ver', String(Date.now()), 21600); } catch (e) { /* sin caché */ }
+}
+function claveDia_(f) { return Utilities.formatDate(f, Session.getScriptTimeZone(), 'yyyy-MM-dd'); }
+
+/** Los dos días que se enseñan: hoy y mañana (a las 00:00 de la zona del script). */
+function ventanaEventos_(ahora) {
+  var hoy0 = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate());
+  var man0 = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate() + 1);
+  var fin = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate() + 2);
+  return { dias: [hoy0, man0], ini: hoy0.getTime(), fin: fin.getTime() };
+}
+
+/** Un evento "crudo" (lo que se guarda en la caché): dia 0 = hoy, 1 = mañana. */
+function eventosDeGoogle_(ids, v) {
+  var cals = [];
+  if (ids && ids.length) ids.forEach(function (id) { var c = CalendarApp.getCalendarById(id); if (c) cals.push(c); });
+  else cals.push(CalendarApp.getDefaultCalendar());
+  var tz = Session.getScriptTimeZone(), out = [];
+  v.dias.forEach(function (dia, i) {
+    cals.forEach(function (c) {
+      c.getEventsForDay(dia).forEach(function (ev) {
+        var todo = ev.isAllDayEvent();
+        var hora = todo ? '' : Utilities.formatDate(ev.getStartTime(), tz, 'HH:mm');
+        out.push({ dia: i, titulo: ev.getTitle(), hora: hora, orden: todo ? '00:00' : hora, todo: todo, fin: todo ? 0 : ev.getEndTime().getTime() });
+      });
+    });
+  });
+  return out;
+}
+
+/** Los eventos de los calendarios (Google e iCloud), de la caché si está fresca. */
+function eventosDeCalendarios_(d, ahora) {
+  var cache = CacheService.getScriptCache();
+  var v = ventanaEventos_(ahora);
+  var clave = 'eventos3_' + versionEventos_() + '_' + claveDia_(ahora) + '_' + (d.calendarios || []).join(',') + '_' + (d.icloud ? 'i' : '');
+  var hit = cache.get(clave);
+  if (hit) return JSON.parse(hit);
+  var out = [];
+  try { out = out.concat(eventosDeGoogle_(d.calendarios, v)); } catch (e) { Logger.log('Calendario de Google: ' + e); }
+  if (d.icloud) { try { out = out.concat(eventosDeICloud_(d.icloud, v)); } catch (e2) { Logger.log('Calendario de iCloud: ' + e2); } }
+  try { cache.put(clave, JSON.stringify(out), CACHE_EVENTOS_S); } catch (e3) { /* sin caché */ }
+  return out;
+}
+
+function nombrePersona_(d, id) {
+  for (var i = 0; i < d.familia.length; i++) if (d.familia[i].id === id) return d.familia[i];
+  return null;
+}
+function eventoDeVisita_(d, v, dia, fecha) {
+  var p = v.persona ? nombrePersona_(d, v.persona) : null;
+  var titulo = v.texto || (p ? 'Viene ' + p.nombre : 'Viene alguien');
+  var hora = v.hora || '';
+  var ini = hora ? new Date(fecha.getFullYear(), fecha.getMonth(), fecha.getDate(), Number(hora.slice(0, 2)), Number(hora.slice(3))).getTime() : 0;
+  return { dia: dia, titulo: titulo, hora: hora, orden: hora || '00:00', todo: !hora, fin: hora ? ini + 3600000 : 0,
+           autor: p ? p.id : null, foto: p && p.foto ? p.foto.v : null };
+}
+/** Visitas apuntadas y tareas de cada semana, para hoy y mañana. */
+function eventosPropios_(d, v) {
+  var out = [];
+  v.dias.forEach(function (dia, i) {
+    var clave = claveDia_(dia);
+    (d.visitas || []).forEach(function (x) { if (x.fecha === clave) out.push(eventoDeVisita_(d, x, i, dia)); });
+    (d.rutina || []).forEach(function (x) { if (Number(x.dia) === dia.getDay()) out.push(eventoDeVisita_(d, { persona: x.persona, texto: x.texto, hora: x.hora }, i, dia)); });
+  });
+  return out;
+}
+
+/** Lo que va a "Lo próximo" en la TV: hasta 6, de hoy y de mañana, sin lo que ya terminó. */
+function eventos_(d) {
+  var ahora = new Date();
+  var v = ventanaEventos_(ahora);
+  var todos = eventosDeCalendarios_(d, ahora).concat(eventosPropios_(d, v));
+  var ms = ahora.getTime();
+  var out = todos.filter(function (e) { return !(e.dia === 0 && !e.todo && e.fin && e.fin < ms); }).map(function (e) {
+    var x = { dia: e.dia, titulo: e.titulo, hora: e.hora, orden: e.orden };
+    if (e.autor) { x.autor = e.autor; x.foto = e.foto || null; }
+    return x;
+  });
+  out.sort(function (a, b) { return a.dia - b.dia || a.orden.localeCompare(b.orden); });
+  return out.slice(0, 6);
+}
+
+/* ---------- Lector de iCal (.ics) ---------- */
+
+function icsLineas_(texto) {
+  var t = String(texto || '').replace(/\r\n/g, '\n').replace(/\r/g, '\n').replace(/\n[ \t]/g, '');
+  return t.split('\n');
+}
+function icsTexto_(s) { return String(s || '').replace(/\\n/gi, ' ').replace(/\\,/g, ',').replace(/\;/g, ';').replace(/\\\\/g, '\\').trim(); }
+function icsParam_(cab) {
+  var partes = cab.split(';'), nombre = partes[0].toUpperCase(), p = {};
+  for (var i = 1; i < partes.length; i++) { var k = partes[i].indexOf('='); if (k > 0) p[partes[i].slice(0, k).toUpperCase()] = partes[i].slice(k + 1).replace(/^"|"$/g, ''); }
+  return { nombre: nombre, p: p };
+}
+/** Un DTSTART/DTEND/EXDATE/RECURRENCE-ID: { todo, fecha:'AAAAMMDD', hora:'HHMMSS', tz, utc, ms } */
+function icsFecha_(valor, p) {
+  var m = /^(\d{4})(\d{2})(\d{2})(?:T(\d{2})(\d{2})(\d{2})?(Z)?)?$/.exec(String(valor).trim());
+  if (!m) return null;
+  var todo = !m[4] || (p && p.VALUE === 'DATE');
+  var r = { todo: todo, fecha: m[1] + m[2] + m[3], hora: todo ? '' : m[4] + m[5] + (m[6] || '00'), tz: (p && p.TZID) || '', utc: !!m[7] };
+  r.ms = icsMs_(r);
+  return r;
+}
+function icsMs_(f) {
+  var a = Number(f.fecha.slice(0, 4)), me = Number(f.fecha.slice(4, 6)) - 1, di = Number(f.fecha.slice(6, 8));
+  if (f.todo) return new Date(a, me, di).getTime();
+  var h = Number(f.hora.slice(0, 2)), mi = Number(f.hora.slice(2, 4)), se = Number(f.hora.slice(4, 6));
+  if (f.utc) return Date.UTC(a, me, di, h, mi, se);
+  var tz = f.tz || Session.getScriptTimeZone();
+  try { return Utilities.parseDate(f.fecha + 'T' + f.hora, tz, "yyyyMMdd'T'HHmmss").getTime(); } catch (e) { return new Date(a, me, di, h, mi, se).getTime(); }
+}
+function icsDuracion_(s) {
+  var m = /^([+-])?P(?:(\d+)W)?(?:(\d+)D)?(?:T(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?)?$/.exec(String(s).trim());
+  if (!m) return 0;
+  var ms = ((Number(m[2] || 0) * 7 + Number(m[3] || 0)) * 86400 + Number(m[4] || 0) * 3600 + Number(m[5] || 0) * 60 + Number(m[6] || 0)) * 1000;
+  return m[1] === '-' ? -ms : ms;
+}
+function icsRegla_(s) {
+  var r = {};
+  String(s || '').split(';').forEach(function (x) { var k = x.indexOf('='); if (k > 0) r[x.slice(0, k).toUpperCase()] = x.slice(k + 1); });
+  return r;
+}
+var ICS_DIAS = { SU: 0, MO: 1, TU: 2, WE: 3, TH: 4, FR: 5, SA: 6 };
+
+/** Todos los VEVENT del texto, con su regla de repetición, exclusiones y cambios de una sola vez. */
+function icsEventos_(texto) {
+  var out = [], ev = null;
+  icsLineas_(texto).forEach(function (l) {
+    if (l === 'BEGIN:VEVENT') { ev = { ex: [] }; return; }
+    if (l === 'END:VEVENT') { if (ev && ev.ini) out.push(ev); ev = null; return; }
+    if (!ev) return;
+    var k = l.indexOf(':'); if (k < 0) return;
+    var cab = icsParam_(l.slice(0, k)), val = l.slice(k + 1);
+    if (cab.nombre === 'SUMMARY') ev.titulo = icsTexto_(val);
+    else if (cab.nombre === 'UID') ev.uid = val.trim();
+    else if (cab.nombre === 'STATUS') ev.cancelado = /CANCELLED/i.test(val);
+    else if (cab.nombre === 'DTSTART') ev.ini = icsFecha_(val, cab.p);
+    else if (cab.nombre === 'DTEND') ev.fin = icsFecha_(val, cab.p);
+    else if (cab.nombre === 'DURATION') ev.dur = icsDuracion_(val);
+    else if (cab.nombre === 'RRULE') ev.regla = icsRegla_(val);
+    else if (cab.nombre === 'RECURRENCE-ID') ev.cambia = icsFecha_(val, cab.p);
+    else if (cab.nombre === 'EXDATE') val.split(',').forEach(function (x) { var f = icsFecha_(x, cab.p); if (f) ev.ex.push(f.fecha); });
+  });
+  return out;
+}
+function diasDesde_(a, b) { return Math.round((Date.UTC(b.getFullYear(), b.getMonth(), b.getDate()) - Date.UTC(a.getFullYear(), a.getMonth(), a.getDate())) / 86400000); }
+function nSemana_(d) { return Math.floor((diasDesde_(new Date(1970, 0, 5), d)) / 7); }   // semanas que empiezan en lunes
+
+/** ¿La regla cae en el día D (siendo S el día de inicio)? */
+function reglaCae_(r, S, D) {
+  var inter = Math.max(1, Number(r.INTERVAL || 1)), f = r.FREQ;
+  var byday = r.BYDAY ? r.BYDAY.split(',') : null, bymd = r.BYMONTHDAY ? r.BYMONTHDAY.split(',').map(Number) : null, bym = r.BYMONTH ? r.BYMONTH.split(',').map(Number) : null;
+  if (bym && bym.indexOf(D.getMonth() + 1) < 0) return false;
+  if (f === 'DAILY') return diasDesde_(S, D) % inter === 0 && (!byday || byday.some(function (x) { return ICS_DIAS[x.slice(-2)] === D.getDay(); }));
+  if (f === 'WEEKLY') {
+    if ((nSemana_(D) - nSemana_(S)) % inter !== 0) return false;
+    var dias = byday ? byday.map(function (x) { return ICS_DIAS[x.slice(-2)]; }) : [S.getDay()];
+    return dias.indexOf(D.getDay()) >= 0;
+  }
+  if (f === 'MONTHLY') {
+    if (((D.getFullYear() - S.getFullYear()) * 12 + D.getMonth() - S.getMonth()) % inter !== 0) return false;
+    if (byday) {
+      return byday.some(function (x) {
+        var m = /^([+-]?\d+)?(SU|MO|TU|WE|TH|FR|SA)$/.exec(x); if (!m || ICS_DIAS[m[2]] !== D.getDay()) return false;
+        if (!m[1]) return true;
+        var n = Number(m[1]), ult = new Date(D.getFullYear(), D.getMonth() + 1, 0).getDate();
+        return n > 0 ? Math.ceil(D.getDate() / 7) === n : Math.ceil((ult - D.getDate() + 1) / 7) === -n;
+      });
+    }
+    if (bymd) return bymd.indexOf(D.getDate()) >= 0 || bymd.some(function (x) { return x < 0 && new Date(D.getFullYear(), D.getMonth() + 1, 0).getDate() + x + 1 === D.getDate(); });
+    return D.getDate() === S.getDate();
+  }
+  if (f === 'YEARLY') {
+    if ((D.getFullYear() - S.getFullYear()) % inter !== 0) return false;
+    if (bym || bymd) return (!bym || bym.indexOf(D.getMonth() + 1) >= 0) && (!bymd || bymd.indexOf(D.getDate()) >= 0);
+    return D.getMonth() === S.getMonth() && D.getDate() === S.getDate();
+  }
+  return false;
+}
+
+/** Los días (a las 00:00) en que ocurre un evento dentro de la ventana, ya repetido. */
+function icsOcurrencias_(ev, v) {
+  var fechaIni = ev.ini, S = new Date(Number(fechaIni.fecha.slice(0, 4)), Number(fechaIni.fecha.slice(4, 6)) - 1, Number(fechaIni.fecha.slice(6, 8)));
+  var durMs = ev.fin ? ev.fin.ms - fechaIni.ms : ev.dur !== undefined ? ev.dur : (fechaIni.todo ? 86400000 : 0);
+  var res = [];
+  var emite = function (dia, msIni) { res.push({ ini: msIni, fin: msIni + durMs, todo: fechaIni.todo }); };
+  if (!ev.regla) { emite(S, fechaIni.ms); return res; }
+  var r = ev.regla, cuenta = r.COUNT ? Number(r.COUNT) : 0, hasta = r.UNTIL ? icsFecha_(r.UNTIL, {}) : null, n = 0;
+  var limite = new Date(v.fin);
+  var salto = new Date(v.ini - durMs - 2 * 86400000);               // sin COUNT no hace falta empezar desde el principio: la regla se calcula por fechas
+  var arranque = !cuenta && salto > S ? new Date(salto.getFullYear(), salto.getMonth(), salto.getDate()) : S;
+  for (var D = new Date(arranque.getTime()), i = 0; D < limite && i < 40000; D = new Date(D.getFullYear(), D.getMonth(), D.getDate() + 1), i++) {
+    if (hasta && D.getTime() > hasta.ms + (hasta.todo ? 86400000 : 0)) break;
+    if (!reglaCae_(r, S, D)) continue;
+    n++;
+    if (cuenta && n > cuenta) break;
+    var clave = D.getFullYear() + dos2_(D.getMonth() + 1) + dos2_(D.getDate());
+    if (ev.ex.indexOf(clave) >= 0) continue;
+    if (D.getTime() + durMs + 86400000 < v.ini) continue;
+    var msIni = fechaIni.todo ? D.getTime() : icsMs_({ todo: false, fecha: clave, hora: fechaIni.hora, tz: fechaIni.tz, utc: fechaIni.utc });
+    emite(D, msIni);
+  }
+  return res;
+}
+function dos2_(n) { return (n < 10 ? '0' : '') + n; }
+
+/** Descarga el calendario de iCloud (webcal:// se pide por https://) y devuelve los eventos de hoy y mañana. */
+function eventosDeICloud_(url, v) {
+  var u = String(url).replace(/^webcal:\/\//i, 'https://');
+  var r = UrlFetchApp.fetch(u, { muteHttpExceptions: true, followRedirects: true });
+  if (r.getResponseCode && r.getResponseCode() !== 200) throw new Error('iCloud respondió ' + r.getResponseCode());
+  return eventosDeICS_(r.getContentText(), v);
+}
+function eventosDeICS_(texto, v) {
+  var evs = icsEventos_(texto), tz = Session.getScriptTimeZone(), out = [];
+  var cambios = {};                                           // instancias que se han movido o cambiado: se sustituyen
+  evs.forEach(function (e) { if (e.cambia && e.uid) cambios[e.uid + '|' + e.cambia.fecha] = true; });
+  evs.forEach(function (e) {
+    if (e.cancelado || !e.titulo) return;
+    var ocs = icsOcurrencias_(e, v);
+    if (!e.cambia && e.uid) ocs = ocs.filter(function (o) { return !cambios[e.uid + '|' + Utilities.formatDate(new Date(o.ini), tz, 'yyyyMMdd')]; });
+    ocs.forEach(function (o) {
+      v.dias.forEach(function (dia, i) {
+        var d0 = dia.getTime(), d1 = new Date(dia.getFullYear(), dia.getMonth(), dia.getDate() + 1).getTime();
+        var cae = o.todo ? (o.ini < d1 && o.fin > d0) : (o.fin > o.ini ? (o.ini < d1 && o.fin > d0) : (o.ini >= d0 && o.ini < d1));
+        if (!cae) return;
+        var hora = o.todo ? '' : Utilities.formatDate(new Date(o.ini), tz, 'HH:mm');
+        if (!o.todo && o.ini < d0) hora = '';                                 // viene de ayer: se enseña como de todo el día
+        out.push({ dia: i, titulo: e.titulo, hora: hora, orden: hora || '00:00', todo: !hora, fin: o.todo ? 0 : o.fin });
+      });
+    });
+  });
+  return out;
+}
+
+/* ============================================================
+ *  Visitas ("Hoy viene Ana") y rutina de cada semana ("Jueves: viene la asistenta")
+ * ============================================================ */
+
+function quePersonaValida_(d, id) { return id && nombrePersona_(d, id) ? id : ''; }
+
+/** v: { id?, fecha 'AAAA-MM-DD', hora 'HH:MM' (opcional), persona (id de la familia, opcional), texto (opcional) }. Hace falta persona o texto. */
+function admVisitaGuardar(k, v) {
+  admin_(k);
+  v = v || {};
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(String(v.fecha || ''))) throw new Error('Elige el día de la visita');
+  var hora = v.hora ? horaValida_(v.hora) : '';
+  if (v.hora && !hora) throw new Error('Esa hora no vale');
+  var texto = String(v.texto || '').trim().slice(0, 60);
+  modificar_(function (d) {
+    var persona = quePersonaValida_(d, v.persona);
+    if (!persona && !texto) throw new Error('Di quién viene (elige a alguien de la familia o escribe quién es)');
+    var x = { id: v.id || Utilities.getUuid(), fecha: v.fecha, hora: hora || '', persona: persona, texto: texto };
+    var i = -1;
+    d.visitas.forEach(function (y, n) { if (y.id === x.id) i = n; });
+    if (i >= 0) d.visitas[i] = x;
+    else { if (d.visitas.length >= 60) throw new Error('Hay demasiadas visitas apuntadas. Borra alguna.'); d.visitas.push(x); }
+    d.visitas.sort(function (a, b) { return (a.fecha + (a.hora || '00:00')).localeCompare(b.fecha + (b.hora || '00:00')); });
+  });
+  return admEstado(k);
+}
+function admVisitaBorrar(k, id) {
+  admin_(k);
+  modificar_(function (d) { d.visitas = d.visitas.filter(function (x) { return x.id !== id; }); });
+  return admEstado(k);
+}
+/** r: { id?, dia 0..6 (0 = domingo), hora (opcional), persona (opcional), texto }. */
+function admRutinaGuardar(k, r) {
+  admin_(k);
+  r = r || {};
+  var dia = Math.floor(Number(r.dia));
+  if (!(dia >= 0 && dia <= 6)) throw new Error('Elige el día de la semana');
+  var hora = r.hora ? horaValida_(r.hora) : '';
+  if (r.hora && !hora) throw new Error('Esa hora no vale');
+  var texto = String(r.texto || '').trim().slice(0, 60);
+  modificar_(function (d) {
+    var persona = quePersonaValida_(d, r.persona);
+    if (!persona && !texto) throw new Error('Escribe qué pasa ese día (por ejemplo "Viene la asistenta")');
+    var x = { id: r.id || Utilities.getUuid(), dia: dia, hora: hora || '', persona: persona, texto: texto };
+    var i = -1;
+    d.rutina.forEach(function (y, n) { if (y.id === x.id) i = n; });
+    if (i >= 0) d.rutina[i] = x;
+    else { if (d.rutina.length >= 30) throw new Error('Hay demasiadas tareas semanales. Borra alguna.'); d.rutina.push(x); }
+    d.rutina.sort(function (a, b) { return ((a.dia + 6) % 7) - ((b.dia + 6) % 7) || (a.hora || '').localeCompare(b.hora || ''); });
+  });
+  return admEstado(k);
+}
+function admRutinaBorrar(k, id) {
+  admin_(k);
+  modificar_(function (d) { d.rutina = d.rutina.filter(function (x) { return x.id !== id; }); });
+  return admEstado(k);
+}
+
+/** "Probar" el enlace de iCloud: lo descarga y cuenta qué hay hoy y mañana. */
+function admProbarICloud(k, url) {
+  admin_(k);
+  url = String(url || '').trim();
+  if (!/^(webcal|https):\/\/[^\s]{6,480}$/i.test(url)) throw new Error('El enlace tiene que empezar por webcal:// o https://');
+  var ev;
+  try { ev = eventosDeICloud_(url, ventanaEventos_(new Date())); }
+  catch (e) { throw new Error('No se ha podido leer ese calendario (' + String(e.message || e).slice(0, 80) + '). Comprueba que el enlace es el de "Calendario público".'); }
+  ev.sort(function (a, b) { return a.dia - b.dia || a.orden.localeCompare(b.orden); });
+  return { ok: true, total: ev.length, primero: ev.length ? (ev[0].dia === 0 ? 'Hoy' : 'Mañana') + (ev[0].hora ? ' ' + ev[0].hora : '') + ': ' + ev[0].titulo : '' };
+}
+
+/* ============================================================
+ *  Mantenimiento diario: copia de los datos, limpieza de Drive y espacio ocupado
+ * ============================================================ */
+
+var COPIAS_QUE_SE_GUARDAN = 7;
+var DIAS_MEDIOS_VISTOS = 30;
+
+function subcarpeta_(nombre, propiedad) {
+  var p = props_(), id = p.getProperty(propiedad);
+  if (id) { try { return DriveApp.getFolderById(id); } catch (e) { /* se recrea */ } }
+  var f = carpeta_().createFolder(nombre);
+  p.setProperty(propiedad, f.getId());
+  return f;
+}
+
+/** Una copia de pizarra-datos.json al día en Pizarra/Copias; se quedan las últimas 7. */
+function copiaDiaria_() {
+  leer_();
+  var f = subcarpeta_('Copias', 'COPIAS_ID');
+  var nombre = 'pizarra-datos-' + Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd') + '.json';
+  var ya = f.getFilesByName(nombre);
+  if (!ya.hasNext()) f.createFile(nombre, DriveApp.getFileById(props_().getProperty('DATOS_ID')).getBlob().getDataAsString('UTF-8'), MimeType.PLAIN_TEXT);
+  var todos = [], it = f.getFiles();
+  while (it.hasNext()) { var a = it.next(); if (/^pizarra-datos-\d{4}-\d{2}-\d{2}\.json$/.test(a.getName())) todos.push(a); }
+  todos.sort(function (a, b) { return a.getName() < b.getName() ? 1 : -1; });
+  todos.slice(COPIAS_QUE_SE_GUARDAN).forEach(function (a) { a.setTrashed(true); });
+  return Math.min(todos.length, COPIAS_QUE_SE_GUARDAN);
+}
+
+/**
+ * Borra los audios, vídeos y fotos mandados que ya se pusieron en la tele hace más de 30 días, y los trozos huérfanos de más de un día.
+ * Solo toca archivos de la carpeta Pizarra/Medios: nunca las fotos de perfil ni las de los recordatorios.
+ */
+function limpiarMedios_() {
+  var d = leer_(), ahora = Date.now(), limite = ahora - DIAS_MEDIOS_VISTOS * 86400000, borrar = [];
+  d.medios.forEach(function (m) {
+    var visto = 0;
+    for (var i = 0; i < d.histMedios.length; i++) if (d.histMedios[i].id === m.id) { visto = d.histMedios[i].t; break; }
+    var enUso = d.repro && d.repro.id === m.id && reproPendiente_(d, ahora);
+    if (m.listo && visto && visto < limite && !enUso) borrar.push(m.id);
+  });
+  var vivos = {};
+  d.medios.forEach(function (m) { if (borrar.indexOf(m.id) < 0) vivos[m.id] = 1; });
+  var huerfanos = 0, it = carpetaMedios_().getFiles();
+  while (it.hasNext()) {
+    var f = it.next(), n = /^([0-9a-f]{16})\.\d+$/.exec(f.getName());
+    if (!n) continue;                                                       // lo que no es un trozo no se toca
+    if (borrar.indexOf(n[1]) >= 0) { f.setTrashed(true); continue; }
+    if (!vivos[n[1]] && f.getDateCreated().getTime() < ahora - 86400000) { f.setTrashed(true); huerfanos++; }
+  }
+  if (borrar.length) modificar_(function (x) { x.medios = x.medios.filter(function (m) { return borrar.indexOf(m.id) < 0; }); });
+  return { medios: borrar.length, huerfanos: huerfanos };
+}
+
+function tamanoCarpeta_(f) {
+  var n = 0, it = f.getFiles();
+  while (it.hasNext()) n += it.next().getSize();
+  var sub = f.getFolders();
+  while (sub.hasNext()) n += tamanoCarpeta_(sub.next());
+  return n;
+}
+/** Cuánto ocupa la carpeta Pizarra (y sus partes). Se guarda para no recorrer Drive cada vez. */
+function calcularEspacio_() {
+  var raiz = carpeta_();
+  var r = { t: Date.now(), total: tamanoCarpeta_(raiz), medios: tamanoCarpeta_(carpetaMedios_()), copias: tamanoCarpeta_(subcarpeta_('Copias', 'COPIAS_ID')) };
+  props_().setProperty('ESPACIO', JSON.stringify(r));
+  return r;
+}
+function espacioGuardado_() {
+  try { return JSON.parse(props_().getProperty('ESPACIO') || 'null'); } catch (e) { return null; }
+}
+function admEspacio(k) {
+  admin_(k);
+  return { espacio: calcularEspacio_() };
+}
+
+/** Se ejecuta sola cada madrugada (activador "limpiezaDiaria"). Cada paso es independiente: si uno falla, siguen los demás. */
+function limpiezaDiaria() {
+  var r = {};
+  try { r.copias = copiaDiaria_(); } catch (e) { Logger.log('Copia diaria: ' + e); }
+  try { r.limpieza = limpiarMedios_(); } catch (e2) { Logger.log('Limpieza de medios: ' + e2); }
+  try {
+    var hoy = claveDia_(new Date(Date.now() - 7 * 86400000));
+    modificar_(function (d) { d.visitas = d.visitas.filter(function (x) { return x.fecha >= hoy; }); });         // las visitas de hace más de una semana se quitan
+  } catch (e3) { Logger.log('Visitas viejas: ' + e3); }
+  try { r.espacio = calcularEspacio_(); } catch (e4) { Logger.log('Espacio: ' + e4); }
+  return r;
+}
+
+/* ---------- Aviso de TV desconectada ---------- */
+
+var TV_SIN_CONSULTAR_MIN = 30;
+var TV_AVISO_CADA_H = 6;
+
+/** Correo si la TV lleva más de 30 minutos sin preguntar, y otro cuando vuelve. Como mucho uno de cada tipo cada 6 horas. */
+function avisoTV_(d) {
+  if (d.avisoTV === false) return 0;
+  var ult = tvUltima_();
+  if (!ult) return 0;                                          // todavía no se ha conectado nunca
+  var ahora = Date.now(), seg = ahora / 1000 - ult, enviados = 0;
+  var p = props_(), est = {};
+  try { est = JSON.parse(p.getProperty('AVISO_TV') || '{}'); } catch (e) { est = {}; }
+  var cuando = Utilities.formatDate(new Date(ult * 1000), Session.getScriptTimeZone(), 'dd/MM HH:mm');
+  if (seg > TV_SIN_CONSULTAR_MIN * 60) {
+    if (!est.caida && ahora - (est.mailCaida || 0) > TV_AVISO_CADA_H * 3600000) {
+      enviarCorreo_(d, 'Pizarra: la tele no responde', 'La tele no ha consultado la pizarra desde el ' + cuando + ' (hace más de ' + TV_SIN_CONSULTAR_MIN + ' minutos).\n\n' +
+        'Puede estar apagada o sin internet. Te avisaré cuando vuelva.');
+      est.mailCaida = ahora; enviados++;
+    }
+    est.caida = true;
+  } else if (seg < 600 && est.caida) {
+    est.caida = false;
+    if (ahora - (est.mailVuelta || 0) > TV_AVISO_CADA_H * 3600000) {
+      enviarCorreo_(d, 'Pizarra: la tele ha vuelto', 'La tele ya está consultando la pizarra otra vez.');
+      est.mailVuelta = ahora; enviados++;
+    }
+  }
+  p.setProperty('AVISO_TV', JSON.stringify(est));
+  return enviados;
 }

@@ -1,3 +1,4 @@
+process.env.TZ = 'Europe/Madrid';       // las horas de las pruebas (y el iCal) son las de Madrid
 // Pruebas de Code.gs con el simulador. Uso:  node test/servidor.test.js
 const { crear: crearSimulador } = require('./simulador');
 const crear = (o = {}) => crearSimulador(Object.assign({ limiteProp: 9216 }, o));   // con el límite real de Google: 9 KB por valor de propiedad
@@ -691,6 +692,196 @@ const JPEG = 'data:image/jpeg;base64,' + Buffer.from('foto-de-prueba').toString(
   s.run(`servir_({parameter:{a:'medioEstado',k:'ADMINKEY',o:${J(String(o))},e:'reproduciendo'}})`);
   const l2 = s.run(`admEstado(${J(ka)})`).medios.lista.find((x) => x.id === id);
   t('y cuando se pone en la tele, queda cuándo y quién', l2.vistoT > 0 && l2.puso === 'Ana');
+}
+
+/* ---------- 20. Rendimiento: los calendarios se guardan 10 minutos ---------- */
+{
+  const h = (hh, mm = 0) => new Date(2026, 9, 20, hh, mm).getTime();
+  const ev = (titulo, ini, fin) => ({ isAllDayEvent: () => false, getTitle: () => titulo, getStartTime: () => new Date(ini), getEndTime: () => new Date(fin) });
+  const s = crear({ ahora: h(17, 0), eventos: [ev('Fisio', h(17, 10), h(17, 30)), ev('Merienda', h(18, 30), h(19, 30))] });
+  const tv = () => JSON.parse(s.run("servir_({parameter:{a:'estado',k:'ADMINKEY'}}).s")).eventos.map((e) => e.titulo);
+  const tv0 = () => JSON.parse(s.run("servir_({parameter:{a:'estado',k:'ADMINKEY'}}).s")).eventos.filter((e) => e.dia === 0).map((e) => e.titulo);
+  tv(); const base = s.contarCalendario();
+  t('la primera vez pregunta a Google (hoy y mañana)', base === 2);
+  for (let i = 1; i <= 9; i++) { s.fijar(h(17, 0) + i * 60000); tv(); }
+  t('en 9 consultas seguidas (una por minuto) no vuelve a preguntar', s.contarCalendario() === base);
+  s.fijar(h(17, 40));
+  t('lo que ya terminó se quita aunque venga de la caché (Fisio acabó a las 17:30)', !tv0().includes('Fisio') && tv0().includes('Merienda'));
+  s.fijar(h(17, 0) + 11 * 60000); tv();
+  t('pasados 10 minutos, vuelve a preguntar (y solo una vez)', s.contarCalendario() === base + 2);
+  tv(); tv();
+  t('y otra vez a la caché', s.contarCalendario() === base + 2);
+  s.run("admAjustes('ADMINKEY', {calendarios:['c1']})");
+  s.run("CalendarApp.getCalendarById = function () { return { getEventsForDay: function () { return []; } }; }");
+  const antes = s.contarCalendario(); tv();
+  t('si se cambian los calendarios en Ajustes, se borra la caché y se vuelve a leer ya', JSON.parse(s.run("servir_({parameter:{a:'estado',k:'ADMINKEY'}}).s")).eventos.every((e) => e.titulo !== 'Fisio') && tv().length === 0);
+  s.fijar(new Date(2026, 9, 21, 9, 0).getTime());
+  t('al día siguiente, otra clave', Object.keys(s.cacheMapa).some((k) => /^eventos3_.*_2026-10-20_/.test(k)) && !Object.keys(s.cacheMapa).some((k) => /^eventos3_.*_2026-10-21_/.test(k)) && (tv(), Object.keys(s.cacheMapa).some((k) => /^eventos3_.*_2026-10-21_/.test(k))));
+  // la TV cuenta sus consultas por hora
+  const s2 = crear({ ahora: h(10, 5) });
+  const poll = () => s2.run("servir_({parameter:{a:'estado',k:'ADMINKEY'}})");
+  for (let i = 0; i < 50; i++) { s2.fijar(h(10, 5) + i * 60000 * 0.5); poll(); }       // 50 consultas dentro de la hora de las 10 (cada 30 s hasta las 10:30)
+  s2.fijar(h(11, 2)); poll();
+  const th = s2.run('tvHoras_()');
+  t('se cuentan las consultas de la TV por hora (las 10 h)', th.find((x) => x.h === '2026102010').n >= 50 && th.length === 24);
+  t('y la hora en curso', th[23].h === '2026102011' && th[23].n === 1);
+  t('las métricas solo se vuelcan cada 10 minutos (menos trabajo por consulta)', (() => { const m = s2.run('metricas_()'); return typeof m === 'object'; })());
+}
+
+/* ---------- 21. Calendario de iCloud (iCal) ---------- */
+{
+  const h = (hh, mm = 0) => new Date(2026, 9, 20, hh, mm).getTime();
+  const ICS = [
+    'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Apple Inc.//iCloud//EN',
+    'BEGIN:VEVENT', 'UID:a1', 'DTSTART;VALUE=DATE:20261020', 'DTEND;VALUE=DATE:20261021', 'SUMMARY:Cumpleaños de Pep', 'END:VEVENT',
+    'BEGIN:VEVENT', 'UID:a2', 'DTSTART;TZID=Europe/Madrid:20261020T183000', 'DTEND;TZID=Europe/Madrid:20261020T193000', 'SUMMARY:Merienda con Ana\\, Javier', 'END:VEVENT',
+    'BEGIN:VEVENT', 'UID:a3', 'DTSTART;TZID=Europe/Madrid:20260901T100000', 'DTEND;TZID=Europe/Madrid:20260901T110000', 'RRULE:FREQ=WEEKLY;BYDAY=TU,TH', 'SUMMARY:Fisio', 'END:VEVENT',
+    'BEGIN:VEVENT', 'UID:a4', 'DTSTART:20261020T150000Z', 'DTEND:20261020T160000Z', 'SUMMARY:Llamada (UTC)', 'END:VEVENT',
+    'BEGIN:VEVENT', 'UID:a5', 'DTSTART;TZID=Europe/Madrid:20261001T090000', 'RRULE:FREQ=DAILY', 'EXDATE;TZID=Europe/Madrid:20261020T090000', 'SUMMARY:Pastilla del azúcar (menos hoy)', 'END:VEVENT',
+    'BEGIN:VEVENT', 'UID:a6', 'DTSTART;TZID=Europe/Madrid:20261019T120000', 'RRULE:FREQ=DAILY;COUNT=3', 'SUMMARY:Tres días', 'END:VEVENT',
+    'BEGIN:VEVENT', 'UID:a7', 'DTSTART;TZID=Europe/Madrid:20260115T170000', 'RRULE:FREQ=MONTHLY;BYDAY=3TU', 'SUMMARY:Tercer martes', 'END:VEVENT',
+    'BEGIN:VEVENT', 'UID:a8', 'DTSTART;TZID=Europe/Madrid:20261020T200000', 'STATUS:CANCELLED', 'SUMMARY:Cancelado', 'END:VEVENT',
+    'BEGIN:VEVENT', 'UID:a9', 'DTSTART;TZID=Europe/Madrid:20260901T130000', 'RRULE:FREQ=WEEKLY;BYDAY=TU', 'SUMMARY:Médico', 'END:VEVENT',
+    'BEGIN:VEVENT', 'UID:a9', 'RECURRENCE-ID;TZID=Europe/Madrid:20261020T130000', 'DTSTART;TZID=Europe/Madrid:20261020T143000', 'SUMMARY:Médico (movido)', 'END:VEVENT',
+    'BEGIN:VEVENT', 'UID:b1', 'DTSTART;VALUE=DATE:20261019', 'DTEND;VALUE=DATE:20261023', 'SUMMARY:Viaje de Javier', 'END:VEVENT',
+    'BEGIN:VEVENT', 'UID:b2', 'DTSTART;VALUE=DATE:20250321', 'RRULE:FREQ=YEARLY', 'SUMMARY:Aniversario', 'END:VEVENT',
+    'BEGIN:VEVENT', 'UID:b3', 'DTSTART;TZID=Europe/Madrid:20261021T080000', 'SUMMARY:Un título muy largo que viene partido en dos líneas porque el', '  formato iCal corta a los 75 caracteres', 'END:VEVENT',
+    'END:VCALENDAR'].join('\r\n');
+  const s = crear({ ahora: h(8, 0), ics: ICS });
+  s.run("admAjustes('ADMINKEY', {icloud:'webcal://p01-caldav.icloud.com/published/2/ABCDEFGHIJ'})");
+  const lista = () => JSON.parse(s.run("servir_({parameter:{a:'estado',k:'ADMINKEY'}}).s")).eventos;
+  s.run("leer_()");
+  const v = s.run('ventanaEventos_(new Date())');
+  const evs = s.run(`eventosDeICS_(${J(ICS)}, ventanaEventos_(new Date()))`);
+  const hoy = evs.filter((e) => e.dia === 0).map((e) => (e.hora || 'todo') + ' ' + e.titulo).sort();
+  const man = evs.filter((e) => e.dia === 1).map((e) => (e.hora || 'todo') + ' ' + e.titulo).sort();
+  t('todo el día: cumpleaños (hoy)', hoy.includes('todo Cumpleaños de Pep'));
+  t('con zona horaria Madrid, y la coma escapada', hoy.includes('18:30 Merienda con Ana, Javier'));
+  t('semanal martes y jueves: hoy (martes) sí, mañana (miércoles) no', hoy.includes('10:00 Fisio') && !man.includes('10:00 Fisio'));
+  t('en UTC: 15:00Z son las 17:00 en Madrid (horario de verano)', hoy.includes('17:00 Llamada (UTC)'));
+  t('diario con EXDATE: hoy no, mañana sí', !hoy.some((x) => /Pastilla/.test(x)) && man.includes('09:00 Pastilla del azúcar (menos hoy)'));
+  t('con COUNT=3 desde el 19: hoy y mañana sí (19, 20, 21) y no más', hoy.includes('12:00 Tres días') && man.includes('12:00 Tres días'));
+  t('mensual "el tercer martes": hoy es el tercer martes de octubre', hoy.includes('17:00 Tercer martes') && !man.some((x) => /Tercer martes/.test(x)));
+  t('un evento cancelado no sale', !hoy.some((x) => /Cancelado/.test(x)));
+  t('una repetición movida sale en su nueva hora y no en la vieja', hoy.includes('14:30 Médico (movido)') && !hoy.includes('13:00 Médico'));
+  t('varios días: el viaje sale hoy y mañana', hoy.includes('todo Viaje de Javier') && man.includes('todo Viaje de Javier'));
+  t('anual: el aniversario es el 21 de marzo, no sale', !hoy.concat(man).some((x) => /Aniversario/.test(x)));
+  t('líneas partidas (el formato corta a los 75 caracteres) se juntan', man.some((x) => /Un título muy largo que viene partido en dos líneas porque el formato iCal corta/.test(x)));
+  // integrado en "Lo próximo", con la caché de 10 minutos y webcal:// pedido por https
+  const l = lista();
+  t('en la TV: lo de iCloud sale mezclado con lo de Google, ordenado', l.length === 6 && l[0].dia === 0 && l[0].orden <= l[1].orden);
+  t('webcal:// se pide por https://', s.urlsPedidas.some((u) => u === 'https://p01-caldav.icloud.com/published/2/ABCDEFGHIJ'));
+  const pedidas = s.urlsPedidas.length; lista(); lista();
+  t('el enlace de iCloud se descarga una vez cada 10 minutos', s.urlsPedidas.length === pedidas);
+  t('el enlace se guarda en los datos del administrador, no en el de la TV', !JSON.stringify(JSON.parse(s.run("servir_({parameter:{a:'estado',k:'ADMINKEY'}}).s"))).includes('icloud.com') && s.run("admEstado('ADMINKEY')").datos.icloud.startsWith('webcal://'));
+  s.run("admFamiliaAnadir('ADMINKEY','Ana')"); const ka = s.run('leer_().familia[0].clave');
+  t('un familiar no ve el enlace', !JSON.stringify(s.run(`admEstado(${J(ka)})`)).includes('icloud'));
+  t('un enlace que no es webcal/https se rechaza', falla(() => s.run("admAjustes('ADMINKEY', {icloud:'ftp://x'})")));
+  t('si iCloud falla, siguen los de Google y no se rompe nada', (() => { const s2 = crear({ ahora: h(8, 0), icsFalla: true }); s2.run("admAjustes('ADMINKEY', {icloud:'https://icloud.com/x.ics'})"); return Array.isArray(JSON.parse(s2.run("servir_({parameter:{a:'estado',k:'ADMINKEY'}}).s")).eventos); })());
+  const pr = s.run("admProbarICloud('ADMINKEY', 'webcal://p01-caldav.icloud.com/published/2/ABC')");
+  t('"Probar" dice cuántos eventos hay y cuál es el primero', pr.ok && pr.total > 5 && /Hoy/.test(pr.primero));
+  t('"Probar" con un enlace roto da un aviso claro', (() => { const s3 = crear({ ahora: h(8, 0), icsFalla: true }); try { s3.run("admProbarICloud('ADMINKEY', 'https://icloud.com/x.ics')"); return false; } catch (e) { return /No se ha podido leer/.test(e.message); } })());
+  s.run("admAjustes('ADMINKEY', {icloud:''})");
+  t('quitar el enlace quita sus eventos al instante', (() => { s.fijar(h(8, 1)); return lista().length === 0; })());
+}
+
+/* ---------- 22. Visitas y rutina semanal ---------- */
+{
+  const h = (hh, mm = 0) => new Date(2026, 9, 20, hh, mm).getTime();
+  const s = crear({ ahora: h(9, 0) });
+  s.run("admFamiliaAnadir('ADMINKEY','Ana')"); const ana = s.run('leer_().familia[0]');
+  s.run(`admFoto(${J(ana.clave)}, null, ${J('data:image/jpeg;base64,/9j/' + 'A'.repeat(200))})`);
+  const lista = () => JSON.parse(s.run("servir_({parameter:{a:'estado',k:'ADMINKEY'}}).s")).eventos;
+  s.run(`admVisitaGuardar('ADMINKEY', ${J({ fecha: '2026-10-20', hora: '18:00', persona: ana.id })})`);
+  let e = lista().find((x) => /Viene Ana/.test(x.titulo));
+  t('una visita de la familia sale como "Viene Ana" con su hora', e && e.hora === '18:00' && e.dia === 0);
+  t('y lleva su foto (para enseñarla en la tele)', e.autor === ana.id && e.foto > 0);
+  s.run(`admVisitaGuardar('ADMINKEY', ${J({ fecha: '2026-10-21', texto: 'Viene el fontanero' })})`);
+  e = lista().find((x) => /fontanero/.test(x.titulo));
+  t('una visita de alguien que no es de la familia: sin foto, mañana, todo el día', e && e.dia === 1 && !e.hora && !e.autor);
+  t('hace falta persona o texto', falla(() => s.run(`admVisitaGuardar('ADMINKEY', ${J({ fecha: '2026-10-20' })})`)));
+  t('y una fecha', falla(() => s.run(`admVisitaGuardar('ADMINKEY', ${J({ texto: 'x' })})`)));
+  s.run(`admRutinaGuardar('ADMINKEY', ${J({ dia: 2, hora: '10:30', texto: 'Viene la asistenta' })})`);
+  t('la rutina del martes sale hoy (martes) a su hora', lista().some((x) => x.titulo === 'Viene la asistenta' && x.dia === 0 && x.hora === '10:30'));
+  t('y no mañana (miércoles)', !lista().some((x) => x.titulo === 'Viene la asistenta' && x.dia === 1));
+  s.run(`admRutinaGuardar('ADMINKEY', ${J({ dia: 3, texto: 'Hoy toca peluquería' })})`);
+  t('la rutina del miércoles sale mañana', lista().some((x) => x.titulo === 'Hoy toca peluquería' && x.dia === 1));
+  s.fijar(h(19, 30));
+  t('una visita de las 18:00 ya no sale a las 19:30', !lista().some((x) => /Viene Ana/.test(x.titulo)));
+  t('un familiar no puede apuntar visitas', falla(() => s.run(`admVisitaGuardar(${J(ana.clave)}, ${J({ fecha: '2026-10-20', texto: 'x' })})`)));
+  const id = s.run('leer_().visitas[0].id');
+  s.run(`admVisitaBorrar('ADMINKEY', ${J(id)})`);
+  t('se puede borrar', s.run('leer_().visitas').length === 1);
+  const rid = s.run('leer_().rutina[0].id'); s.run(`admRutinaBorrar('ADMINKEY', ${J(rid)})`);
+  t('y la rutina también', s.run('leer_().rutina').length === 1);
+  t('la lista de la rutina sale ordenada de lunes a domingo', (() => { s.run(`admRutinaGuardar('ADMINKEY', ${J({ dia: 0, texto: 'Domingo' })})`); s.run(`admRutinaGuardar('ADMINKEY', ${J({ dia: 1, texto: 'Lunes' })})`); return s.run('leer_().rutina').map((r) => r.texto).join() === 'Lunes,Hoy toca peluquería,Domingo'; })());
+}
+
+/* ---------- 23. Copia diaria, limpieza de Drive, espacio y aviso de TV ---------- */
+{
+  const h = (d, hh, mm = 0) => new Date(2026, 9, d, hh, mm).getTime();
+  const s = crear({ ahora: h(20, 3) });
+  s.run("admFamiliaAnadir('ADMINKEY','Ana')");
+  s.run('limpiezaDiaria()');
+  const copias = () => Object.values(s.archivos).filter((a) => /^pizarra-datos-/.test(a.nombre) && !a.papelera).map((a) => a.nombre).sort();
+  t('la copia diaria crea pizarra-datos-AAAA-MM-DD.json', copias().length === 1 && copias()[0] === 'pizarra-datos-2026-10-20.json');
+  s.run('limpiezaDiaria()');
+  t('dos veces el mismo día no duplican', copias().length === 1);
+  const orig = JSON.parse(Buffer.from(Object.values(s.archivos).find((a) => a.nombre === 'pizarra-datos-2026-10-20.json').bytes).toString('utf8'));
+  t('la copia es un JSON de verdad con los datos', Array.isArray(orig.familia) && orig.familia[0].nombre === 'Ana');
+  for (let d = 21; d <= 30; d++) { s.fijar(h(d, 3)); s.run('limpiezaDiaria()'); }
+  t('solo se guardan las últimas 7 copias', copias().length === 7 && copias()[0] === 'pizarra-datos-2026-10-24.json' && copias()[6] === 'pizarra-datos-2026-10-30.json');
+  t('las copias están en Pizarra/Copias (no sueltas)', s.run("subcarpeta_('Copias','COPIAS_ID').getId()") !== s.props.CARPETA_ID);
+  // limpieza de medios
+  const s2 = crear({ ahora: h(20, 12) });
+  s2.run("admFamiliaAnadir('ADMINKEY','Ana')"); const ka = s2.run('leer_().familia[0].clave');
+  s2.run(`admFoto(${J(ka)}, null, ${J('data:image/jpeg;base64,/9j/' + 'A'.repeat(200))})`);
+  s2.run(`admRecordatorioGuardar('ADMINKEY', ${J({ hora: '10:00', dias: [], texto: 'Merienda', duracion: 10, confirmar: false })}, ${J('data:image/jpeg;base64,/9j/' + 'A'.repeat(200))}, false)`);
+  const sube = (nombre) => { const { id } = s2.run(`admMedioNuevo(${J(ka)}, ${J({ tipo: 'audio', mime: 'audio/wav', bytes: 500, partes: 1 })})`); s2.run(`admMedioParte(${J(ka)}, ${J(id)}, 0, ${J(Buffer.alloc(500, 2).toString('base64'))})`); s2.run(`admMedioFin(${J(ka)}, ${J(id)})`); return id; };
+  const viejoVisto = sube(), recienVisto = sube(), sinVer = sube();
+  s2.run(`modificar_(function (d) { d.histMedios = [{ t: ${h(20, 12) - 5 * 86400000}, id: ${J(recienVisto)}, tipo: 'audio', de: 'Ana', quien: 'Ana' }, { t: ${h(20, 12) - 40 * 86400000}, id: ${J(viejoVisto)}, tipo: 'audio', de: 'Ana', quien: 'Ana' }]; })`);
+  const antesFotos = Object.values(s2.archivos).filter((a) => !a.papelera && /foto|\.jpg/.test(a.nombre)).length;
+  const huerfano = require('crypto').randomBytes(8).toString('hex') + '.0';
+  s2.run(`carpetaMedios_().createFile(Utilities.newBlob([1,2,3], 'application/octet-stream', ${J(huerfano)}))`);
+  Object.values(s2.archivos).find((a) => a.nombre === huerfano).creado = h(18, 0);
+  const noEsTrozo = 'notas.txt'; s2.run(`carpetaMedios_().createFile(${J(noEsTrozo)}, 'hola', MimeType.PLAIN_TEXT)`); Object.values(s2.archivos).find((a) => a.nombre === noEsTrozo).creado = h(1, 0);
+  const r = s2.run('limpiezaDiaria()');
+  const vivos = (id) => Object.values(s2.archivos).filter((a) => a.nombre.startsWith(id + '.') && !a.papelera).length;
+  t('un envío visto hace más de 30 días se borra (sus trozos y su entrada)', vivos(viejoVisto) === 0 && !s2.run('leer_().medios').some((m) => m.id === viejoVisto));
+  t('uno visto hace 5 días se queda', vivos(recienVisto) === 1);
+  t('uno que nunca se ha puesto en la tele se queda', vivos(sinVer) === 1);
+  t('el trozo huérfano de hace días se borra', Object.values(s2.archivos).find((a) => a.nombre === huerfano).papelera === true);
+  t('un archivo de Medios que no es un trozo no se toca', !Object.values(s2.archivos).find((a) => a.nombre === noEsTrozo).papelera);
+  t('NUNCA se borran las fotos de perfil ni las de los recordatorios', Object.values(s2.archivos).filter((a) => !a.papelera && /foto|\.jpg/.test(a.nombre)).length === antesFotos && antesFotos >= 2);
+  t('un envío que se está poniendo ahora no se borra aunque sea viejo', (() => { s2.run(`admMedioReproducir(${J(ka)}, ${J(recienVisto)}, 0)`); s2.run(`modificar_(function (d) { d.histMedios[0].t = ${h(20, 12) - 45 * 86400000}; })`); s2.run('limpiezaDiaria()'); return vivos(recienVisto) === 1; })());
+  // espacio
+  const e = s2.run("admEspacio('ADMINKEY')").espacio;
+  t('Ajustes muestra cuánto ocupa Pizarra (total, envíos y copias)', e.total > 0 && e.medios >= 1000 && e.copias > 0 && e.total >= e.medios + e.copias);
+  t('queda guardado para el panel', s2.run("admEstado('ADMINKEY')").datos.espacio.total === e.total);
+  t('un familiar no puede pedirlo', falla(() => s2.run(`admEspacio(${J(ka)})`)));
+  // aviso de TV
+  const s3 = crear({ ahora: h(20, 10) });
+  const poll = () => s3.run("servir_({parameter:{a:'estado',k:'ADMINKEY'}})");
+  t('sin haberse conectado nunca, no avisa', s3.run('revisarAvisos()') === 0 && s3.correos.length === 0);
+  poll();
+  s3.fijar(h(20, 10) + 20 * 60000); s3.run('revisarAvisos()');
+  t('a los 20 minutos sin consultar, todavía no avisa', s3.correos.length === 0);
+  s3.fijar(h(20, 10) + 31 * 60000); s3.run('revisarAvisos()');
+  t('a los 31 minutos, un correo "la tele no responde"', s3.correos.length === 1 && /no responde/.test(s3.correos[0].asunto) && /20\/10 10:00/.test(s3.correos[0].cuerpo));
+  s3.fijar(h(20, 10) + 60 * 60000); s3.run('revisarAvisos()');
+  t('no se repite mientras siga apagada', s3.correos.length === 1);
+  s3.fijar(h(20, 10) + 70 * 60000); poll(); s3.run('revisarAvisos()');
+  t('cuando vuelve, otro correo', s3.correos.length === 2 && /ha vuelto/.test(s3.correos[1].asunto));
+  s3.fijar(h(20, 10) + 70 * 60000 + 40 * 60000); s3.run('revisarAvisos()');
+  t('si se vuelve a caer antes de 6 horas, no manda otro (como mucho uno de cada tipo cada 6 h)', s3.correos.length === 2);
+  s3.fijar(h(20, 10) + 8 * 3600000); s3.run('revisarAvisos()');
+  t('pasadas 6 horas, sí', s3.correos.length === 3 || (poll(), s3.run('revisarAvisos()'), s3.correos.length >= 3));
+  s3.run("admAjustes('ADMINKEY', {avisoTV:false})");
+  const n = s3.correos.length; s3.fijar(h(21, 10) + 20 * 3600000); s3.run('revisarAvisos()');
+  t('con el interruptor apagado no avisa', s3.correos.length === n);
+  t('el interruptor se guarda y se ve en Ajustes', s3.run("admEstado('ADMINKEY')").datos.avisoTV === false);
+  t('el activador diario se crea con autorizar (una sola vez)', (() => { const s4 = crear(); s4.run('autorizar()'); s4.run('autorizar()'); return s4.disparadores.filter((f) => f === 'limpiezaDiaria').length === 1; })());
+  t('leer en voz alta: por defecto sí, y se puede apagar', (() => { const s5 = crear(); const a = JSON.parse(s5.run("servir_({parameter:{a:'estado',k:'ADMINKEY'}}).s")).leerVoz; s5.run("admAjustes('ADMINKEY', {leerVoz:false})"); return a === true && JSON.parse(s5.run("servir_({parameter:{a:'estado',k:'ADMINKEY'}}).s")).leerVoz === false; })());
 }
 
 console.log(bien + ' bien, ' + mal + ' fallos');
