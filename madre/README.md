@@ -75,6 +75,63 @@ las distribuciones de pantalla (Reloj a la izquierda, Lista, Sencillo) combinabl
 
 Con el script nuevo y la TV todavía en la 2.0, todo sigue funcionando (la 2.0 ignora los recordatorios). Y con el script anterior, la TV 3.0 también (simplemente no hay recordatorios).
 
+## Versión 6.1: móvil rediseñado, mejoras del script y arreglos de la TV
+
+### Arreglos de la TV (app 6.1)
+- **Pantalla vacía**: con la distribución "reloj" (y con cualquiera) solo se veía la cabecera. Causa probable: la TV no tenía datos
+  (dirección o clave guardadas mal; por ejemplo si se lanzó el comando de arranque con los textos de ejemplo
+  `TU_DIRECCION_EXEC`/`TU_CLAVE_DE_ADMINISTRADOR`) y el cuerpo quedaba en blanco. Ahora:
+  - la TV **no guarda** una dirección que no empiece por `https://` ni una clave de menos de 8 caracteres;
+  - sin datos, todas las distribuciones dicen "Esperando a la pizarra…";
+  - si una distribución falla al dibujarse, se pone la **Clásica**;
+  - sin nada apuntado hoy, "Lo próximo" enseña lo primero de mañana ("Mañana · A las doce").
+- **Palabras partidas**: ninguna palabra se parte nunca. La letra baja hasta 36 px; si aun así no cabe, el texto se recorta por
+  palabras con "…" (solo una palabra más larga que toda la línea se acorta ella sola).
+- **Versión instalada**: el panel enseña "Conectada hace… · app 6.1". Desde PowerShell:
+  `adb shell dumpsys package es.pizarra.tv | findstr versionName`.
+
+### Qué hay de nuevo
+- **App del móvil rediseñada** (estilo iPhone: listas agrupadas, fondo gris claro, una sola tinta azul, modo oscuro): Inicio
+  (estado de la tele, vista previa real, "A continuación"), Mandar (con nota de voz de mantener pulsado) y Enviados; el engranaje
+  guarda Pantalla, Recordatorios, Cuentas atrás, Visitas y rutina, Familia y Ajustes. El familiar ve Inicio, Mandar y Enviados.
+- **Todo se guarda al tocar**, "Deshacer" 10 s, miniaturas reales, programar un mensaje, "Volver a mandar", fijar un mensaje
+  (uno solo, solo el administrador), horas en 24 h, nombres con mayúscula, Familia sin enseñar el enlace con la clave
+  (solo "Copiar enlace" y "Enviar por WhatsApp") y errores junto a lo que falló.
+- **Script**: caché de eventos de 10 minutos (simulado: 952 → 142 ms de media y 1200 → 120 llamadas a Calendar cada 600 consultas),
+  limpieza diaria de Drive (medios vistos de más de 30 días; nunca fotos de perfil ni de recordatorios activos), copia diaria de los
+  datos en `Pizarra/Copias` (las últimas 7), aviso por correo si la TV lleva más de 30 min sin consultar (y otro al volver, máximo uno
+  de cada tipo cada 6 h), calendario de iCloud (`webcal://`, el enlace se guarda solo en el script), "Hoy viene…" y rutina semanal.
+- **TV**: lee en voz alta los mensajes nuevos (español, nunca de noche; sin voz española no falla), y "Hoy viene…" con la foto.
+
+### Iconos de la pantalla de inicio
+- **Administrador**: el televisor violeta con el corazón (`web-app/iconos/`).
+- **Familiares (Ana, Dani, María…)**: el mismo televisor en verde (`web-app/iconos-familia/`). El panel pone uno u otro según quién entra
+  (iPhone: `apple-touch-icon`; Android: iconos de 192/512 y manifiesto). Solo vale si guardan la app desde `…/Sky/tele/`, no desde la página de Google.
+- Para usar otro dibujo: `python3 madre/web-app/hacer-iconos.py mi-icono.png` (PNG cuadrado, mejor de 1024 px), después `python3 madre/web-app/construir.py` y `sh madre/web-app/publicar.sh`.
+  Quien ya añadió la app debe borrar el icono y volver a añadirla: iOS guarda el icono al añadirla.
+
+### Desplegar el script (la dirección `/exec` no cambia)
+1. Abre el proyecto en script.google.com; sustituye todo `Code.gs` y `Admin.html` por los de esta carpeta.
+2. Ejecuta una vez la función `autorizar` (crea el activador diario de limpieza y copias). **No hacen falta permisos nuevos.**
+3. Implementar › Administrar implementaciones › lápiz › **Nueva versión**. Nunca "Nueva implementación".
+
+### Instalar la 6.1 (PowerShell, de uno en uno)
+```powershell
+adb connect 192.168.1.83:5555
+adb install -r "$HOME\Downloads\PizarraTV-6.1.apk"
+```
+No hace falta repetir la dirección ni la clave. Si la TV las perdió, pásalas **reales** (nunca los textos de ejemplo):
+`adb shell am start -n es.pizarra.tv/.MainActivity --es url "https://script.google.com/macros/s/…/exec" --es k "TU_CLAVE"`.
+Volver a la 5.0: `adb uninstall es.pizarra.tv`, `adb install "$HOME\Downloads\PizarraTV-5.0.apk"` y el comando de arranque de arriba.
+La APK 6.1 lleva el mismo certificado que la 5.0 (SHA-256 `2ec1326a…0512972`).
+
+### Medir antes y después
+```powershell
+$u = "https://script.google.com/macros/s/…/exec"; $k = "TU_CLAVE"
+Invoke-RestMethod "$u`?a=metricas&k=$k" | ConvertTo-Json -Depth 6 | Out-File "$HOME\Downloads\metricas-antes.json" -Encoding utf8
+```
+(repetir con `metricas-despues.json` pasadas unas horas). Ajustes enseña las consultas de la TV por hora.
+
 ## Versión 5.0: distribuciones, audios/vídeos/fotos a distancia y app con icono
 
 Todo está en tres PR en borrador encadenados (#8 distribuciones → #9 audios y vídeos → #10 app con icono), sobre #7 (fase 3.1). Nada está fusionado.

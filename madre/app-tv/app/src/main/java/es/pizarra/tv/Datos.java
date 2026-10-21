@@ -21,6 +21,8 @@ final class Datos {
         boolean manana;
         String hora = "";   // "18:30"; vacío si dura todo el día
         String titulo = "";
+        String autor = "";   // visitas: id de la persona de la familia que viene (para su foto)
+        int foto;            // versión de su foto; 0 si no tiene
     }
 
     static final class Dia {
@@ -52,6 +54,7 @@ final class Datos {
     }
 
     Medio medio;
+    boolean leerVoz;                // leer en voz alta los mensajes nuevos (nunca de noche)
     boolean rapido;                 // hay un envío pendiente: se pregunta cada pocos segundos
     Recordatorio recordatorio;
     boolean pidenCaptura;           // alguien mira la vista previa en el panel: hay que mandar una captura de la pantalla
@@ -126,6 +129,7 @@ final class Datos {
         }
         d.pidenCaptura = o.optBoolean("captura", false);
         d.rapido = o.optBoolean("rapido", false);
+        d.leerVoz = o.optBoolean("leerVoz", false);
         JSONObject me = o.optJSONObject("medio");
         if (me != null && !me.optString("id", "").isEmpty()) {
             Medio x = new Medio();
@@ -186,6 +190,8 @@ final class Datos {
             x.manana = e.optInt("dia", 0) == 1;
             x.hora = e.optString("hora", "");
             x.titulo = e.optString("titulo", "").trim();
+            x.autor = e.isNull("autor") ? "" : e.optString("autor", "");
+            x.foto = e.isNull("foto") ? 0 : e.optInt("foto", 0);
             if (!x.titulo.isEmpty()) d.eventos.add(x);
         }
         JSONObject t = o.optJSONObject("tiempo");
@@ -205,7 +211,7 @@ final class Datos {
         b.append(verMensajes).append(verEventos).append(verTiempo).append(verCuenta).append(verParte);
         b.append(distribucionAhora()).append('|').append(nocheTexto).append('|').append(contactoNombre).append(contactoTelefono);
         for (Mensaje m : mensajes) b.append('|').append(m.de).append(m.texto).append(m.t).append(m.autor).append(m.foto);
-        for (Evento e : eventos) b.append('|').append(e.manana).append(e.hora).append(e.titulo);
+        for (Evento e : eventos) b.append('|').append(e.manana).append(e.hora).append(e.titulo).append(e.autor).append(e.foto);
         if (hayTiempo) b.append('|').append(temperatura).append(codigoTiempo);
         if (hoy != null) b.append(hoy.temp).append(hoy.codigo);
         if (manana != null) b.append(manana.temp).append(manana.codigo);
