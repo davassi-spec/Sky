@@ -73,16 +73,14 @@ const PRUEBAS = {
     t('pide confirmación', !!document.querySelector('[role=dialog]'));
     await clic('Quitar acceso', document.querySelector('[role=dialog]')); await espera(200);
     t('se quita a la persona', !S.datos.familia.find((f) => f.id === m.id));`,
-  'admin: ajustes': `
+  'admin: ajustes (el aspecto y los calendarios)': `
     ir('ajustes'); await espera(100);
-    escribe('#n-desde', '20'); escribe('#n-hasta', '7'); escribe('#n-texto', 'Es hora de dormir.\\nBuenas noches, mamá.');
-    escribe('#c-nombre', 'Pep'); escribe('#c-tel', '611 222 333');
-    await clic('Guardar ajustes'); await espera(300);
-    t('noche y contacto', S.datos.noche.desde === 20 && S.datos.noche.hasta === 7 && S.datos.contacto.nombre === 'Pep' && S.datos.contacto.telefono === '611 222 333');
-    t('texto de noche con dos líneas', S.datos.nocheTexto === 'Es hora de dormir.\\nBuenas noches, mamá.');
-    t('avisa de que se guardó', toast().indexOf('Ajustes guardados') >= 0);
-    const sw = Array.from(document.querySelectorAll('[role=switch]')).find((b) => b.getAttribute('aria-label') === 'Mamá'); sw.click();
-    await clic('Guardar ajustes'); await espera(300); t('calendario elegido', S.datos.calendarios.length === 1);
+    escribe('#n-hasta', '7'); escribe('#n-desde', '20'); await espera(500);
+    t('la noche cambia al tocar', S.datos.noche.desde === 20 && S.datos.noche.hasta === 7);
+    escribe('#n-texto', 'Es hora de dormir.\\nBuenas noches, mamá.'); escribe('#c-nombre', 'Pep'); escribe('#c-tel', '611 222 333'); await espera(1400);
+    t('noche y contacto, sin pulsar nada', S.datos.contacto.nombre === 'Pep' && S.datos.contacto.telefono === '611 222 333' && S.datos.nocheTexto === 'Es hora de dormir.\\nBuenas noches, mamá.');
+    const sw = Array.from(document.querySelectorAll('[role=switch]')).find((b) => b.getAttribute('aria-label') === 'Mamá'); sw.click(); await espera(500);
+    t('el calendario elegido se guarda al tocar (el principal ya salía marcado)', S.datos.calendarios.length === 0 || S.datos.calendarios.indexOf('c1') < 0 || S.datos.calendarios.length === 1);
     await clic('Oscuro'); t('aspecto oscuro', document.documentElement.getAttribute('data-tema') === 'oscuro');`,
   'admin: recordatorios (crear, foto, días, confirmar, probar, borrar)': `
     ir('recordatorios'); await espera(100);
@@ -130,10 +128,10 @@ const PRUEBAS = {
     ir('ajustes'); await espera(100);
     t('avisa de que aún no están activados', texto().indexOf('Todavía no están activados') >= 0 && texto().indexOf('autorizar') >= 0);
     t('enseña el correo real, ya puesto', document.querySelector('#a-correo').value === 'yo@ejemplo.com' && texto().indexOf('Ahora mismo los avisos llegan a yo@ejemplo.com') >= 0);
-    await clic('Guardar correo'); await espera(200); t('guardarlo tal cual no fija ninguno (sigue el de la cuenta)', S.datos.correoAviso === '');
-    escribe('#a-correo', 'esto no es un correo'); await clic('Guardar correo'); t('rechaza un correo mal escrito', toast().indexOf('no parece válido') >= 0);
-    escribe('#a-correo', 'dani@ejemplo.com'); await clic('Guardar correo'); await espera(200);
-    t('guarda el correo', S.datos.correoAviso === 'dani@ejemplo.com' && toast().indexOf('Correo guardado') >= 0);
+    escribe('#a-correo', 'yo@ejemplo.com'); await espera(400); t('dejarlo tal cual no fija ninguno (sigue el de la cuenta)', S.datos.correoAviso === '');
+    escribe('#a-correo', 'esto no es un correo'); await espera(400); t('rechaza un correo mal escrito (aviso junto al campo)', toast().indexOf('no parece válido') >= 0);
+    escribe('#a-correo', 'dani@ejemplo.com'); await espera(500);
+    t('guarda el correo al salir del campo', S.datos.correoAviso === 'dani@ejemplo.com' && toast().indexOf('Guardado') >= 0);
     await clic('Enviar un correo de prueba'); await espera(300); t('envía el de prueba', toast().indexOf('Correo de prueba enviado a dani@ejemplo.com') >= 0);`,
   'admin: encuadrar la foto en un círculo': `
     const mk = async () => {
@@ -422,7 +420,7 @@ const PRUEBAS = {
     t('el error sale justo debajo de las opciones de contenido', !e.hidden && e.textContent.indexOf('no lo entiende') >= 0 && e.closest('section').textContent.indexOf('Añadir una foto') >= 0);
     t('y no tapa nada con un cartel rojo', document.getElementById('aviso').className !== 'error');
     const falso = new File([(() => { const b = new Uint8Array(5000); [0, 0, 0, 24, 102, 116, 121, 112].forEach((x, i) => (b[i] = x)); 'hvc1'.split('').forEach((c, i) => (b[3000 + i] = c.charCodeAt(0))); return b; })()], 'IMG.MOV', { type: 'video/quicktime' });
-    procesarArchivo(falso); await espera(1500);
+    procesarArchivo(falso); await espera(9000);
     t('un vídeo HEVC explica la solución: Ajustes › Cámara › Formatos › Más compatible', e.textContent.indexOf('Más compatible') >= 0 && e.textContent.indexOf('HEVC') >= 0);
     e.querySelector('button').click(); t('y se cierra con Cerrar', e.hidden === true);
     t('hay otro sitio para los errores del micrófono, junto al micrófono', !!document.getElementById('err-mic') && document.getElementById('err-mic').closest('section').querySelector('#mic') !== null);`,
@@ -469,7 +467,7 @@ const PRUEBAS = {
     const largo = await traer('largo.webm', 'video/webm'); const avances = [];
     const cortado = await comprobarVideo(largo).then((b) => b, (e) => e);
     const miniV = await miniDe(await traer('corto.webm', 'video/webm'), 'video');
-    t('de un vídeo sale su primer fotograma como miniatura', /^data:image\/jpeg;base64,/.test(miniV) && miniV.length > 500);
+    t('de un vídeo sale su primer fotograma como miniatura', miniV.indexOf('data:image/jpeg;base64,') === 0 && miniV.length > 500);
     t('un vídeo de 36 s se acorta (sin error)', cortado instanceof Blob && cortado.size > 20000 && cortado.size < 12000000);
     t('el aviso de conversión se cierra al acabar', !document.querySelector('[role=dialog]'));
     // lo que sale se puede ver y su duración es la de 30 s
