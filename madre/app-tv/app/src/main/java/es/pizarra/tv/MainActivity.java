@@ -93,9 +93,12 @@ public class MainActivity extends Activity {
         }
     };
 
+    static boolean enPrimerPlano;      // la pizarra está delante: el aviso de "la TV despierta" no la vuelve a abrir
+
     @Override
     protected void onCreate(Bundle b) {
         super.onCreate(b);
+        startService(new Intent(this, Despertar.class));
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON | WindowManager.LayoutParams.FLAG_FULLSCREEN);
         prefs = getSharedPreferences("pizarra", MODE_PRIVATE);
         DisplayMetrics dm = getResources().getDisplayMetrics();
@@ -121,6 +124,7 @@ public class MainActivity extends Activity {
     @Override
     protected void onResume() {
         super.onResume();
+        enPrimerPlano = true;
         h.removeCallbacks(tic);
         h.removeCallbacks(busca);
         h.post(tic);
@@ -136,6 +140,7 @@ public class MainActivity extends Activity {
     @Override
     protected void onPause() {
         super.onPause();
+        enPrimerPlano = false;
         cerrarMedio(false);
         h.removeCallbacks(tic);
         h.removeCallbacks(busca);

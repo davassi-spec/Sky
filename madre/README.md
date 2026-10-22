@@ -90,6 +90,13 @@ Con el script nuevo y la TV todavía en la 2.0, todo sigue funcionando (la 2.0 i
 - **Versión instalada**: el panel enseña "Conectada hace… · app 6.1". Desde PowerShell:
   `adb shell dumpsys package es.pizarra.tv | findstr versionName`.
 
+### App 6.2: se abre sola al despertar la TV
+Una TV Android, al "apagarla" con el mando, no se reinicia: se duerme. Sin arranque no hay `BOOT_COMPLETED` y la pizarra no salía. Ahora un
+servicio (`Despertar`) escucha cuándo se enciende la pantalla (`SCREEN_ON`, `USER_PRESENT`, fin del salvapantallas) y abre la pizarra si no está
+delante. También se abre al arrancar (`BOOT_COMPLETED`, `QUICKBOOT_POWERON`) y tras instalar una versión nueva. **Sin probar en la Philips real**:
+si esa TV no emite esos avisos al despertar, hay que mirar su ajuste "al encender" (ver más abajo). Si mamá quiere ver un canal, usa el mando
+(Fuente/Inicio): la pizarra se abre cada vez que la TV se enciende.
+
 ### Qué hay de nuevo
 - **App del móvil rediseñada** (estilo iPhone: listas agrupadas, fondo gris claro, una sola tinta azul, modo oscuro): Inicio
   (estado de la tele, vista previa real, "A continuación"), Mandar (con nota de voz de mantener pulsado) y Enviados; el engranaje
