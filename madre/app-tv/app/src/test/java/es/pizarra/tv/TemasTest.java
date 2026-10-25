@@ -16,6 +16,27 @@ public class TemasTest {
         for (int i = 0; i < MainActivity.TEMAS.length; i++) {
             MainActivity.Tema t = MainActivity.TEMAS[i];
             String id = MainActivity.TABLEROS[i];
+            if (i >= 7) {                                                       // "Mensajes primero"
+                minimo(id + " cabecera/fecha", t.encTxt, t.fecha);
+                minimo(id + " cabecera/hora", t.encTxt, t.hora);
+                minimo(id + " mensaje 1", t.txt, t.msg1);
+                minimo(id + " mensaje 2", t.txt, t.msg2);
+                minimo(id + " próxima cita", t.citaTxt, t.cita);
+                minimo(id + " texto/hoy", t.txt, t.hoy);
+                minimo(id + " texto/mañana", t.txt, t.man);
+                minimo(id + " cuenta atrás", t.bandaTxt, t.banda);
+                minimo(id + " texto/fondo", t.txt, t.fondo);
+                minimo(id + " grados de hoy", t.tempHoy, t.hoy);
+                minimo(id + " grados de mañana", t.tempMan, t.man);
+                for (int k = 0; k < Paleta.TODAS.length; k += 2) {                  // los mensajes llevan los colores del estilo elegido (de día) sobre estos fondos
+                    Paleta p = Paleta.TODAS[k];
+                    minimo(id + " con el estilo " + k + ": nombre de quien escribe/mensaje 1", p.acentoTexto, t.msg1);
+                    minimo(id + " con el estilo " + k + ": nombre de quien escribe/mensaje 2", p.acentoTexto, t.msg2);
+                    minimo(id + " con el estilo " + k + ": texto/mensaje 1", p.texto, t.msg1);
+                    minimo(id + " con el estilo " + k + ": texto/mensaje 2", p.texto, t.msg2);
+                }
+                continue;
+            }
             int[] fondos = {t.fondo, t.fecha, t.hora, t.hoy, t.man, t.parte, t.panel};
             for (int f : fondos) {
                 if (i == 0 && f == t.fecha) continue;                         // Banda verde: ahí el texto es blanco (se comprueba abajo)

@@ -17,7 +17,8 @@ var NOMBRE_CARPETA = 'Pizarra';
 var NOMBRE_DATOS = 'pizarra-datos.json';
 var MAX_CADUCADOS = 100;          // mensajes ya caducados que se guardan en el historial
 var MAX_ACTIVOS = 50;
-var DISTRIBUCIONES = ['clasica', 'reloj', 'lista', 'sencillo', 'banda', 'mosaico', 'bloques', 'lateral', 'titular', 'marco', 'limpia'];   // las siete últimas: pantallas con diseño propio (app de la tele 6.4; una app anterior las ve como la Clásica)
+var DISTRIBUCIONES = ['clasica', 'reloj', 'lista', 'sencillo', 'banda', 'mosaico', 'bloques', 'lateral', 'titular', 'marco', 'limpia',
+  'salvia_melocoton', 'coral_menta', 'salvia_azul', 'menta_lavanda', 'azul_terracota', 'bosque_amarillo'];   // desde 'banda': pantallas con diseño propio (app de la tele 6.4; las seis de "Mensajes primero", 6.7); una app anterior las ve como la Clásica
 var ESTILOS = ['calido', 'lavanda', 'salvia', 'terracota', 'contraste'];
 var BLOQUES = ['cuentaAtras', 'mensajes', 'proximo', 'tiempo', 'parteDelDia'];
 var ICONOS_CUENTA = ['calendario', 'avion', 'corazon', 'tarta'];

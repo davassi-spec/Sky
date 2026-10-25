@@ -996,14 +996,14 @@ const JPEG = 'data:image/jpeg;base64,' + Buffer.from('foto-de-prueba').toString(
 /* ---------- Pantallas con diseño propio (siete tableros) ---------- */
 {
   const s = crear();
-  const ids = ['banda', 'mosaico', 'bloques', 'lateral', 'titular', 'marco', 'limpia'];
+  const ids = ['banda', 'mosaico', 'bloques', 'lateral', 'titular', 'marco', 'limpia', 'salvia_melocoton', 'coral_menta', 'salvia_azul', 'menta_lavanda', 'azul_terracota', 'bosque_amarillo'];
   ids.forEach((id) => {
     s.run(`admAjustes('ADMINKEY', {distribucion:'${id}'})`);
     t('se guarda la distribución ' + id, s.run("admEstado('ADMINKEY')").datos.distribucion === id);
     t('y la tele la recibe: ' + id, JSON.parse(s.run("servir_({parameter:{a:'estado',k:'ADMINKEY'}}).s")).distribucion === id);
   });
   s.run("admAjustes('ADMINKEY', {distribucion:'holograma'})");
-  t('una distribución inventada no cambia nada', s.run("admEstado('ADMINKEY')").datos.distribucion === 'limpia');
+  t('una distribución inventada no cambia nada', s.run("admEstado('ADMINKEY')").datos.distribucion === 'bosque_amarillo');
   s.run("admProbarEstilo('ADMINKEY', 'calido', 'dia', 'mosaico')");
   t('se puede probar un minuto con un tablero', s.run("admEstado('ADMINKEY')").datos.prueba.distribucion === 'mosaico');
   t('las cuatro de siempre siguen valiendo', ['clasica', 'reloj', 'lista', 'sencillo'].every((id) => { s.run(`admAjustes('ADMINKEY', {distribucion:'${id}'})`); return s.run("admEstado('ADMINKEY')").datos.distribucion === id; }));

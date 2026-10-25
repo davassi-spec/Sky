@@ -1071,7 +1071,8 @@ public class MainActivity extends Activity {
 
     /* ---------- Pantallas con diseño propio (siete "tableros") ---------- */
 
-    static final String[] TABLEROS = {"banda", "mosaico", "bloques", "lateral", "titular", "marco", "limpia"};
+    static final String[] TABLEROS = {"banda", "mosaico", "bloques", "lateral", "titular", "marco", "limpia",
+            "salvia_melocoton", "coral_menta", "salvia_azul", "menta_lavanda", "azul_terracota", "bosque_amarillo"};
 
     static boolean esTablero(String d) {
         return indiceTablero(d) >= 0;
@@ -1085,23 +1086,32 @@ public class MainActivity extends Activity {
     /** Colores fijos de cada diseño (de día). De noche estas pantallas usan la Clásica con el estilo de noche. */
     static final class Tema {
         final int fondo, banda, bandaTxt, txt, sub, fecha, hora, hoy, man, parte, panel, tempHoy, tempMan, pill, pillTxt, raya;
+        final int msg1, msg2, cita, encTxt, citaTxt;       // solo "Mensajes primero": los dos mensajes, la próxima cita y el texto de la cabecera y de la cita
 
         Tema(int... c) {
             fondo = c[0]; banda = c[1]; bandaTxt = c[2]; txt = c[3]; sub = c[4]; fecha = c[5]; hora = c[6]; hoy = c[7]; man = c[8];
             parte = c[9]; panel = c[10]; tempHoy = c[11]; tempMan = c[12]; pill = c[13]; pillTxt = c[14]; raya = c[15];
+            msg1 = c[16]; msg2 = c[17]; cita = c[18]; encTxt = c[19]; citaTxt = c[20];
         }
     }
 
     private static final int NAVY = 0xFF0B1F3A, ROJO = 0xFFA63D22, TEAL = 0xFF0B6560;
     //                                      fondo       banda       bandaTxt    txt         sub         fecha       hora        hoy         man         parte       panel       tempHoy     tempMan     pill        pillTxt     raya
     static final Tema[] TEMAS = {
-            new Tema(0xFFFBF8F1, 0xFFFBD3BC, NAVY,       NAVY, 0xFF3A4A60, 0xFF17402B, 0xFF17402B, 0xFFFFEFC2, 0xFFD9EAFB, 0xFFFFFFFF, 0xFFFFFFFF, NAVY,   NAVY,   0xFFFBE3A0, NAVY, 0x668FB59C),   // banda
-            new Tema(0xFFFBF6EC, 0xFFA63D22, 0xFFFFFFFF, NAVY, 0xFF3A4A60, 0xFFCDE5F9, 0xFFFFFDF8, 0xFFDCE9D3, 0xFFFBE0CF, 0xFFFBE3A0, 0xFFFFFFFF, NAVY,   NAVY,   0xFFFBE3A0, NAVY, 0x33000000),   // mosaico
-            new Tema(0xFFFBF6EC, 0xFF15395E, 0xFFFFFFFF, NAVY, 0xFF3A4A60, 0xFFD1EDE4, 0xFFEADDF4, 0xFFF6EBDA, 0xFFF6EBDA, 0xFFF6EBDA, 0xFFF6EBDA, ROJO,   TEAL,   0xFFFBE3A0, NAVY, 0x55000000),   // bloques
-            new Tema(0xFFF3F4E6, 0xFFFBE7A0, NAVY,       NAVY, 0xFF3A4A60, 0xFFC9DDB8, 0xFFFDF9EE, 0xFFFDE5D0, 0xFFD8EAFB, 0xFFC9DDB8, 0xFFC9DDB8, ROJO,   TEAL,   0xFFFBE3A0, NAVY, 0x55000000),   // lateral
-            new Tema(0xFFFBF9F4, 0xFFA63D22, 0xFFFFFFFF, NAVY, 0xFF3A4A60, 0xFFFBF9F4, 0xFFD4E7FA, 0xFFFFF0CB, 0xFFDFF2DC, 0xFFFBE3A0, 0xFFD4E7FA, NAVY,   NAVY,   0xFFFBE3A0, NAVY, 0x55000000),   // titular
-            new Tema(0xFF6BA7BD, 0xFF0F4C5C, 0xFFFFFFFF, NAVY, 0xFF1C2A3E, 0xFFD6E8CE, 0xFFFFF8E8, 0xFFFBDCCB, 0xFFD9EBFA, 0xFFFBE3A0, 0xFFFFFFFF, NAVY,   NAVY,   0xFFFBE3A0, NAVY, 0x33000000),   // marco
-            new Tema(0xFFFBF8F1, 0xFFFBF8F1, NAVY,       NAVY, 0xFF3A4A60, 0xFFFBF8F1, 0xFFFBF8F1, 0xFFFFF0CB, 0xFFDFF2DC, 0xFFBDD5E8, 0xFFFBF8F1, NAVY,   NAVY,   0xFFBDD5E8, NAVY, 0x66000000),   // limpia
+            new Tema(0xFFFBF8F1, 0xFFFBD3BC, NAVY,       NAVY, 0xFF3A4A60, 0xFF17402B, 0xFF17402B, 0xFFFFEFC2, 0xFFD9EAFB, 0xFFFFFFFF, 0xFFFFFFFF, NAVY,   NAVY,   0xFFFBE3A0, NAVY, 0x668FB59C, 0, 0, 0, NAVY, NAVY),   // banda
+            new Tema(0xFFFBF6EC, 0xFFA63D22, 0xFFFFFFFF, NAVY, 0xFF3A4A60, 0xFFCDE5F9, 0xFFFFFDF8, 0xFFDCE9D3, 0xFFFBE0CF, 0xFFFBE3A0, 0xFFFFFFFF, NAVY,   NAVY,   0xFFFBE3A0, NAVY, 0x33000000, 0, 0, 0, NAVY, NAVY),   // mosaico
+            new Tema(0xFFFBF6EC, 0xFF15395E, 0xFFFFFFFF, NAVY, 0xFF3A4A60, 0xFFD1EDE4, 0xFFEADDF4, 0xFFF6EBDA, 0xFFF6EBDA, 0xFFF6EBDA, 0xFFF6EBDA, ROJO,   TEAL,   0xFFFBE3A0, NAVY, 0x55000000, 0, 0, 0, NAVY, NAVY),   // bloques
+            new Tema(0xFFF3F4E6, 0xFFFBE7A0, NAVY,       NAVY, 0xFF3A4A60, 0xFFC9DDB8, 0xFFFDF9EE, 0xFFFDE5D0, 0xFFD8EAFB, 0xFFC9DDB8, 0xFFC9DDB8, ROJO,   TEAL,   0xFFFBE3A0, NAVY, 0x55000000, 0, 0, 0, NAVY, NAVY),   // lateral
+            new Tema(0xFFFBF9F4, 0xFFA63D22, 0xFFFFFFFF, NAVY, 0xFF3A4A60, 0xFFFBF9F4, 0xFFD4E7FA, 0xFFFFF0CB, 0xFFDFF2DC, 0xFFFBE3A0, 0xFFD4E7FA, NAVY,   NAVY,   0xFFFBE3A0, NAVY, 0x55000000, 0, 0, 0, NAVY, NAVY),   // titular
+            new Tema(0xFF6BA7BD, 0xFF0F4C5C, 0xFFFFFFFF, NAVY, 0xFF1C2A3E, 0xFFD6E8CE, 0xFFFFF8E8, 0xFFFBDCCB, 0xFFD9EBFA, 0xFFFBE3A0, 0xFFFFFFFF, NAVY,   NAVY,   0xFFFBE3A0, NAVY, 0x33000000, 0, 0, 0, NAVY, NAVY),   // marco
+            new Tema(0xFFFBF8F1, 0xFFFBF8F1, NAVY,       NAVY, 0xFF3A4A60, 0xFFFBF8F1, 0xFFFBF8F1, 0xFFFFF0CB, 0xFFDFF2DC, 0xFFBDD5E8, 0xFFFBF8F1, NAVY,   NAVY,   0xFFBDD5E8, NAVY, 0x66000000, 0, 0, 0, NAVY, NAVY),   // limpia
+            // Mensajes primero (seis combinaciones de color): fondo, banda, bandaTxt, txt, sub, fecha, hora, hoy, man, parte, panel, tempHoy, tempMan, pill, pillTxt, raya, msg1, msg2, cita, encTxt, citaTxt
+            new Tema(0xFFFAF7EE, 0xFF164957, 0xFFFFFFFF, NAVY, 0xFF3A4A60, 0xFFDCE8D3, 0xFFFFF5DF, 0xFFF6D9C4, 0xFFDDEBF5, 0xFFFFFFFF, 0xFFFFFFFF, NAVY, NAVY, 0xFFFBE3A0, NAVY, 0x55000000, 0xFFF6D9C4, 0xFFDDEBF5, 0xFFDCE8D3, NAVY, NAVY),   // salvia y melocotón
+            new Tema(0xFFFFFDF6, 0xFF9B352D, 0xFFFFFFFF, NAVY, 0xFF3A4A60, 0xFFFFF3D0, 0xFFDDEBF5, 0xFFFFF0C9, 0xFFDDEEE2, 0xFFFFFFFF, 0xFFFFFFFF, NAVY, NAVY, 0xFFFBE3A0, NAVY, 0x55000000, 0xFFFFF0C9, 0xFFDDEEE2, 0xFFFFF3D0, NAVY, NAVY),   // coral y menta
+            new Tema(0xFFFAF7EE, 0xFFFFE8A6, NAVY,       NAVY, 0xFF3A4A60, 0xFFDFE9CB, 0xFFFFF8E9, 0xFFF9DFC7, 0xFFDDEBF5, 0xFFFFFFFF, 0xFFFFFFFF, NAVY, NAVY, 0xFFFBE3A0, NAVY, 0x55000000, 0xFFF9DFC7, 0xFFDDEBF5, 0xFFDFE9CB, NAVY, NAVY),   // salvia y azul
+            new Tema(0xFFFFFBF3, 0xFF174561, 0xFFFFFFFF, NAVY, 0xFF3A4A60, 0xFFDDEEE8, 0xFFECE2F2, 0xFFF4E5D2, 0xFFDDEBE8, 0xFFFFFFFF, 0xFFFFFFFF, NAVY, NAVY, 0xFFFBE3A0, NAVY, 0x55000000, 0xFFF4E5D2, 0xFFDDEBE8, 0xFFDDEEE8, NAVY, NAVY),   // menta y lavanda
+            new Tema(0xFFFAF7EE, 0xFFA63B26, 0xFFFFFFFF, NAVY, 0xFF3A4A60, 0xFFDDEBF5, 0xFFFFFBF3, 0xFFDFE9D3, 0xFFF8DFCD, 0xFFFFFFFF, 0xFFFFFFFF, NAVY, NAVY, 0xFFFBE3A0, NAVY, 0x55000000, 0xFFDFE9D3, 0xFFF8DFCD, 0xFFDDEBF5, NAVY, NAVY),   // azul y terracota
+            new Tema(0xFFFFFCF3, 0xFFF6D9C4, NAVY,       NAVY, 0xFF3A4A60, 0xFF173F32, 0xFF173F32, 0xFFFFF0C5, 0xFFDDEBF5, 0xFFFFFFFF, 0xFFFFFFFF, NAVY, NAVY, 0xFFFBE3A0, NAVY, 0x55000000, 0xFFFFF0C5, 0xFFDDEBF5, 0xFF173F32, 0xFFFFFFFF, 0xFFFFFFFF),   // bosque y amarillo
     };
 
     private Tema tema;
@@ -1193,7 +1203,8 @@ public class MainActivity extends Activity {
             case 3: tbLateral(); break;
             case 4: tbTitular(); break;
             case 5: tbMosaico(true); break;
-            default: tbLimpia(); break;
+            case 6: tbLimpia(); break;
+            default: tbMensajes(); break;
         }
     }
 
@@ -1442,6 +1453,72 @@ public class MainActivity extends Activity {
         tbModoClima = 4;
     }
 
+    /** El hueco de mensajes de "Mensajes primero": los mensajes a todo el ancho, uno debajo de otro, y la próxima cita en una banda debajo. */
+    private void anadirZonaMensajes(LinearLayout padre) {
+        tbZona = columna();
+        tbMsgsCol = columna();
+        tbEvCol = columna();
+        tbZona.addView(tbMsgsCol, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f));
+        tbZona.addView(tbEvCol, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        padre.addView(tbZona, vp(2.4f, 14));
+    }
+
+    /** 8 a 13. Mensajes primero: cabecera pequeña con el día y la hora, los mensajes lo más grandes posible, la próxima cita en una banda y el tiempo abajo. */
+    private void tbMensajes() {
+        crearCampos(110, 56, 150, 44, 44);
+        tvHablada.setMaxLines(2);
+        colorReloj(tema.encTxt, tema.encTxt);
+        LinearLayout arriba = fila();
+        LinearLayout fecha = bloque(tema.fecha);
+        fecha.setGravity(Gravity.CENTER_VERTICAL);
+        fecha.addView(tvDia);
+        fecha.addView(tvFecha);
+        ajustable(fecha, 1.6f);
+        LinearLayout hora = bloque(tema.hora);
+        hora.setGravity(Gravity.CENTER_VERTICAL);
+        hora.addView(filaReloj(false), lp(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        hora.addView(tvHablada);
+        ajustable(hora, 1.5f);
+        arriba.addView(fecha, hp(1f, 0));
+        arriba.addView(hora, hp(1f, 14));
+        raiz.addView(arriba, vp(1.25f, 0));
+        tbEnc = arriba;
+        anadirZonaMensajes(raiz);
+        LinearLayout clima = fila();
+        tbHoy = bloque(tema.hoy);
+        tbMan = bloque(tema.man);
+        clima.addView(tbHoy, hp(1f, 0));
+        clima.addView(tbMan, hp(1f, 14));
+        raiz.addView(clima, vp(1f, 14));
+        tbClima = clima;
+        tbModoClima = 1;
+    }
+
+    /** La próxima cita en una banda: "Próxima cita" y debajo "A las seis y media, Merienda con Ana". */
+    private View tarjetaCitaBanda() {
+        Datos.Evento e = null;
+        boolean deManana = false;
+        for (Datos.Evento x : datos.eventos) if (!x.manana) { e = x; break; }
+        if (e == null) for (Datos.Evento x : datos.eventos) if (x.manana) { e = x; deManana = true; break; }
+        if (e == null) return null;
+        LinearLayout t = bloque(tema.cita);
+        t.setGravity(Gravity.CENTER_VERTICAL);
+        t.setPadding(px(36), px(12), px(36), px(12));
+        TextView et = texto(40, false);
+        et.setTextColor(tema.citaTxt);
+        et.setText(deManana ? "Próxima cita · mañana" : "Próxima cita");
+        et.setMaxLines(1);
+        t.addView(et);
+        String cuando = e.hora.isEmpty() || Texto.aLas(e.hora).isEmpty() ? "Todo el día" : Texto.mayus(Texto.aLas(e.hora));
+        TextView tx = texto(56, true);
+        tx.setTextColor(tema.citaTxt);
+        tx.setText(cuando + ", " + e.titulo);
+        tx.setMaxLines(2);
+        t.addView(tx);
+        ajustable(t, 1.4f);
+        return t;
+    }
+
     /** Pone en una tarjeta de tiempo: el día, los grados con su dibujo y el consejo. modo: 0 con franja, 1 vertical, 2 mitad de la tarjeta ancha, 3 y 4 en horizontal. */
     private void climaContenido(LinearLayout cont, String titulo, int temp, int codigo, int modo, int acento, int franja) {
         cont.removeAllViews();
@@ -1533,6 +1610,10 @@ public class MainActivity extends Activity {
                 banda.setBackgroundDrawable(null);
                 icBanda.setColorFilter(tema.sub, PorterDuff.Mode.SRC_IN);
                 txBanda.setTextColor(tema.txt);
+            } else if (tbIdx >= 7) {
+                banda.setBackgroundDrawable(caja(tema.banda, 16, 0, 0));
+                icBanda.setColorFilter(tema.bandaTxt, PorterDuff.Mode.SRC_IN);
+                txBanda.setTextColor(tema.bandaTxt);
             } else if (tbIdx == 5) {
                 banda.setBackgroundDrawable(caja(tema.banda, 28, 0, 0));
                 icBanda.setColorFilter(0xFFFFD25A, PorterDuff.Mode.SRC_IN);
@@ -1557,18 +1638,32 @@ public class MainActivity extends Activity {
             hay = true;
         } else {
             int nm = datos.verMensajes ? Math.min(2, datos.mensajes.size()) : 0;
-            for (int i = 0; i < nm; i++) anadir(tbMsgsCol, tarjetaMensaje(datos.mensajes.get(i), ahora, nm > 1), 1f);
-            View ev = datos.verEventos ? tarjetaProximoCompacto() : null;
-            if (ev != null) anadir(tbEvCol, ev, 1f);
+            boolean mp = tbIdx >= 7;                          // Mensajes primero: mensajes de colores, a todo el ancho, y la cita en una banda
+            for (int i = 0; i < nm; i++) {
+                View mv = tarjetaMensaje(datos.mensajes.get(i), ahora, nm > 1);
+                if (mp) mv.setBackgroundDrawable(caja(i == 0 ? tema.msg1 : tema.msg2, 28, 0, 0));
+                anadir(tbMsgsCol, mv, 1f);
+            }
+            View ev = datos.verEventos ? (mp ? tarjetaCitaBanda() : tarjetaProximoCompacto()) : null;
+            if (ev != null) {
+                if (mp) {
+                    LinearLayout.LayoutParams le = lp(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+                    le.topMargin = px(nm > 0 ? 14 : 0);
+                    tbEvCol.addView(ev, le);
+                } else {
+                    anadir(tbEvCol, ev, 1f);
+                }
+            }
             hay = nm > 0 || ev != null;
             tbMsgsCol.setVisibility(nm > 0 ? View.VISIBLE : View.GONE);
             tbEvCol.setVisibility(ev != null ? View.VISIBLE : View.GONE);
-            if (nm == 0 && ev != null) ((LinearLayout.LayoutParams) tbEvCol.getLayoutParams()).leftMargin = 0;
+            if (!mp && nm == 0 && ev != null) ((LinearLayout.LayoutParams) tbEvCol.getLayoutParams()).leftMargin = 0;
         }
         tbZona.setVisibility(hay ? View.VISIBLE : View.GONE);
         // el tiempo
         boolean tiempo = datos != null && datos.verTiempo && datos.hayTiempo;
-        tbClima.setVisibility(tiempo ? View.VISIBLE : View.GONE);
+        boolean sinDatosVisible = tbIdx >= 7 && datos != null && datos.verTiempo && !datos.hayTiempo;      // Mensajes primero: dos tarjetas que dicen que no hay datos
+        tbClima.setVisibility(tiempo || sinDatosVisible ? View.VISIBLE : View.GONE);
         boolean contenido = tbZona.getVisibility() == View.VISIBLE;
         if (tbIdx == 6) ((View) tvHablada.getParent()).getLayoutParams().height = px(contenido ? 78 : 110);
         int modo = contenido ? 5 : tbModoClima;           // con mensajes o cita, el tiempo se pone en una sola línea
@@ -1587,12 +1682,36 @@ public class MainActivity extends Activity {
                 tbMan.setVisibility(View.GONE);
             }
         }
+        if (sinDatosVisible) {
+            String[] dia = {"Hoy", "Mañana"};
+            LinearLayout[] cont = {tbHoy, tbMan};
+            for (int i = 0; i < 2; i++) {
+                cont[i].removeAllViews();
+                cont[i].setVisibility(View.VISIBLE);
+                cont[i].setGravity(Gravity.CENTER_VERTICAL);
+                TextView d = texto(52, true);
+                d.setTextColor(tema.txt);
+                d.setText(dia[i]);
+                cont[i].addView(d);
+                TextView n = texto(40, false);
+                n.setTextColor(tema.txt);
+                n.setText("Sin datos del tiempo");
+                cont[i].addView(n);
+                ajustable(cont[i], 1.3f);
+            }
+        }
         // con mensajes o cita, la cabecera y el tiempo ceden sitio
         boolean largo = false;                           // un mensaje largo pide más sitio: la cabecera y el tiempo ceden más
         if (datos != null && datos.verMensajes) for (Datos.Mensaje m : datos.mensajes.subList(0, Math.min(2, datos.mensajes.size()))) if (m.texto.length() > 90) largo = true;
-        ((LinearLayout.LayoutParams) tbEnc.getLayoutParams()).weight = contenido ? (largo ? 0.82f : 0.85f) : 1.2f;
-        ((LinearLayout.LayoutParams) tbClima.getLayoutParams()).weight = contenido ? (tbIdx == 3 ? 0.95f : largo ? 0.62f : 0.65f) : 1f;
-        ((LinearLayout.LayoutParams) tbZona.getLayoutParams()).weight = largo ? 1.9f : 1.5f;
+        if (tbIdx >= 7) {                                // Mensajes primero: la cabecera y el tiempo, lo justo; los mensajes, el resto
+            ((LinearLayout.LayoutParams) tbEnc.getLayoutParams()).weight = contenido ? 0.9f : 1.25f;
+            ((LinearLayout.LayoutParams) tbClima.getLayoutParams()).weight = contenido ? 0.6f : 1f;
+            ((LinearLayout.LayoutParams) tbZona.getLayoutParams()).weight = largo ? 2.8f : 2.3f;
+        } else {
+            ((LinearLayout.LayoutParams) tbEnc.getLayoutParams()).weight = contenido ? (largo ? 0.82f : 0.85f) : 1.2f;
+            ((LinearLayout.LayoutParams) tbClima.getLayoutParams()).weight = contenido ? (tbIdx == 3 ? 0.95f : largo ? 0.62f : 0.65f) : 1f;
+            ((LinearLayout.LayoutParams) tbZona.getLayoutParams()).weight = largo ? 1.9f : 1.5f;
+        }
         tbEnc.requestLayout();
         raiz.requestLayout();
     }

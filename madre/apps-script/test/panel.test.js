@@ -30,7 +30,7 @@ const PRUEBAS = {
     t('avisa de que la colocación es fija', texto().indexOf('La pantalla siempre coloca cada cosa en el mismo sitio') >= 0);
     await clic('Lavanda', document.querySelectorAll('.estilos')[0]); t('estilo de día', S.datos.estiloDia === 'lavanda');
     await clic('Salvia', document.querySelectorAll('.estilos')[1]); t('estilo de noche', S.datos.estiloNoche === 'salvia');
-    t('hay once distribuciones con miniatura real', document.querySelectorAll('.dist').length === 11 && Array.from(document.querySelectorAll('.dist img')).every((i) => i.src.indexOf('data:image/jpeg;base64,') === 0));
+    t('hay diecisiete distribuciones con miniatura real', document.querySelectorAll('.dist').length === 17 && Array.from(document.querySelectorAll('.dist img')).every((i) => i.src.indexOf('data:image/jpeg;base64,') === 0));
     t('la distribución va antes que los colores', document.querySelector('.dists').compareDocumentPosition(document.querySelector('.estilos')) & 4);
     t('por defecto la clásica', document.querySelector('.dist[aria-pressed=true]').getAttribute('data-dist') === 'clasica');
     await clic('Lista', document.querySelector('.dists')); await espera(300);
@@ -467,13 +467,19 @@ const PRUEBAS = {
   'admin: las siete pantallas con diseño propio (y el aviso si la tele es anterior a la 6.4)': `
     await rpc('doGet', { parameter: { k: 'ADMINKEY', v: '6.3' } }); S = await llamar('admEstado'); ir('pantalla'); await espera(400);
     const ids = Array.prototype.map.call(document.querySelectorAll('.dist'), (b) => b.getAttribute('data-dist'));
-    t('el panel ofrece las once distribuciones', ids.length === 11 && ['banda', 'mosaico', 'bloques', 'lateral', 'titular', 'marco', 'limpia'].every((x) => ids.indexOf(x) >= 0));
+    t('el panel ofrece las diecisiete distribuciones', ids.length === 17 && ['banda', 'mosaico', 'bloques', 'lateral', 'titular', 'marco', 'limpia', 'salvia_melocoton', 'coral_menta', 'salvia_azul', 'menta_lavanda', 'azul_terracota', 'bosque_amarillo'].every((x) => ids.indexOf(x) >= 0));
     t('cada una con su miniatura', Array.prototype.every.call(document.querySelectorAll('.dist img'), (i) => i.getAttribute('src').indexOf('data:image/jpeg;base64,') === 0 && i.getAttribute('src').length > 3000));
     await clic('Banda verde'); await espera(500);
     t('al elegirla se guarda', S.datos.distribucion === 'banda' && (await llamar('admEstado')).datos.distribucion === 'banda');
     t('y con la tele en la 6.3 avisa de que seguirá viendo la Clásica', document.getElementById('aviso-tableros').textContent.indexOf('seguirá viendo la Clásica') >= 0 && document.getElementById('aviso-tableros').textContent.indexOf('es la 6.3') >= 0);
     await rpc('doGet', { parameter: { k: 'ADMINKEY', v: '6.4' } }); S = await llamar('admEstado'); ir('pantalla'); await espera(400);
     t('con la 6.4 ya no avisa', document.getElementById('aviso-tableros').textContent.indexOf('seguirá viendo la Clásica') < 0 && document.getElementById('aviso-tableros').textContent.indexOf('propios colores') >= 0);
+    await rpc('doGet', { parameter: { k: 'ADMINKEY', v: '6.6' } }); S = await llamar('admEstado'); ir('pantalla'); await espera(400);
+    await clic('Coral y menta'); await espera(500);
+    t('"Mensajes primero" pide la 6.7: con la 6.6 avisa', document.getElementById('aviso-tableros').textContent.indexOf('hasta que instales la 6.7') >= 0);
+    await rpc('doGet', { parameter: { k: 'ADMINKEY', v: '6.7' } }); S = await llamar('admEstado'); ir('pantalla'); await espera(400);
+    t('con la 6.7 ya no avisa', document.getElementById('aviso-tableros').textContent.indexOf('seguirá viendo la Clásica') < 0);
+    t('y las agrupa con su título', document.getElementById('app').textContent.indexOf('Mensajes primero (seis colores)') >= 0 && document.getElementById('app').textContent.indexOf('Con diseño propio') >= 0);
     await clic('Clásica'); await espera(400);
     t('con la Clásica no hay aviso', document.getElementById('aviso-tableros').hidden === true);`,
   'admin: errores junto a lo que falló': `

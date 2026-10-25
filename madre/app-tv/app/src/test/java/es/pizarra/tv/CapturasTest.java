@@ -315,7 +315,7 @@ public class CapturasTest {
         File dir = new File(System.getProperty("capturas.dir"));
         String ev = "[{\"dia\":0,\"titulo\":\"Merienda con Ana\",\"hora\":\"18:30\",\"orden\":1},{\"dia\":1,\"titulo\":\"Analítica Mamá\",\"hora\":\"07:45\",\"orden\":2}]";
         String cuenta = "{\"id\":\"c1\",\"texto\":\"Faltan 7 días para Tots Sants\",\"icono\":\"calendario\",\"dias\":7}";
-        for (String d : new String[]{"banda", "mosaico", "bloques", "lateral", "titular", "marco", "limpia"}) {
+        for (String d : new String[]{"banda", "mosaico", "bloques", "lateral", "titular", "marco", "limpia", "salvia_melocoton", "coral_menta", "salvia_azul", "menta_lavanda", "azul_terracota", "bosque_amarillo"}) {
             String n = "t7-" + d + "-";
             captura(n + "solo-hora-y-tiempo", conDistribucion(json("calido", "", "[]", TIEMPO, cuenta), d), 25, 12, 33);
             captura(n + "sin-cuenta-atras", conDistribucion(json("calido", "", "[]", TIEMPO, "null"), d), 25, 12, 33);
@@ -336,7 +336,7 @@ public class CapturasTest {
     @Test
     public void unaDistribucionDesconocidaSeVeComoLaClasica() {
         assertEquals("clasica", Datos.valida("holograma"));
-        for (String d : new String[]{"banda", "mosaico", "bloques", "lateral", "titular", "marco", "limpia"}) assertEquals(d, Datos.valida(d));
+        for (String d : new String[]{"banda", "mosaico", "bloques", "lateral", "titular", "marco", "limpia", "salvia_melocoton", "coral_menta", "salvia_azul", "menta_lavanda", "azul_terracota", "bosque_amarillo"}) assertEquals(d, Datos.valida(d));
     }
 
     private static String conMedio(String json, String medio) {

@@ -90,6 +90,16 @@ Con el script nuevo y la TV todavía en la 2.0, todo sigue funcionando (la 2.0 i
 - **Versión instalada**: el panel enseña "Conectada hace… · app 6.1". Desde PowerShell:
   `adb shell dumpsys package es.pizarra.tv | findstr versionName`.
 
+### App 6.7: "Mensajes primero", seis combinaciones de color
+Un diseño nuevo, a partir de los 24 PNG de ChatGPT (6 combinaciones × 4 estados): cabecera pequeña (día | hora), los **mensajes lo más grandes posible**
+a todo el ancho y de colores, la **próxima cita** en una banda, la cuenta atrás arriba y el tiempo abajo. Ids: `salvia_melocoton`, `coral_menta`, `salvia_azul`,
+`menta_lavanda`, `azul_terracota` y `bosque_amarillo`. En el panel salen agrupadas bajo "Mensajes primero".
+- Sin mensajes ni cita (estado A) los huecos punteados de los mockups **no se dibujan** (eran marcas de sitio): el tiempo y la cabecera ocupan el espacio.
+- Sin datos del tiempo (estado D) salen las dos tarjetas "Sin datos del tiempo", como en los mockups.
+- Los mockups llevaban el texto del tiempo a ~26 px; aquí se respeta el mínimo de 36 px (a 1080p).
+- Los colores y su contraste se comprueban en `TemasTest` (también el estilo de día elegido sobre los fondos de los mensajes). De noche, la Clásica.
+- Compatibilidad: hace falta la 6.7; una app anterior ve la Clásica (el panel lo avisa).
+
 ### App 6.6: las siete pantallas sin "momento del día"
 Siguiendo los diseños revisados, las siete pantallas con diseño propio ya no llevan etiqueta ni píldora de "Al mediodía / Por la tarde": la hora
 hablada ("Es la una menos veintisiete del mediodía") ya lo dice. Banda verde pierde su tarjeta central y se queda con Hoy y Mañana.
