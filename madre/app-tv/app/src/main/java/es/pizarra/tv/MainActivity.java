@@ -539,6 +539,7 @@ public class MainActivity extends Activity {
         if ("reloj".equals(dist)) construirReloj();
         else if ("lista".equals(dist)) construirLista();
         else if ("sencillo".equals(dist)) construirSencillo();
+        else if (esTablero(dist)) construirTablero(dist);
         else construirClasica();
     }
 
@@ -878,8 +879,13 @@ public class MainActivity extends Activity {
     static String fallaDePrueba;      // solo para las pruebas: una distribución que se obliga a fallar
 
     private void pintarDistribucion(Calendar ahora, int hora, String dist) {
+        if (noche && esTablero(dist)) dist = "clasica";      // de noche, los tableros usan la Clásica con el estilo de noche
         construirRaiz(dist);
         if (dist.equals(fallaDePrueba)) throw new IllegalStateException("fallo de prueba");
+        if (esTablero(dist)) {
+            pintarTablero(ahora, hora);
+            return;
+        }
         tvDia.setTextColor(p.texto);
         tvFecha.setTextColor(p.sub);
         tvH.setTextColor(compactoHora ? p.acentoTexto : p.texto);
@@ -1054,6 +1060,633 @@ public class MainActivity extends Activity {
         lt.width = anchoElegido >= ancho ? ViewGroup.LayoutParams.MATCH_PARENT : anchoElegido + px(4);
         tx.setLayoutParams(lt);
     }
+
+    /* ---------- Pantallas con diseño propio (siete "tableros") ---------- */
+
+    static final String[] TABLEROS = {"banda", "mosaico", "bloques", "lateral", "titular", "marco", "limpia"};
+
+    static boolean esTablero(String d) {
+        return indiceTablero(d) >= 0;
+    }
+
+    static int indiceTablero(String d) {
+        for (int i = 0; i < TABLEROS.length; i++) if (TABLEROS[i].equals(d)) return i;
+        return -1;
+    }
+
+    /** Colores fijos de cada diseño (de día). De noche estas pantallas usan la Clásica con el estilo de noche. */
+    static final class Tema {
+        final int fondo, banda, bandaTxt, txt, sub, fecha, hora, hoy, man, parte, panel, tempHoy, tempMan, pill, pillTxt, raya;
+
+        Tema(int... c) {
+            fondo = c[0]; banda = c[1]; bandaTxt = c[2]; txt = c[3]; sub = c[4]; fecha = c[5]; hora = c[6]; hoy = c[7]; man = c[8];
+            parte = c[9]; panel = c[10]; tempHoy = c[11]; tempMan = c[12]; pill = c[13]; pillTxt = c[14]; raya = c[15];
+        }
+    }
+
+    private static final int NAVY = 0xFF0B1F3A, ROJO = 0xFFA63D22, TEAL = 0xFF0B6560;
+    //                                      fondo       banda       bandaTxt    txt         sub         fecha       hora        hoy         man         parte       panel       tempHoy     tempMan     pill        pillTxt     raya
+    static final Tema[] TEMAS = {
+            new Tema(0xFFFBF8F1, 0xFFFBD3BC, NAVY,       NAVY, 0xFF3A4A60, 0xFF17402B, 0xFF17402B, 0xFFFFEFC2, 0xFFD9EAFB, 0xFFFFFFFF, 0xFFFFFFFF, NAVY,   NAVY,   0xFFFBE3A0, NAVY, 0x668FB59C),   // banda
+            new Tema(0xFFFBF6EC, 0xFFA63D22, 0xFFFFFFFF, NAVY, 0xFF3A4A60, 0xFFCDE5F9, 0xFFFFFDF8, 0xFFDCE9D3, 0xFFFBE0CF, 0xFFFBE3A0, 0xFFFFFFFF, NAVY,   NAVY,   0xFFFBE3A0, NAVY, 0x33000000),   // mosaico
+            new Tema(0xFFFBF6EC, 0xFF15395E, 0xFFFFFFFF, NAVY, 0xFF3A4A60, 0xFFD1EDE4, 0xFFEADDF4, 0xFFF6EBDA, 0xFFF6EBDA, 0xFFF6EBDA, 0xFFF6EBDA, ROJO,   TEAL,   0xFFFBE3A0, NAVY, 0x55000000),   // bloques
+            new Tema(0xFFF3F4E6, 0xFFFBE7A0, NAVY,       NAVY, 0xFF3A4A60, 0xFFC9DDB8, 0xFFFDF9EE, 0xFFFDE5D0, 0xFFD8EAFB, 0xFFC9DDB8, 0xFFC9DDB8, ROJO,   TEAL,   0xFFFBE3A0, NAVY, 0x55000000),   // lateral
+            new Tema(0xFFFBF9F4, 0xFFA63D22, 0xFFFFFFFF, NAVY, 0xFF3A4A60, 0xFFFBF9F4, 0xFFD4E7FA, 0xFFFFF0CB, 0xFFDFF2DC, 0xFFFBE3A0, 0xFFD4E7FA, NAVY,   NAVY,   0xFFFBE3A0, NAVY, 0x55000000),   // titular
+            new Tema(0xFF6BA7BD, 0xFF0F4C5C, 0xFFFFFFFF, NAVY, 0xFF1C2A3E, 0xFFD6E8CE, 0xFFFFF8E8, 0xFFFBDCCB, 0xFFD9EBFA, 0xFFFBE3A0, 0xFFFFFFFF, NAVY,   NAVY,   0xFFFBE3A0, NAVY, 0x33000000),   // marco
+            new Tema(0xFFFBF8F1, 0xFFFBF8F1, NAVY,       NAVY, 0xFF3A4A60, 0xFFFBF8F1, 0xFFFBF8F1, 0xFFFFF0CB, 0xFFDFF2DC, 0xFFBDD5E8, 0xFFFBF8F1, NAVY,   NAVY,   0xFFBDD5E8, NAVY, 0x66000000),   // limpia
+    };
+
+    private Tema tema;
+    private int tbIdx;
+    private boolean tbBandaFina;
+    private LinearLayout tbEnc, tbClima, tbZona, tbMsgsCol, tbEvCol, tbHoy, tbMan;
+    private TextView tbParteTxt;
+    private ImageView tbParteIc;
+    private int tbModoClima, tbFranjaHoy, tbFranjaMan;
+
+    private LinearLayout bloque(int fondo) {
+        LinearLayout t = new LinearLayout(this);
+        t.setOrientation(LinearLayout.VERTICAL);
+        t.setBackgroundDrawable(caja(fondo, 28, 0, 0));
+        t.setPadding(px(36), px(20), px(36), px(20));
+        return t;
+    }
+
+    /** La tarjeta agranda o encoge su contenido para llenar el hueco que le toque (como las demás). */
+    private void ajustable(final LinearLayout t, final float kmax) {
+        t.addOnLayoutChangeListener(new View.OnLayoutChangeListener() {
+            @Override public void onLayoutChange(View v, int l, int tp, int r, int b, int ol, int ot, int or, int ob) {
+                if (r - l == or - ol && b - tp == ob - ot) return;
+                llenar(t, kmax, true);
+            }
+        });
+    }
+
+    private LinearLayout.LayoutParams vp(float peso, int arriba) {
+        LinearLayout.LayoutParams l = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, peso);
+        l.topMargin = px(arriba);
+        return l;
+    }
+
+    private LinearLayout.LayoutParams hp(float peso, int izquierda) {
+        LinearLayout.LayoutParams l = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, peso);
+        l.leftMargin = px(izquierda);
+        return l;
+    }
+
+    private View rayaV(int color, float ancho) {
+        View v = new View(this);
+        v.setBackgroundColor(color);
+        v.setLayoutParams(lp(Math.max(2, px(ancho)), ViewGroup.LayoutParams.MATCH_PARENT));
+        return v;
+    }
+
+    private LinearLayout fila() {
+        LinearLayout f = new LinearLayout(this);
+        f.setOrientation(LinearLayout.HORIZONTAL);
+        return f;
+    }
+
+    private LinearLayout columna() {
+        LinearLayout f = new LinearLayout(this);
+        f.setOrientation(LinearLayout.VERTICAL);
+        return f;
+    }
+
+    private void colorReloj(int color, int hablada) {
+        tvDia.setTextColor(color);
+        tvFecha.setTextColor(color);
+        tvH.setTextColor(color);
+        tvDos.setTextColor(color);
+        tvM.setTextColor(color);
+        tvHablada.setTextColor(hablada);
+    }
+
+    /** "Al mediodía" con su sol, en una píldora. */
+    private LinearLayout pildoraTablero() {
+        LinearLayout pl = fila();
+        pl.setGravity(Gravity.CENTER_VERTICAL);
+        pl.setTag("parte");
+        pl.setBackgroundDrawable(caja(tema.pill, 40, 0, 0));
+        pl.setPadding(px(26), px(8), px(30), px(8));
+        tbParteIc = icono(R.drawable.ic_sol, tema.pillTxt, 48);
+        LinearLayout.LayoutParams l = lp(px(48), px(48));
+        l.rightMargin = px(14);
+        pl.addView(tbParteIc, l);
+        tbParteTxt = texto(46, true);
+        tbParteTxt.setMaxLines(1);
+        tbParteTxt.setTextColor(tema.pillTxt);
+        pl.addView(tbParteTxt);
+        return pl;
+    }
+
+    /** "Al mediodía" y un sol grande, uno encima del otro. */
+    private LinearLayout parteGrande(int fondo) {
+        LinearLayout t = bloque(fondo);
+        t.setTag("parte");
+        t.setGravity(Gravity.CENTER);
+        tbParteTxt = texto(54, true);
+        tbParteTxt.setMaxLines(2);
+        tbParteTxt.setGravity(Gravity.CENTER);
+        tbParteTxt.setTextColor(tema.txt);
+        t.addView(tbParteTxt, lp(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        tbParteIc = icono(R.drawable.ic_sol, 0xFFF2A81D, 150);
+        LinearLayout.LayoutParams l = lp(px(150), px(150));
+        l.gravity = Gravity.CENTER_HORIZONTAL;
+        l.topMargin = px(14);
+        t.addView(tbParteIc, l);
+        ajustable(t, 1.4f);
+        return t;
+    }
+
+    /** El hueco de los mensajes y de la próxima cita; solo se ve si hay algo. */
+    private void anadirZonaTablero(LinearLayout padre) {
+        tbZona = fila();
+        tbMsgsCol = columna();
+        tbEvCol = columna();
+        tbZona.addView(tbMsgsCol, hp(1.7f, 0));
+        tbZona.addView(tbEvCol, hp(1f, 16));
+        padre.addView(tbZona, vp(1.5f, 14));
+    }
+
+    private void construirTablero(String d) {
+        tbIdx = indiceTablero(d);
+        tema = TEMAS[tbIdx];
+        tbBandaFina = false;
+        tbEnc = null; tbClima = null; tbHoy = null; tbMan = null;
+        compactoHora = false;
+        anchoHablada = -1;
+        raiz.setBackgroundColor(tema.fondo);
+        switch (tbIdx) {
+            case 0: tbBandaVerde(); break;
+            case 1: tbMosaico(false); break;
+            case 2: tbBloques(); break;
+            case 3: tbLateral(); break;
+            case 4: tbTitular(); break;
+            case 5: tbMosaico(true); break;
+            default: tbLimpia(); break;
+        }
+    }
+
+    /** 1. Cabecera verde oscura con el día y la hora; debajo, Hoy, el momento del día y Mañana. */
+    private void tbBandaVerde() {
+        crearCampos(130, 60, 190, 44, 44);
+        tvHablada.setMaxLines(2);
+        colorReloj(0xFFFFFFFF, 0xFFE6F0E9);
+        LinearLayout enc = bloque(0xFF17402B);
+        enc.setOrientation(LinearLayout.HORIZONTAL);
+        enc.setGravity(Gravity.CENTER_VERTICAL);
+        enc.setPadding(px(48), px(14), px(48), px(14));
+        LinearLayout izq = columna();
+        izq.setGravity(Gravity.CENTER_VERTICAL);
+        izq.addView(tvDia);
+        izq.addView(tvFecha);
+        enc.addView(izq, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+        LinearLayout.LayoutParams lr = lp(Math.max(2, px(3)), ViewGroup.LayoutParams.MATCH_PARENT);
+        lr.leftMargin = px(28);
+        lr.rightMargin = px(28);
+        View raya = new View(this);
+        raya.setBackgroundColor(tema.raya);
+        enc.addView(raya, lr);
+        LinearLayout der = columna();
+        der.setGravity(Gravity.CENTER_VERTICAL);
+        der.addView(filaReloj(false));
+        der.addView(tvHablada);
+        enc.addView(der, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1.15f));
+        ajustable(enc, 1.5f);
+        raiz.addView(enc, vp(1.15f, 0));
+        tbEnc = enc;
+        anadirZonaTablero(raiz);
+        LinearLayout clima = fila();
+        tbHoy = bloque(tema.hoy);
+        tbMan = bloque(tema.man);
+        clima.addView(tbHoy, hp(1f, 0));
+        clima.addView(parteGrande(tema.parte), hp(0.6f, 14));
+        clima.addView(tbMan, hp(1f, 14));
+        raiz.addView(clima, vp(1f, 14));
+        tbClima = clima;
+        tbModoClima = 0;
+        tbFranjaHoy = 0xFFFAD97A;
+        tbFranjaMan = 0xFFB5D6F5;
+    }
+
+    /** 2 y 6. Cuatro cuadros: el día y la hora arriba; Hoy y Mañana abajo. El 6 lleva marco de color. */
+    private void tbMosaico(boolean marco) {
+        crearCampos(120, 56, 190, 44, 44);
+        tvHablada.setMaxLines(2);
+        colorReloj(tema.txt, tema.sub);
+        LinearLayout arriba = fila();
+        LinearLayout fecha = bloque(tema.fecha);
+        fecha.setGravity(Gravity.CENTER_VERTICAL);
+        fecha.addView(tvDia);
+        fecha.addView(tvFecha);
+        ajustable(fecha, 1.6f);
+        LinearLayout hora = bloque(tema.hora);
+        hora.setGravity(Gravity.CENTER_HORIZONTAL);
+        hora.addView(filaReloj(false), lp(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        hora.addView(tvHablada);
+        LinearLayout pl = pildoraTablero();
+        LinearLayout.LayoutParams lpl = lp(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        lpl.topMargin = px(10);
+        hora.addView(pl, lpl);
+        ajustable(hora, 1.5f);
+        arriba.addView(fecha, hp(1f, 0));
+        arriba.addView(hora, hp(1f, 14));
+        raiz.addView(arriba, vp(1.15f, 0));
+        tbEnc = arriba;
+        anadirZonaTablero(raiz);
+        LinearLayout clima = fila();
+        tbHoy = bloque(tema.hoy);
+        tbMan = bloque(tema.man);
+        clima.addView(tbHoy, hp(1f, 0));
+        clima.addView(tbMan, hp(1f, 14));
+        raiz.addView(clima, vp(1f, 14));
+        tbClima = clima;
+        tbModoClima = 1;
+        tbFranjaHoy = 0;
+        tbFranjaMan = 0;
+    }
+
+    /** 3. Dos bloques de color arriba (día y hora) y una tarjeta ancha con Hoy y Mañana. */
+    private void tbBloques() {
+        crearCampos(120, 56, 190, 44, 44);
+        tvHablada.setMaxLines(2);
+        colorReloj(tema.txt, tema.sub);
+        LinearLayout arriba = fila();
+        LinearLayout fecha = bloque(tema.fecha);
+        fecha.setGravity(Gravity.CENTER_VERTICAL);
+        fecha.addView(tvDia);
+        fecha.addView(tvFecha);
+        ajustable(fecha, 1.6f);
+        LinearLayout hora = bloque(tema.hora);
+        hora.setGravity(Gravity.CENTER_HORIZONTAL);
+        hora.addView(filaReloj(false), lp(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        hora.addView(tvHablada);
+        ajustable(hora, 1.5f);
+        arriba.addView(fecha, hp(1f, 0));
+        arriba.addView(hora, hp(1f, 14));
+        raiz.addView(arriba, vp(1.15f, 0));
+        tbEnc = arriba;
+        anadirZonaTablero(raiz);
+        LinearLayout clima = bloque(tema.hoy);
+        clima.setOrientation(LinearLayout.HORIZONTAL);
+        clima.setPadding(px(24), px(12), px(24), px(12));
+        tbHoy = columna();
+        tbMan = columna();
+        tbHoy.setGravity(Gravity.CENTER_VERTICAL);
+        tbMan.setGravity(Gravity.CENTER_VERTICAL);
+        clima.addView(tbHoy, hp(1f, 0));
+        clima.addView(rayaV(tema.raya, 3), lp(Math.max(2, px(3)), ViewGroup.LayoutParams.MATCH_PARENT));
+        clima.addView(tbMan, hp(1f, 24));
+        LinearLayout pl = columna();
+        pl.setTag("parte");
+        pl.setGravity(Gravity.CENTER);
+        TextView t = texto(40, true);
+        t.setTextColor(tema.txt);
+        t.setMaxLines(2);
+        t.setGravity(Gravity.CENTER);
+        tbParteTxt = t;
+        pl.addView(t, lp(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        tbParteIc = icono(R.drawable.ic_sol, 0xFFF2A81D, 88);
+        LinearLayout.LayoutParams li = lp(px(88), px(88));
+        li.gravity = Gravity.CENTER_HORIZONTAL;
+        pl.addView(tbParteIc, li);
+        clima.addView(pl, hp(0.55f, 20));
+        ajustable(clima, 1.5f);
+        raiz.addView(clima, vp(1f, 14));
+        tbClima = clima;
+        tbModoClima = 2;
+    }
+
+    /** 4. Columna verde a la izquierda con el día; a la derecha, la hora grande y Hoy y Mañana en dos filas. */
+    private void tbLateral() {
+        crearCampos(110, 56, 200, 46, 44);
+        tvHablada.setMaxLines(2);
+        colorReloj(tema.txt, tema.sub);
+        LinearLayout cuerpoT = fila();
+        LinearLayout izq = bloque(tema.fecha);
+        izq.setGravity(Gravity.CENTER_HORIZONTAL);
+        izq.addView(tvDia, lp(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        tvFecha.setMaxLines(2);
+        izq.addView(tvFecha, lp(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        View raya = new View(this);
+        raya.setBackgroundColor(tema.raya);
+        LinearLayout.LayoutParams lr = lp(ViewGroup.LayoutParams.MATCH_PARENT, Math.max(2, px(3)));
+        lr.topMargin = px(18);
+        lr.bottomMargin = px(18);
+        izq.addView(raya, lr);
+        tbParteTxt = texto(50, true);
+        tbParteTxt.setTextColor(tema.txt);
+        tbParteTxt.setMaxLines(2);
+        izq.addView(tbParteTxt, lp(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        tbParteIc = icono(R.drawable.ic_sol, 0xFFF2A81D, 190);
+        LinearLayout.LayoutParams li = lp(px(190), px(190));
+        li.gravity = Gravity.CENTER_HORIZONTAL;
+        li.topMargin = px(16);
+        izq.addView(tbParteIc, li);
+        ajustable(izq, 1.4f);
+        cuerpoT.addView(izq, hp(0.72f, 0));
+        LinearLayout der = columna();
+        LinearLayout hora = bloque(tema.hora);
+        hora.setGravity(Gravity.CENTER_HORIZONTAL);
+        hora.addView(filaReloj(false), lp(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        hora.addView(tvHablada);
+        ajustable(hora, 1.5f);
+        der.addView(hora, vp(1.1f, 0));
+        tbEnc = hora;
+        anadirZonaTablero(der);
+        LinearLayout clima = columna();
+        tbHoy = bloque(tema.hoy);
+        tbMan = bloque(tema.man);
+        clima.addView(tbHoy, vp(1f, 0));
+        clima.addView(tbMan, vp(1f, 14));
+        der.addView(clima, vp(1.5f, 14));
+        tbClima = clima;
+        cuerpoT.addView(der, hp(1.7f, 14));
+        raiz.addView(cuerpoT, vp(1f, 0));
+        tbModoClima = 6;
+    }
+
+    /** 5. El día en letra enorme sin recuadro; a su lado, la hora; debajo, un panel con Hoy y Mañana. */
+    private void tbTitular() {
+        crearCampos(150, 66, 200, 46, 44);
+        tvHablada.setMaxLines(2);
+        colorReloj(tema.txt, tema.sub);
+        LinearLayout arriba = fila();
+        LinearLayout izq = columna();
+        izq.setGravity(Gravity.CENTER_VERTICAL);
+        izq.addView(tvDia, lp(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        izq.addView(tvFecha, lp(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        txBanda.setTextSize(TypedValue.COMPLEX_UNIT_PX, 44 * s);
+        txBanda.setTag(44f);
+        raiz.removeView(banda);                         // la cuenta atrás va debajo de la fecha, como una píldora
+        LinearLayout.LayoutParams lb = lp(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        lb.topMargin = px(14);
+        izq.addView(banda, lb);
+        izq.setPadding(px(8), 0, px(8), 0);
+        ajustable(izq, 1.5f);
+        arriba.addView(izq, hp(1.15f, 0));
+        LinearLayout hora = bloque(tema.hora);
+        hora.setGravity(Gravity.CENTER_HORIZONTAL);
+        hora.addView(filaReloj(false), lp(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        hora.addView(tvHablada);
+        ajustable(hora, 1.5f);
+        arriba.addView(hora, hp(1f, 14));
+        raiz.addView(arriba, vp(1.25f, 0));
+        tbEnc = arriba;
+        anadirZonaTablero(raiz);
+        LinearLayout panel = bloque(tema.panel);
+        LinearLayout cab = fila();
+        LinearLayout pl = pildoraTablero();
+        cab.addView(pl, lp(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        panel.addView(cab, lp(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        LinearLayout filaC = fila();
+        tbHoy = bloque(tema.hoy);
+        tbMan = bloque(tema.man);
+        filaC.addView(tbHoy, hp(1f, 0));
+        filaC.addView(tbMan, hp(1f, 14));
+        LinearLayout.LayoutParams lf = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f);
+        lf.topMargin = px(12);
+        panel.addView(filaC, lf);
+        raiz.addView(panel, vp(1.1f, 14));
+        tbClima = panel;
+        tbModoClima = 3;
+    }
+
+    /** 7. Muy limpia: letras grandes sobre el fondo, una banda con el momento del día y Hoy y Mañana. */
+    private void tbLimpia() {
+        crearCampos(130, 62, 230, 46, 44);
+        tvHablada.setMaxLines(1);
+        colorReloj(tema.txt, tema.txt);
+        tbBandaFina = true;
+        txBanda.setTextSize(TypedValue.COMPLEX_UNIT_PX, 40 * s);
+        txBanda.setTag(40f);
+        LinearLayout.LayoutParams lbf = (LinearLayout.LayoutParams) banda.getLayoutParams();
+        lbf.bottomMargin = px(4);
+        banda.setGravity(Gravity.LEFT | Gravity.CENTER_VERTICAL);
+        banda.setMinimumHeight(px(52));
+        LinearLayout.LayoutParams lic = (LinearLayout.LayoutParams) icBanda.getLayoutParams();
+        lic.width = px(40);
+        lic.height = px(40);
+        lic.rightMargin = px(16);
+        View r0 = new View(this);
+        r0.setBackgroundColor(tema.raya);
+        raiz.addView(r0, lp(ViewGroup.LayoutParams.MATCH_PARENT, Math.max(2, px(2))));
+        LinearLayout arriba = fila();
+        arriba.setGravity(Gravity.CENTER_VERTICAL);
+        arriba.setPadding(px(8), px(8), px(8), px(8));
+        LinearLayout izq = columna();
+        izq.setGravity(Gravity.CENTER_VERTICAL);
+        izq.addView(tvDia);
+        izq.addView(tvFecha);
+        arriba.addView(izq, hp(1.1f, 0));
+        LinearLayout.LayoutParams lr = lp(Math.max(2, px(3)), ViewGroup.LayoutParams.MATCH_PARENT);
+        lr.leftMargin = px(24);
+        lr.rightMargin = px(24);
+        View raya = new View(this);
+        raya.setBackgroundColor(tema.raya);
+        arriba.addView(raya, lr);
+        LinearLayout der = columna();
+        der.setGravity(Gravity.CENTER);
+        der.addView(filaReloj(false), lp(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        arriba.addView(der, hp(1f, 0));
+        ajustable(arriba, 1.6f);
+        raiz.addView(arriba, vp(1.25f, 0));
+        tbEnc = arriba;
+        LinearLayout franjaB = bloque(tema.parte);
+        franjaB.setOrientation(LinearLayout.HORIZONTAL);
+        franjaB.setGravity(Gravity.CENTER_VERTICAL);
+        franjaB.setPadding(px(40), px(8), px(40), px(8));
+        tbParteTxt = texto(60, true);
+        tbParteTxt.setTextColor(tema.txt);
+        tbParteTxt.setMaxLines(1);
+        tbParteIc = icono(R.drawable.ic_sol, 0xFFF2A81D, 56);
+        LinearLayout.LayoutParams lp0 = lp(px(56), px(56));
+        lp0.rightMargin = px(18);
+        franjaB.addView(tbParteIc, lp0);
+        franjaB.addView(tbParteTxt, lp(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        LinearLayout.LayoutParams lr2 = lp(Math.max(2, px(3)), px(48));
+        lr2.leftMargin = px(28);
+        lr2.rightMargin = px(28);
+        View raya2 = new View(this);
+        raya2.setBackgroundColor(tema.raya);
+        franjaB.addView(raya2, lr2);
+        franjaB.addView(tvHablada, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+        ajustable(franjaB, 1.3f);
+        raiz.addView(franjaB, lp(ViewGroup.LayoutParams.MATCH_PARENT, px(110)));
+        anadirZonaTablero(raiz);
+        LinearLayout clima = fila();
+        tbHoy = bloque(tema.hoy);
+        tbMan = bloque(tema.man);
+        clima.addView(tbHoy, hp(1f, 0));
+        clima.addView(tbMan, hp(1f, 14));
+        raiz.addView(clima, vp(1f, 14));
+        tbClima = clima;
+        tbModoClima = 4;
+    }
+
+    /** Pone en una tarjeta de tiempo: el día, los grados con su dibujo y el consejo. modo: 0 con franja, 1 vertical, 2 mitad de la tarjeta ancha, 3 y 4 en horizontal. */
+    private void climaContenido(LinearLayout cont, String titulo, int temp, int codigo, int modo, int acento, int franja) {
+        cont.removeAllViews();
+        int txt = tema.txt;
+        if (modo <= 2) {
+            cont.setOrientation(LinearLayout.VERTICAL);
+            TextView d = texto(modo == 0 ? 52 : 58, true);
+            d.setTextColor(txt);
+            d.setText(titulo);
+            d.setMaxLines(1);
+            if (franja != 0) {
+                d.setBackgroundDrawable(caja(franja, 20, 0, 0));
+                d.setPadding(px(20), px(6), px(20), px(6));
+            }
+            cont.addView(d, lp(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+            LinearLayout f = fila();
+            f.setGravity(Gravity.CENTER_VERTICAL);
+            TextView g = texto(modo == 2 ? 120 : 150, true);
+            g.setTextColor(acento);
+            g.setText(temp + "°");
+            g.setMaxLines(1);
+            f.addView(g, lp(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+            ImageView ic = icono(Texto.iconoDelTiempo(codigo), 0xFF6F86A8, modo == 2 ? 110 : 130);
+            LinearLayout.LayoutParams li = lp(px(modo == 2 ? 110 : 130), px(modo == 2 ? 110 : 130));
+            li.leftMargin = px(24);
+            f.addView(ic, li);
+            LinearLayout.LayoutParams lf = lp(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+            lf.topMargin = px(6);
+            cont.addView(f, lf);
+            TextView e = texto(44, false);
+            e.setTextColor(txt);
+            e.setText(Texto.consejo(temp, codigo));
+            LinearLayout.LayoutParams le = lp(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+            le.topMargin = px(6);
+            cont.addView(e, le);
+        } else {
+            boolean compacto = modo == 5, enLinea = modo == 6;
+            cont.setOrientation(LinearLayout.HORIZONTAL);
+            cont.setGravity(Gravity.CENTER_VERTICAL);
+            LinearLayout col = compacto || enLinea ? fila() : columna();
+            col.setGravity(Gravity.CENTER_VERTICAL);
+            TextView d = texto(compacto ? 44 : 52, true);
+            d.setTextColor(txt);
+            d.setText(titulo);
+            d.setMaxLines(1);
+            col.addView(d);
+            TextView g = texto(compacto ? 76 : enLinea ? 120 : modo == 4 ? 110 : 130, true);
+            g.setTextColor(acento);
+            g.setText(temp + "°");
+            g.setMaxLines(1);
+            if (modo == 4) {
+                g.setBackgroundDrawable(caja(0xFFCFE2F3, 6, 0, 0));
+                g.setPadding(px(16), px(4), px(16), px(4));
+            }
+            LinearLayout.LayoutParams lg = lp(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+            if (compacto || enLinea) lg.leftMargin = px(16);
+            col.addView(g, lg);
+            cont.addView(col, lp(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+            float lado = compacto ? 76 : 110;
+            ImageView ic = icono(Texto.iconoDelTiempo(codigo), 0xFF6F86A8, lado);
+            LinearLayout.LayoutParams li = lp(px(lado), px(lado));
+            li.leftMargin = px(compacto ? 14 : 18);
+            li.rightMargin = px(compacto ? 14 : 18);
+            cont.addView(ic, li);
+            cont.addView(rayaV(tema.raya, 3));
+            TextView e = texto(compacto ? 38 : 44, false);
+            e.setTextColor(txt);
+            e.setText(Texto.consejo(temp, codigo));
+            LinearLayout.LayoutParams le = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
+            le.leftMargin = px(compacto ? 16 : 20);
+            cont.addView(e, le);
+        }
+        ajustable(cont, 1.4f);
+    }
+
+    /** Pinta un tablero: textos del día, cuenta atrás, mensajes y próxima cita, y el tiempo. */
+    private void pintarTablero(Calendar ahora, int hora) {
+        raiz.setBackgroundColor(tema.fondo);
+        marco.setBackgroundColor(tema.fondo);
+        tvDia.setText(Texto.nombreDia(ahora));
+        tvFecha.setText(Texto.fecha(ahora));
+        tbParteTxt.setText(Texto.etiquetaParte(hora));
+        tbParteIc.setImageResource(R.drawable.ic_sol);
+        boolean parte = datos == null || datos.verParte;
+        View padreParte = (View) tbParteTxt.getParent();
+        if ("parte".equals(padreParte.getTag())) padreParte.setVisibility(parte ? View.VISIBLE : View.GONE);
+        else { tbParteTxt.setVisibility(parte ? View.VISIBLE : View.GONE); tbParteIc.setVisibility(parte ? View.VISIBLE : View.GONE); }
+        // la cuenta atrás
+        if (datos == null || datos.cuenta == null) {
+            banda.setVisibility(View.GONE);
+        } else {
+            banda.setVisibility(View.VISIBLE);
+            icBanda.setImageResource(Texto.iconoDeLaCuenta(datos.cuenta.icono));
+            if (tbBandaFina) {
+                banda.setBackgroundDrawable(null);
+                icBanda.setColorFilter(tema.sub, PorterDuff.Mode.SRC_IN);
+                txBanda.setTextColor(tema.txt);
+            } else if (tbIdx == 5) {
+                banda.setBackgroundDrawable(caja(tema.banda, 28, 0, 0));
+                icBanda.setColorFilter(0xFFFFD25A, PorterDuff.Mode.SRC_IN);
+                txBanda.setTextColor(tema.bandaTxt);
+            } else {
+                banda.setBackgroundDrawable(caja(tema.banda, tbIdx == 4 ? 20 : 28, 0, 0));
+                icBanda.setColorFilter(tema.bandaTxt, PorterDuff.Mode.SRC_IN);
+                txBanda.setTextColor(tema.bandaTxt);
+            }
+            txBanda.setText(datos.cuenta.texto);
+        }
+        // mensajes y próxima cita
+        tbMsgsCol.removeAllViews();
+        tbEvCol.removeAllViews();
+        boolean conectada = !prefs.getString("url", "").isEmpty();
+        boolean hay = false;
+        if (!conectada) {
+            anadir(tbMsgsCol, tarjetaAviso("Falta conectar la pizarra."), 1f);
+            hay = true;
+        } else if (datos == null) {
+            anadir(tbMsgsCol, tarjetaAviso("Esperando a la pizarra…"), 1f);
+            hay = true;
+        } else {
+            int nm = datos.verMensajes ? Math.min(2, datos.mensajes.size()) : 0;
+            for (int i = 0; i < nm; i++) anadir(tbMsgsCol, tarjetaMensaje(datos.mensajes.get(i), ahora, nm > 1), 1f);
+            View ev = datos.verEventos ? tarjetaProximoCompacto() : null;
+            if (ev != null) anadir(tbEvCol, ev, 1f);
+            hay = nm > 0 || ev != null;
+            tbMsgsCol.setVisibility(nm > 0 ? View.VISIBLE : View.GONE);
+            tbEvCol.setVisibility(ev != null ? View.VISIBLE : View.GONE);
+            if (nm == 0 && ev != null) ((LinearLayout.LayoutParams) tbEvCol.getLayoutParams()).leftMargin = 0;
+        }
+        tbZona.setVisibility(hay ? View.VISIBLE : View.GONE);
+        // el tiempo
+        boolean tiempo = datos != null && datos.verTiempo && datos.hayTiempo;
+        tbClima.setVisibility(tiempo ? View.VISIBLE : View.GONE);
+        boolean contenido = tbZona.getVisibility() == View.VISIBLE;
+        if ((tbIdx == 1 || tbIdx == 4 || tbIdx == 5) && contenido) padreParte.setVisibility(View.GONE);      // con mensajes, el momento del día ya va en la hora hablada
+        if (tbIdx == 6) padreParte.getLayoutParams().height = px(contenido ? 78 : 110);
+        int modo = contenido ? 5 : tbModoClima;           // con mensajes o cita, el tiempo se pone en una sola línea
+        if (tiempo) {
+            Datos.Dia hoy = datos.hoy;
+            if (hoy == null) {
+                hoy = new Datos.Dia();
+                hoy.temp = datos.temperatura;
+                hoy.codigo = datos.codigoTiempo;
+            }
+            climaContenido(tbHoy, "Hoy", hoy.temp, hoy.codigo, modo, tema.tempHoy, contenido ? 0 : tbFranjaHoy);
+            if (datos.manana != null) {
+                tbMan.setVisibility(View.VISIBLE);
+                climaContenido(tbMan, "Mañana", datos.manana.temp, datos.manana.codigo, modo, tema.tempMan, contenido ? 0 : tbFranjaMan);
+            } else {
+                tbMan.setVisibility(View.GONE);
+            }
+        }
+        // con mensajes o cita, la cabecera y el tiempo ceden sitio
+        boolean largo = false;                           // un mensaje largo pide más sitio: la cabecera y el tiempo ceden más
+        if (datos != null && datos.verMensajes) for (Datos.Mensaje m : datos.mensajes.subList(0, Math.min(2, datos.mensajes.size()))) if (m.texto.length() > 90) largo = true;
+        ((LinearLayout.LayoutParams) tbEnc.getLayoutParams()).weight = contenido ? (largo ? 0.82f : 0.85f) : 1.2f;
+        ((LinearLayout.LayoutParams) tbClima.getLayoutParams()).weight = contenido ? (tbIdx == 3 ? 0.95f : largo ? 0.62f : 0.65f) : 1f;
+        ((LinearLayout.LayoutParams) tbZona.getLayoutParams()).weight = largo ? 1.9f : 1.5f;
+        tbEnc.requestLayout();
+        raiz.requestLayout();
+    }
+
 
     /* ---------- Pantalla del recordatorio ---------- */
 

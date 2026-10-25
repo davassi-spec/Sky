@@ -58,7 +58,7 @@ final class Datos {
     boolean rapido;                 // hay un envío pendiente: se pregunta cada pocos segundos
     Recordatorio recordatorio;
     boolean pidenCaptura;           // alguien mira la vista previa en el panel: hay que mandar una captura de la pantalla
-    static final String[] DISTRIBUCIONES = {"clasica", "reloj", "lista", "sencillo"};
+    static final String[] DISTRIBUCIONES = {"clasica", "reloj", "lista", "sencillo", "banda", "mosaico", "bloques", "lateral", "titular", "marco", "limpia"};
     String distribucion = "clasica";
     String pruebaDistribucion;
     String estiloDia = "lavanda";

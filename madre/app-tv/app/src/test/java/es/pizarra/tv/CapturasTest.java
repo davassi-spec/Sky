@@ -1,5 +1,6 @@
 package es.pizarra.tv;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import android.app.Activity;
@@ -302,6 +303,38 @@ public class CapturasTest {
         String larga = TextoAjustado.recortar("Anticonstitucionalmente", tp, 200, 2, 0);
         assertTrue(larga, larga.endsWith("…") && tp.measureText(larga) <= 200);
         assertTrue("lo que cabe no se toca", TextoAjustado.recortar("Toma Medicina", tp, ancho, 2, 0).equals("Toma Medicina"));
+    }
+
+
+    /** Los siete tableros nuevos, de día y de noche, con todos los casos. */
+    @Test
+    public void tableros() throws Exception {
+        foto();
+        File dir = new File(System.getProperty("capturas.dir"));
+        String ev = "[{\"dia\":0,\"titulo\":\"Merienda con Ana\",\"hora\":\"18:30\",\"orden\":1},{\"dia\":1,\"titulo\":\"Analítica Mamá\",\"hora\":\"07:45\",\"orden\":2}]";
+        String cuenta = "{\"id\":\"c1\",\"texto\":\"Faltan 7 días para Tots Sants\",\"icono\":\"calendario\",\"dias\":7}";
+        for (String d : new String[]{"banda", "mosaico", "bloques", "lateral", "titular", "marco", "limpia"}) {
+            String n = "t7-" + d + "-";
+            captura(n + "solo-hora-y-tiempo", conDistribucion(json("calido", "", "[]", TIEMPO, cuenta), d), 25, 12, 33);
+            captura(n + "sin-cuenta-atras", conDistribucion(json("calido", "", "[]", TIEMPO, "null"), d), 25, 12, 33);
+            captura(n + "dos-mensajes", conDistribucion(json("calido", DANIEL + "," + ANA, ev, TIEMPO, cuenta), d), 20, 17, 15);
+            captura(n + "un-mensaje", conDistribucion(json("calido", DANIEL, "[]", TIEMPO, "null"), d), 20, 17, 15);
+            captura(n + "mensaje-largo", conDistribucion(json("calido", LARGO + "," + ANA, ev, TIEMPO, "null"), d), 20, 11, 40);
+            captura(n + "solo-cita", conDistribucion(json("calido", "", ev, TIEMPO, "null"), d), 20, 17, 15);
+            captura(n + "sin-tiempo", conDistribucion(json("calido", DANIEL, ev, "null", cuenta), d), 20, 17, 15);
+            captura(n + "nada", conDistribucion(json("calido", "", "[]", "null", "null"), d), 20, 17, 15);
+            captura(n + "noche", conDistribucion(json("calido", DANIEL, ev, TIEMPO, cuenta), d), 20, 22, 10);
+            captura(n + "recordatorio", conDistribucion(json("calido", DANIEL, ev, TIEMPO, "null", REC), d), 20, 17, 15);
+            assertTrue(d + ": solo con la hora y el tiempo se ve", contenidoDelCuerpo(new File(dir, n + "solo-hora-y-tiempo.png")) > 8);
+            assertTrue(d + ": con mensajes se ve", contenidoDelCuerpo(new File(dir, n + "dos-mensajes.png")) > 8);
+            assertTrue(d + ": sin nada de datos tampoco se queda en blanco", contenidoDelCuerpo(new File(dir, n + "nada.png")) > 1);
+        }
+    }
+
+    @Test
+    public void unaDistribucionDesconocidaSeVeComoLaClasica() {
+        assertEquals("clasica", Datos.valida("holograma"));
+        for (String d : new String[]{"banda", "mosaico", "bloques", "lateral", "titular", "marco", "limpia"}) assertEquals(d, Datos.valida(d));
     }
 
     private static String conMedio(String json, String medio) {

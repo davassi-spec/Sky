@@ -90,6 +90,19 @@ Con el script nuevo y la TV todavía en la 2.0, todo sigue funcionando (la 2.0 i
 - **Versión instalada**: el panel enseña "Conectada hace… · app 6.1". Desde PowerShell:
   `adb shell dumpsys package es.pizarra.tv | findstr versionName`.
 
+### App 6.4: siete pantallas nuevas con diseño propio
+Además de Clásica, Reloj, Lista y Sencillo hay siete distribuciones más, hechas a partir de los diseños del usuario: **Banda verde, Mosaico, Bloques,
+Columna lateral, Titular grande, Marco azul y Limpia** (ids `banda`, `mosaico`, `bloques`, `lateral`, `titular`, `marco`, `limpia`). Se eligen en
+Panel › Gestión › Pantalla › Distribución.
+- **Colores**: cada una lleva los suyos de día (el estilo elegido solo cambia los mensajes, la próxima cita y de noche). **De noche** se ven como la
+  Clásica con el estilo de noche. Los recordatorios, vídeos y fotos no cambian.
+- **Con mensajes o cita**: el tiempo pasa a una sola línea y la cabecera se encoge para dejar sitio; sin nada de eso se ven como en el diseño.
+- **Compatibilidad**: hace falta la app **6.4**. Una app anterior (probado con el código de la 6.3) recibe el id nuevo, no lo conoce y dibuja la
+  **Clásica** idéntica, nunca en blanco. El panel lo avisa: "la app de la tele es la 6.3: hasta que instales la 6.4 seguirá viendo la Clásica".
+- Código: `construirTablero` y `pintarTablero` en `MainActivity.java`; colores en `TEMAS` (con prueba de contraste 4,5:1, `TemasTest`);
+  miniaturas del panel con `python3 madre/web-app/hacer-miniaturas.py <carpeta de capturas>`.
+- Revertir: elegir otra distribución en el panel, o instalar la 6.3 (`PizarraTV-6.3.apk`).
+
 ### App 6.3: una cita solo de mañana ya se ve de día
 En la distribución Clásica, de día, "Lo próximo" solo dibujaba los eventos de hoy: si lo único apuntado era de mañana (por ejemplo "Mañana 07:45
 Analítica Mamá"), no salía nada. Ahora, sin nada hoy, la tarjeta se llama "Mañana" y enseña lo de mañana. Las otras tres distribuciones ya lo hacían desde la 6.1.

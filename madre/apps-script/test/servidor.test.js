@@ -993,5 +993,21 @@ const JPEG = 'data:image/jpeg;base64,' + Buffer.from('foto-de-prueba').toString(
   t('con iCloud puesto, cuenta también sus eventos o dice el error', r2 && r2.i === 0);
 }
 
+/* ---------- Pantallas con diseño propio (siete tableros) ---------- */
+{
+  const s = crear();
+  const ids = ['banda', 'mosaico', 'bloques', 'lateral', 'titular', 'marco', 'limpia'];
+  ids.forEach((id) => {
+    s.run(`admAjustes('ADMINKEY', {distribucion:'${id}'})`);
+    t('se guarda la distribución ' + id, s.run("admEstado('ADMINKEY')").datos.distribucion === id);
+    t('y la tele la recibe: ' + id, JSON.parse(s.run("servir_({parameter:{a:'estado',k:'ADMINKEY'}}).s")).distribucion === id);
+  });
+  s.run("admAjustes('ADMINKEY', {distribucion:'holograma'})");
+  t('una distribución inventada no cambia nada', s.run("admEstado('ADMINKEY')").datos.distribucion === 'limpia');
+  s.run("admProbarEstilo('ADMINKEY', 'calido', 'dia', 'mosaico')");
+  t('se puede probar un minuto con un tablero', s.run("admEstado('ADMINKEY')").datos.prueba.distribucion === 'mosaico');
+  t('las cuatro de siempre siguen valiendo', ['clasica', 'reloj', 'lista', 'sencillo'].every((id) => { s.run(`admAjustes('ADMINKEY', {distribucion:'${id}'})`); return s.run("admEstado('ADMINKEY')").datos.distribucion === id; }));
+}
+
 console.log(bien + ' bien, ' + mal + ' fallos');
 process.exit(mal ? 1 : 0);

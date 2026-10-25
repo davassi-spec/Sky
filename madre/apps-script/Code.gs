@@ -17,7 +17,7 @@ var NOMBRE_CARPETA = 'Pizarra';
 var NOMBRE_DATOS = 'pizarra-datos.json';
 var MAX_CADUCADOS = 100;          // mensajes ya caducados que se guardan en el historial
 var MAX_ACTIVOS = 50;
-var DISTRIBUCIONES = ['clasica', 'reloj', 'lista', 'sencillo'];
+var DISTRIBUCIONES = ['clasica', 'reloj', 'lista', 'sencillo', 'banda', 'mosaico', 'bloques', 'lateral', 'titular', 'marco', 'limpia'];   // las siete últimas: pantallas con diseño propio (app de la tele 6.4; una app anterior las ve como la Clásica)
 var ESTILOS = ['calido', 'lavanda', 'salvia', 'terracota', 'contraste'];
 var BLOQUES = ['cuentaAtras', 'mensajes', 'proximo', 'tiempo', 'parteDelDia'];
 var ICONOS_CUENTA = ['calendario', 'avion', 'corazon', 'tarta'];
@@ -47,7 +47,7 @@ function base_() {
     calendarios: [],
     bloques: BLOQUES.map(function (id) { return { id: id, activo: true }; }),
     estiloDia: 'lavanda', estiloNoche: 'calido',
-    distribucion: 'clasica',                       // clasica | reloj | lista | sencillo
+    distribucion: 'clasica',                       // clasica | reloj | lista | sencillo | banda | mosaico | bloques | lateral | titular | marco | limpia
     prueba: null,                                  // { estilo, modo, hasta } mientras dura "Probar 1 minuto"
     cuentasAtras: [],
     recordatorios: [],                             // { id, hora 'HH:MM', dias [0..6, 0=domingo], texto, texto2, foto {id,v}, duracion (min), confirmar, activo }
