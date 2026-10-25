@@ -1,5 +1,6 @@
 package es.pizarra.tv;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import android.app.Activity;
@@ -39,6 +40,7 @@ public class CapturasTest {
     @After
     public void restaura() {
         Hora.fijar(null);
+        IconoTiempo.fasePrueba = null;
     }
 
     private static long epoch(int dia, int h, int m) {
@@ -86,6 +88,7 @@ public class CapturasTest {
     }
 
     private void captura(String nombre, String json, int dia, int h, int m) throws Exception {
+        IconoTiempo.fasePrueba = 0.3f;          // la animación del tiempo congelada: las capturas salen siempre igual
         Context ctx = RuntimeEnvironment.getApplication();
         Calendar c = Calendar.getInstance(TimeZone.getTimeZone("Europe/Madrid"));
         c.clear();
@@ -231,6 +234,171 @@ public class CapturasTest {
         }
     }
 
+
+    /** El caso real de la TV: sin mensajes, un solo evento (de mañana), tiempo y cuenta atrás; en las cuatro distribuciones. */
+    @Test
+    public void casoRealSinMensajesSoloManana() throws Exception {
+        foto();
+        String ev = "[{\"dia\":1,\"titulo\":\"Talleres\",\"hora\":\"12:00\",\"orden\":1}]";
+        String cuenta = "{\"id\":\"c1\",\"texto\":\"Faltan 11 días para Tots Sants\",\"icono\":\"calendario\",\"dias\":11}";
+        for (String d : new String[]{"clasica", "reloj", "lista", "sencillo"}) {
+            captura("r1-" + d + "-calido-caso-real", conDistribucion(json("calido", "", ev, TIEMPO, cuenta), d), 20, 17, 15);
+            captura("r4-" + d + "-calido-analitica-manana", conDistribucion(json("calido", "", "[{\"dia\":1,\"titulo\":\"Analítica Mamá\",\"hora\":\"07:45\",\"orden\":1}]", TIEMPO, "null"), d), 20, 12, 43);
+            assertTrue(d + ": una cita solo de mañana se ve de día", contenidoDelCuerpo(new File(System.getProperty("capturas.dir"), "r4-" + d + "-calido-analitica-manana.png")) > 8);
+            captura("r1-" + d + "-calido-solo-la-hora", conDistribucion(json("calido", "", "[]", "null", "null"), d), 20, 17, 15);
+        }
+    }
+
+
+    /** Porcentaje de píxeles del cuerpo (debajo de la cabecera) que no son del color de fondo: si es ~0, la pantalla está en blanco. */
+    private static double contenidoDelCuerpo(File png) {
+        Bitmap b = BitmapFactory.decodeFile(png.getPath());
+        int fondo = b.getPixel(4, 4), n = 0, total = 0;
+        for (int y = 700; y < 1040; y += 4) for (int x = 60; x < 1860; x += 4) { total++; if (b.getPixel(x, y) != fondo) n++; }
+        return 100.0 * n / total;
+    }
+
+    /** Ninguna distribución se queda en blanco: con todo vacío, sin datos, o si una de ellas falla al dibujar. */
+    @Test
+    public void ningunaDistribucionEnBlanco() throws Exception {
+        foto();
+        File dir = new File(System.getProperty("capturas.dir"));
+        String ev = "[{\"dia\":1,\"titulo\":\"Talleres\",\"hora\":\"12:00\",\"orden\":1}]";
+        String cuenta = "{\"id\":\"c1\",\"texto\":\"Faltan 11 días para Tots Sants\",\"icono\":\"calendario\",\"dias\":11}";
+        for (String d : new String[]{"clasica", "reloj", "lista", "sencillo"}) {
+            captura("r2-" + d + "-caso-real", conDistribucion(json("calido", "", ev, TIEMPO, cuenta), d), 20, 17, 15);
+            assertTrue(d + " caso real: el cuerpo no está vacío", contenidoDelCuerpo(new File(dir, "r2-" + d + "-caso-real.png")) > 3);
+            captura("r2-" + d + "-sin-datos", "", 20, 17, 15);
+            assertTrue(d + " sin datos: dice algo", contenidoDelCuerpo(new File(dir, "r2-" + d + "-sin-datos.png")) > 1);
+        }
+        MainActivity.fallaDePrueba = "reloj";
+        try {
+            captura("r2-reloj-que-falla-se-ve-clasica", conDistribucion(json("calido", DANIEL, EV_DIA, TIEMPO, cuenta), "reloj"), 20, 17, 15);
+        } finally {
+            MainActivity.fallaDePrueba = null;
+        }
+        assertTrue("si falla, se ve la Clásica con su contenido", contenidoDelCuerpo(new File(dir, "r2-reloj-que-falla-se-ve-clasica.png")) > 5);
+    }
+
+    /** Nunca se parte una palabra: recordatorios y textos que no caben. */
+    @Test
+    public void palabrasEnterasEnElRecordatorio() throws Exception {
+        foto();
+        String[] frases = {"Toma Medicina Mamá", "Hora de la fisioterapia", "Recuerda llamar a la farmacia", "Anticonstitucionalmente electroencefalografista"};
+        int i = 0;
+        for (String f : frases) {
+            String rec = "{\"id\":\"rec9\",\"clave\":\"rec9|2026-10-20\",\"texto\":\"" + f + "\",\"texto2\":\"\",\"foto\":null,\"confirmar\":true,\"segundos\":600,\"prueba\":false}";
+            for (String e : new String[]{"calido", "lavanda"})
+                captura("r3-" + e + "-recordatorio-" + (++i), json(e, "", EV_DIA, TIEMPO, "null", rec), 20, 17, 15);
+        }
+    }
+
+    @Test
+    public void recortarNuncaParteUnaPalabra() {
+        android.text.TextPaint tp = new android.text.TextPaint();
+        tp.setTextSize(40);
+        int ancho = 400;
+        String r = TextoAjustado.recortar("Hoy viene la prima Maricarmen con los niños a merendar y luego se van al cine todos juntos", tp, ancho, 2, 0);
+        assertTrue(r, r.endsWith("…"));
+        for (String w : r.replace("…", "").trim().split(" ")) assertTrue(w, "Hoy viene la prima Maricarmen con los niños a merendar y luego se van al cine todos juntos".contains(w));
+        assertTrue(new android.text.StaticLayout(r, tp, ancho, android.text.Layout.Alignment.ALIGN_NORMAL, 1f, 0, false).getLineCount() <= 2);
+        String larga = TextoAjustado.recortar("Anticonstitucionalmente", tp, 200, 2, 0);
+        assertTrue(larga, larga.endsWith("…") && tp.measureText(larga) <= 200);
+        assertTrue("lo que cabe no se toca", TextoAjustado.recortar("Toma Medicina", tp, ancho, 2, 0).equals("Toma Medicina"));
+    }
+
+
+    /** Los siete tableros nuevos, de día y de noche, con todos los casos. */
+    @Test
+    public void tableros() throws Exception {
+        foto();
+        File dir = new File(System.getProperty("capturas.dir"));
+        String ev = "[{\"dia\":0,\"titulo\":\"Merienda con Ana\",\"hora\":\"18:30\",\"orden\":1},{\"dia\":1,\"titulo\":\"Analítica Mamá\",\"hora\":\"07:45\",\"orden\":2}]";
+        String cuenta = "{\"id\":\"c1\",\"texto\":\"Faltan 7 días para Tots Sants\",\"icono\":\"calendario\",\"dias\":7}";
+        for (String d : new String[]{"banda", "mosaico", "bloques", "lateral", "titular", "marco", "limpia", "salvia_melocoton", "coral_menta", "salvia_azul", "menta_lavanda", "azul_terracota", "bosque_amarillo"}) {
+            String n = "t7-" + d + "-";
+            captura(n + "solo-hora-y-tiempo", conDistribucion(json("calido", "", "[]", TIEMPO, cuenta), d), 25, 12, 33);
+            captura(n + "sin-cuenta-atras", conDistribucion(json("calido", "", "[]", TIEMPO, "null"), d), 25, 12, 33);
+            captura(n + "dos-mensajes", conDistribucion(json("calido", DANIEL + "," + ANA, ev, TIEMPO, cuenta), d), 20, 17, 15);
+            captura(n + "un-mensaje", conDistribucion(json("calido", DANIEL, "[]", TIEMPO, "null"), d), 20, 17, 15);
+            captura(n + "mensaje-largo", conDistribucion(json("calido", LARGO + "," + ANA, ev, TIEMPO, "null"), d), 20, 11, 40);
+            captura(n + "solo-cita", conDistribucion(json("calido", "", ev, TIEMPO, "null"), d), 20, 17, 15);
+            captura(n + "sin-tiempo", conDistribucion(json("calido", DANIEL, ev, "null", cuenta), d), 20, 17, 15);
+            captura(n + "nada", conDistribucion(json("calido", "", "[]", "null", "null"), d), 20, 17, 15);
+            captura(n + "noche", conDistribucion(json("calido", DANIEL, ev, TIEMPO, cuenta), d), 20, 22, 10);
+            captura(n + "recordatorio", conDistribucion(json("calido", DANIEL, ev, TIEMPO, "null", REC), d), 20, 17, 15);
+            assertTrue(d + ": solo con la hora y el tiempo se ve", contenidoDelCuerpo(new File(dir, n + "solo-hora-y-tiempo.png")) > 8);
+            assertTrue(d + ": con mensajes se ve", contenidoDelCuerpo(new File(dir, n + "dos-mensajes.png")) > 8);
+            assertTrue(d + ": sin nada de datos tampoco se queda en blanco", contenidoDelCuerpo(new File(dir, n + "nada.png")) > 1);
+        }
+    }
+
+    @Test
+    public void unaDistribucionDesconocidaSeVeComoLaClasica() {
+        assertEquals("clasica", Datos.valida("holograma"));
+        for (String d : new String[]{"banda", "mosaico", "bloques", "lateral", "titular", "marco", "limpia", "salvia_melocoton", "coral_menta", "salvia_azul", "menta_lavanda", "azul_terracota", "bosque_amarillo"}) assertEquals(d, Datos.valida(d));
+    }
+
+
+    /** Las citas: la hora en cifras (7:45) y, con varias, se turnan de una en una. */
+    @Test
+    public void citasEnCifrasYTurnandose() throws Exception {
+        foto();
+        File dir = new File(System.getProperty("capturas.dir"));
+        String dos = "[{\"dia\":1,\"titulo\":\"Analítica Mamá\",\"hora\":\"07:45\",\"orden\":1},{\"dia\":1,\"titulo\":\"Fisioterapia con Marta\",\"hora\":\"11:30\",\"orden\":2}]";
+        assertEquals("7:45", Texto.horaNumerica("07:45"));
+        assertEquals("18:30", Texto.horaNumerica("18:30"));
+        assertEquals("0:05", Texto.horaNumerica("00:05"));
+        assertEquals("", Texto.horaNumerica("")); 
+        assertEquals("", Texto.horaNumerica("25:00"));
+        for (String d : new String[]{"clasica", "reloj", "lista", "sencillo", "banda", "mosaico", "bloques", "lateral", "titular", "marco", "limpia", "salvia_melocoton", "bosque_amarillo"}) {
+            captura("c8-" + d + "-dos-citas-primera", conDistribucion(json("calido", ANA, dos, TIEMPO, "null"), d), 25, 19, 15);
+            assertTrue(d + ": la cita se ve", contenidoDelCuerpo(new File(dir, "c8-" + d + "-dos-citas-primera.png")) > 8);
+        }
+        // pasados unos segundos, aparece la segunda
+        Context ctx = RuntimeEnvironment.getApplication();
+        Calendar c = Calendar.getInstance(TimeZone.getTimeZone("Europe/Madrid"));
+        c.clear();
+        c.set(2026, Calendar.OCTOBER, 25, 19, 15, 0);
+        Hora.fijar(c);
+        IconoTiempo.fasePrueba = 0.3f;
+        ctx.getSharedPreferences("pizarra", Context.MODE_PRIVATE).edit().putString("url", "http://127.0.0.1:1/x").putString("k", "k")
+                .putString("cache", conDistribucion(json("calido", ANA, dos, TIEMPO, "null"), "clasica")).putLong("cacheT", System.currentTimeMillis()).commit();
+        Activity a = Robolectric.buildActivity(MainActivity.class).setup().get();
+        View raiz = a.getWindow().getDecorView();
+        for (int i = 0; i < 3; i++) {
+            raiz.measure(View.MeasureSpec.makeMeasureSpec(1920, View.MeasureSpec.EXACTLY), View.MeasureSpec.makeMeasureSpec(1080, View.MeasureSpec.EXACTLY));
+            raiz.layout(0, 0, 1920, 1080);
+            ShadowLooper.idleMainLooper();
+        }
+        assertTrue("al principio sale la primera", textos(raiz).contains("Analítica Mamá") && textos(raiz).contains("7:45") && textos(raiz).contains("1 de 2"));
+        ShadowLooper.idleMainLooper(9, java.util.concurrent.TimeUnit.SECONDS);
+        for (int i = 0; i < 3; i++) {
+            raiz.measure(View.MeasureSpec.makeMeasureSpec(1920, View.MeasureSpec.EXACTLY), View.MeasureSpec.makeMeasureSpec(1080, View.MeasureSpec.EXACTLY));
+            raiz.layout(0, 0, 1920, 1080);
+            ShadowLooper.idleMainLooper();
+        }
+        String t2 = textos(raiz);
+        assertTrue("a los 9 segundos sale la segunda: " + t2, t2.contains("Fisioterapia con Marta") && t2.contains("11:30") && t2.contains("2 de 2") && !t2.contains("Analítica Mamá"));
+        Bitmap b = Bitmap.createBitmap(1920, 1080, Bitmap.Config.ARGB_8888);
+        raiz.draw(new Canvas(b));
+        try (FileOutputStream o = new FileOutputStream(new File(dir, "c8-clasica-dos-citas-segunda.png"))) {
+            b.compress(Bitmap.CompressFormat.PNG, 100, o);
+        }
+        ShadowLooper.idleMainLooper(9, java.util.concurrent.TimeUnit.SECONDS);
+        assertTrue("y vuelve a la primera", textos(raiz).contains("Analítica Mamá"));
+    }
+
+    private static String textos(View v) {
+        StringBuilder sb = new StringBuilder();
+        if (v instanceof android.widget.TextView && v.getVisibility() == View.VISIBLE) sb.append(((android.widget.TextView) v).getText()).append('\n');
+        if (v instanceof android.view.ViewGroup && v.getVisibility() == View.VISIBLE) {
+            android.view.ViewGroup g = (android.view.ViewGroup) v;
+            for (int i = 0; i < g.getChildCount(); i++) sb.append(textos(g.getChildAt(i)));
+        }
+        return sb.toString();
+    }
+
     private static String conMedio(String json, String medio) {
         return json.replace("\"version\":2", "\"version\":2,\"rapido\":true,\"medio\":" + medio);
     }
@@ -302,5 +470,22 @@ public class CapturasTest {
         for (String e : ESTILOS) captura(e + "-recordatorio-palabra-larga-foto-vertical", json(e, DANIEL + "," + ANA, EV_DIA, TIEMPO, "null", rec), 20, 11, 22);
         String rec2 = rec.replace("Toma Medicina a Mamá", "Hidratación y medicación después del desayuno");
         captura("lavanda-recordatorio-palabra-larga-2", json("lavanda", DANIEL, EV_DIA, TIEMPO, "null", rec2), 20, 11, 22);
+    }
+
+    private static final String EV_VISITAS = "[{\"dia\":0,\"titulo\":\"Viene la asistenta\",\"hora\":\"17:30\",\"orden\":\"17:30\"},"
+            + "{\"dia\":0,\"titulo\":\"Viene Ana\",\"hora\":\"18:00\",\"orden\":\"18:00\",\"autor\":\"p1\",\"foto\":1},"
+            + "{\"dia\":0,\"titulo\":\"Cena\",\"hora\":\"21:00\",\"orden\":\"21:00\"},"
+            + "{\"dia\":1,\"titulo\":\"Viene Javier\",\"hora\":\"11:00\",\"orden\":\"11:00\",\"autor\":\"p1\",\"foto\":1}]";
+
+    /** "Hoy viene…" (con la foto de quien viene) y la rutina de la semana, en las cuatro distribuciones. */
+    @Test
+    public void hoyVieneYRutinaSemanal() throws Exception {
+        foto();
+        for (String d : new String[]{"clasica", "reloj", "lista", "sencillo"}) {
+            captura("d6-" + d + "-lavanda-dia-hoy-viene", conDistribucion(json("lavanda", DANIEL + "," + ANA, EV_VISITAS, TIEMPO, "null"), d), 20, 17, 15);
+            captura("d6-" + d + "-calido-noche-manana-viene", conDistribucion(json("calido", DANIEL, EV_VISITAS, TIEMPO, "null"), d), 20, 22, 10);
+        }
+        String solo = "[{\"dia\":0,\"titulo\":\"Viene Ana\",\"hora\":\"18:00\",\"orden\":\"18:00\",\"autor\":\"p1\",\"foto\":1}]";
+        captura("d6-clasica-lavanda-dia-solo-ana", json("lavanda", DANIEL, solo, TIEMPO, "null"), 20, 17, 15);
     }
 }

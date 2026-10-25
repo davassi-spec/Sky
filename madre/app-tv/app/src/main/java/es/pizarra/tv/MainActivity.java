@@ -72,6 +72,8 @@ public class MainActivity extends Activity {
     private final List<LinearLayout> tarjetasMsg = new ArrayList<>();
     private LinearLayout recView;        // la pantalla del recordatorio (ocupa todo, sustituye a la pizarra)
     private TextView tvRecTop;
+    private Voz voz;
+    private java.util.Set<String> leidos;
     private PantallaMedio pm;            // foto, audio o vídeo a pantalla completa (null si no hay)
     private String ordenCerrado = "";   // el último envío que ya terminó (para no ponerlo dos veces)
 
@@ -91,9 +93,12 @@ public class MainActivity extends Activity {
         }
     };
 
+    static boolean enPrimerPlano;      // la pizarra está delante: el aviso de "la TV despierta" no la vuelve a abrir
+
     @Override
     protected void onCreate(Bundle b) {
         super.onCreate(b);
+        startService(new Intent(this, Despertar.class));
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON | WindowManager.LayoutParams.FLAG_FULLSCREEN);
         prefs = getSharedPreferences("pizarra", MODE_PRIVATE);
         DisplayMetrics dm = getResources().getDisplayMetrics();
@@ -119,6 +124,8 @@ public class MainActivity extends Activity {
     @Override
     protected void onResume() {
         super.onResume();
+        enPrimerPlano = true;
+        reanudarRotaciones();
         h.removeCallbacks(tic);
         h.removeCallbacks(busca);
         h.post(tic);
@@ -126,9 +133,17 @@ public class MainActivity extends Activity {
     }
 
     @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (voz != null) { voz.cerrar(); voz = null; }
+    }
+
+    @Override
     protected void onPause() {
         super.onPause();
+        enPrimerPlano = false;
         cerrarMedio(false);
+        pararRotaciones(false);
         h.removeCallbacks(tic);
         h.removeCallbacks(busca);
     }
@@ -155,6 +170,10 @@ public class MainActivity extends Activity {
         if (i == null) return;
         String url = i.getStringExtra("url");
         String k = i.getStringExtra("k");
+        if (url != null && k != null && !(url.trim().startsWith("https://") && k.trim().length() >= 8)) {
+            Log.w(TAG, "Dirección o clave no válidas: no se guardan");     // p. ej. el texto de ejemplo "TU_DIRECCION_EXEC"
+            url = null;
+        }
         if (url != null && k != null) {
             prefs.edit().putString("url", url.trim()).putString("k", k.trim()).remove("cache").apply();
             datos = null;
@@ -175,6 +194,14 @@ public class MainActivity extends Activity {
         }
     }
 
+    private String versionApp() {
+        try {
+            return getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
+        } catch (Exception e) {
+            return "";
+        }
+    }
+
     private void buscar() {
         final String url = prefs.getString("url", "");
         final String k = prefs.getString("k", "");
@@ -183,7 +210,7 @@ public class MainActivity extends Activity {
             @Override public void run() {
                 HttpURLConnection c = null;
                 try {
-                    c = (HttpURLConnection) new URL(url + "?a=estado&k=" + URLEncoder.encode(k, "UTF-8")).openConnection();
+                    c = (HttpURLConnection) new URL(url + "?a=estado&k=" + URLEncoder.encode(k, "UTF-8") + "&v=" + URLEncoder.encode(versionApp(), "UTF-8")).openConnection();
                     c.setConnectTimeout(15000);
                     c.setReadTimeout(25000);
                     if (c.getResponseCode() != 200) throw new Exception("HTTP " + c.getResponseCode());
@@ -191,12 +218,14 @@ public class MainActivity extends Activity {
                     final Datos nuevo = Datos.parse(cuerpoJson);
                     prefs.edit().putString("cache", cuerpoJson).putLong("cacheT", System.currentTimeMillis()).apply();
                     for (Datos.Mensaje m : nuevo.mensajes) Fotos.asegurar(MainActivity.this, url, k, m.autor, m.foto);
+                    for (Datos.Evento ev : nuevo.eventos) Fotos.asegurar(MainActivity.this, url, k, ev.autor, ev.foto);
                     if (nuevo.recordatorio != null) Fotos.asegurar(MainActivity.this, url, k, nuevo.recordatorio.id, nuevo.recordatorio.foto);
                     h.post(new Runnable() {
                         @Override public void run() {
                             datos = nuevo;
                             pintarReloj();
                             gestionarMedio();
+                            leerNuevos(nuevo);
                             if (nuevo.pidenCaptura) mandarCaptura(url, k);
                         }
                     });
@@ -207,6 +236,23 @@ public class MainActivity extends Activity {
                 }
             }
         }).start();
+    }
+
+    /* ---------- Leer en voz alta los mensajes nuevos ---------- */
+
+    /** Un mensaje nuevo se lee una sola vez, en español, y nunca de noche (de noche se da por visto en silencio). */
+    private void leerNuevos(Datos nuevo) {
+        if (leidos == null) {
+            leidos = new java.util.LinkedHashSet<>(prefs.getStringSet("leidos", new java.util.HashSet<String>()));
+        }
+        boolean primera = !prefs.contains("leidos");
+        boolean permitido = nuevo.leerVoz && !nuevo.esNocheAhora(Hora.ahora().get(Calendar.HOUR_OF_DAY)) && pm == null && nuevo.recordatorio == null;
+        List<String> frases = Voz.porLeer(nuevo.mensajes, leidos, permitido, primera);
+        while (leidos.size() > 60) leidos.remove(leidos.iterator().next());
+        prefs.edit().putStringSet("leidos", new java.util.HashSet<>(leidos)).apply();
+        if (frases.isEmpty()) return;
+        if (voz == null) voz = new Voz(this);
+        for (String f : frases) voz.decir(f);
     }
 
     /* ---------- Fotos, audios y vídeos que manda la familia ---------- */
@@ -351,6 +397,81 @@ public class MainActivity extends Activity {
         return v;
     }
 
+    /* ---------- Citas que se van turnando ---------- */
+
+    private static final int ROTA_MS = 8000;
+    private final List<Runnable> rotaciones = new ArrayList<>();
+
+    private interface Mostrar {
+        void en(int i);
+    }
+
+    /** Si hay más de una cita, la tarjeta enseña una cada pocos segundos (con un fundido) para que cada una se vea grande y entera. */
+    private void rotar(final View vista, final int total, final Mostrar m) {
+        if (total < 2) return;
+        final int[] i = {0};
+        Runnable r = new Runnable() {
+            @Override public void run() {
+                i[0] = (i[0] + 1) % total;
+                vista.animate().alpha(0f).setDuration(350).withEndAction(new Runnable() {
+                    @Override public void run() {
+                        m.en(i[0]);
+                        vista.animate().alpha(1f).setDuration(350).start();
+                    }
+                }).start();
+                h.postDelayed(this, ROTA_MS);
+            }
+        };
+        rotaciones.add(r);
+        h.postDelayed(r, ROTA_MS);
+    }
+
+    private void pararRotaciones(boolean olvidar) {
+        for (Runnable r : rotaciones) h.removeCallbacks(r);
+        if (olvidar) rotaciones.clear();
+    }
+
+    private void reanudarRotaciones() {
+        for (Runnable r : rotaciones) {
+            h.removeCallbacks(r);
+            h.postDelayed(r, ROTA_MS);
+        }
+    }
+
+    /** "7:45" o "Todo el día". */
+    private static String cuandoNum(Datos.Evento e) {
+        String n = Texto.horaNumerica(e.hora);
+        return n.isEmpty() ? "Todo el día" : n;
+    }
+
+    /** Las citas que tocan: las de hoy y, si hoy no hay ninguna, las de mañana. */
+    private List<Datos.Evento> citasQueToca(boolean[] deManana) {
+        List<Datos.Evento> hoy = new ArrayList<>(), man = new ArrayList<>();
+        for (Datos.Evento x : datos.eventos) (x.manana ? man : hoy).add(x);
+        deManana[0] = hoy.isEmpty();
+        return hoy.isEmpty() ? man : hoy;
+    }
+
+    /** El dibujo del tiempo con su movimiento. multicolor: sol ámbar, nube pizarra, gotas azules; si no, todo de un color. */
+    private ImageView iconoTiempo(int codigo, int color, float lado, boolean multicolor) {
+        IconoTiempo v = new IconoTiempo(this, codigo, color, multicolor);
+        v.setLayoutParams(lp(px(lado), px(lado)));
+        v.setTag(new float[]{lado, lado});
+        return v;
+    }
+
+    /** El círculo de un evento de "Lo próximo": la foto de quien viene si es de la familia y la tenemos; si no, el icono de siempre. */
+    private ImageView iconoEvento(Datos.Evento e, int icono, float diametro, float interior) {
+        Bitmap foto = e.autor.isEmpty() ? null : Fotos.circulo(this, e.autor, e.foto, px(Math.max(diametro, 240)));
+        if (foto == null) return iconoRedondo(icono, p.avatar, diametro, interior);
+        ImageView v = new ImageView(this);
+        v.setImageBitmap(foto);
+        v.setScaleType(ImageView.ScaleType.FIT_CENTER);
+        v.setLayoutParams(lp(px(diametro), px(diametro)));
+        v.setTag(new float[]{diametro, diametro});                 // escalar() lo agranda como a los demás iconos
+        return v;
+    }
+
     private ImageView iconoRedondo(int recurso, int color, float diametro, float interior) {
         ImageView v = new ImageView(this);
         v.setImageResource(recurso);
@@ -475,6 +596,7 @@ public class MainActivity extends Activity {
 
     private void construirRaiz(String dist) {
         raiz.removeAllViews();
+        pararRotaciones(true);
         distActual = dist;
         anchoHablada = -1;
         compactoHora = false;
@@ -483,6 +605,7 @@ public class MainActivity extends Activity {
         if ("reloj".equals(dist)) construirReloj();
         else if ("lista".equals(dist)) construirLista();
         else if ("sencillo".equals(dist)) construirSencillo();
+        else if (esTablero(dist)) construirTablero(dist);
         else construirClasica();
     }
 
@@ -805,7 +928,30 @@ public class MainActivity extends Activity {
         recView.setVisibility(View.GONE);
         raiz.setBackgroundColor(p.fondo);
         marco.setBackgroundColor(p.fondo);
-        construirRaiz(datos != null ? datos.distribucionAhora() : "clasica");
+        String dist = datos != null ? datos.distribucionAhora() : "clasica";
+        try {
+            pintarDistribucion(ahora, hora, dist);
+        } catch (Exception e) {
+            Log.w(TAG, "Falló la distribución " + dist + "; se pone la Clásica", e);
+            try {
+                pintarDistribucion(ahora, hora, "clasica");
+            } catch (Exception e2) {
+                Log.w(TAG, "Falló también la Clásica", e2);
+            }
+        }
+    }
+
+    /** Dibuja la cabecera y el cuerpo con una distribución. Si algo falla, quien la llama vuelve a intentarlo con la Clásica. */
+    static String fallaDePrueba;      // solo para las pruebas: una distribución que se obliga a fallar
+
+    private void pintarDistribucion(Calendar ahora, int hora, String dist) {
+        if (noche && esTablero(dist)) dist = "clasica";      // de noche, los tableros usan la Clásica con el estilo de noche
+        construirRaiz(dist);
+        if (dist.equals(fallaDePrueba)) throw new IllegalStateException("fallo de prueba");
+        if (esTablero(dist)) {
+            pintarTablero(ahora, hora);
+            return;
+        }
         tvDia.setTextColor(p.texto);
         tvFecha.setTextColor(p.sub);
         tvH.setTextColor(compactoHora ? p.acentoTexto : p.texto);
@@ -857,6 +1003,17 @@ public class MainActivity extends Activity {
         col.addView(v, l);
     }
 
+    /** Una tarjeta con un aviso grande: nunca se deja el cuerpo en blanco si no hay datos. */
+    private View tarjetaAviso(String texto) {
+        LinearLayout t = tarjeta(false);
+        t.setGravity(Gravity.CENTER_VERTICAL);
+        TextView x = texto(76, true);
+        x.setTextColor(p.texto);
+        x.setText(texto);
+        t.addView(x);
+        return t;
+    }
+
     private void pintarCuerpo(Calendar ahora, int hora) {
         colIzq.removeAllViews();
         colDer.removeAllViews();
@@ -874,6 +1031,8 @@ public class MainActivity extends Activity {
             x.setText("Falta conectar la pizarra.");
             t.addView(x);
             izq.add(t);
+        } else if (datos == null) {
+            izq.add(tarjetaAviso("Esperando a la pizarra…"));
         } else if (datos != null && noche) {
             boolean deManana = hora >= 12;      // pasada la medianoche, "lo de mañana" ya es lo de hoy
             int nm = datos.verMensajes ? Math.min(2, datos.mensajes.size()) : 0;
@@ -892,6 +1051,7 @@ public class MainActivity extends Activity {
             int nm = datos.verMensajes ? Math.min(2, datos.mensajes.size()) : 0;
             for (int i = 0; i < nm; i++) izq.add(tarjetaMensaje(datos.mensajes.get(i), ahora, nm > 1));
             View ev = datos.verEventos ? tarjetaEventos(ahora, false, false) : null;
+            if (ev == null && datos.verEventos) ev = tarjetaEventos(ahora, false, true);       // nada hoy: lo de mañana (antes no salía nada)
             View tp = datos.verTiempo && datos.hayTiempo ? tarjetaTiempo() : null;
             if (nm > 0) {
                 if (ev != null) der.add(ev);
@@ -925,6 +1085,8 @@ public class MainActivity extends Activity {
         TextPaint tpnt = new TextPaint(Paint.ANTI_ALIAS_FLAG);
         tpnt.setTypeface(tf);
         int elegido = tamanos[tamanos.length - 1];
+        boolean encontrado = false;
+        int cupo = 0;                                               // el menor tamaño en el que cabe (aunque quede una palabra suelta)
         int anchoElegido = ancho;
         for (int z : tamanos) {
             tpnt.setTextSize(z * s);
@@ -945,18 +1107,682 @@ public class MainActivity extends Activity {
                 w = hi;
                 sl = new StaticLayout(txt, tpnt, w, Layout.Alignment.ALIGN_NORMAL, interlineado, 0, false);
             }
+            cupo = z;
             boolean huerfana = sl.getLineCount() > 1 && sl.getLineWidth(sl.getLineCount() - 1) < w * 0.3f;
             if (!huerfana) {
                 elegido = z;
                 anchoElegido = w;
+                encontrado = true;
                 break;
             }
+        }
+        if (!encontrado && cupo > 0) elegido = cupo;
+        else if (!encontrado) {                                     // ni al mínimo cabe: se recorta por palabras con "…", nunca a mitad de palabra
+            tpnt.setTextSize(elegido * s);
+            tx.setText(TextoAjustado.recortar(txt, tpnt, ancho, Math.max(1, (int) (alto / (elegido * s * interlineado * 1.2f))), alto));
         }
         tx.setTextSize(TypedValue.COMPLEX_UNIT_PX, elegido * s);
         ViewGroup.LayoutParams lt = tx.getLayoutParams();
         lt.width = anchoElegido >= ancho ? ViewGroup.LayoutParams.MATCH_PARENT : anchoElegido + px(4);
         tx.setLayoutParams(lt);
     }
+
+    /* ---------- Pantallas con diseño propio (siete "tableros") ---------- */
+
+    static final String[] TABLEROS = {"banda", "mosaico", "bloques", "lateral", "titular", "marco", "limpia",
+            "salvia_melocoton", "coral_menta", "salvia_azul", "menta_lavanda", "azul_terracota", "bosque_amarillo"};
+
+    static boolean esTablero(String d) {
+        return indiceTablero(d) >= 0;
+    }
+
+    static int indiceTablero(String d) {
+        for (int i = 0; i < TABLEROS.length; i++) if (TABLEROS[i].equals(d)) return i;
+        return -1;
+    }
+
+    /** Colores fijos de cada diseño (de día). De noche estas pantallas usan la Clásica con el estilo de noche. */
+    static final class Tema {
+        final int fondo, banda, bandaTxt, txt, sub, fecha, hora, hoy, man, parte, panel, tempHoy, tempMan, pill, pillTxt, raya;
+        final int msg1, msg2, cita, encTxt, citaTxt;       // solo "Mensajes primero": los dos mensajes, la próxima cita y el texto de la cabecera y de la cita
+
+        Tema(int... c) {
+            fondo = c[0]; banda = c[1]; bandaTxt = c[2]; txt = c[3]; sub = c[4]; fecha = c[5]; hora = c[6]; hoy = c[7]; man = c[8];
+            parte = c[9]; panel = c[10]; tempHoy = c[11]; tempMan = c[12]; pill = c[13]; pillTxt = c[14]; raya = c[15];
+            msg1 = c[16]; msg2 = c[17]; cita = c[18]; encTxt = c[19]; citaTxt = c[20];
+        }
+    }
+
+    private static final int NAVY = 0xFF0B1F3A, ROJO = 0xFFA63D22, TEAL = 0xFF0B6560;
+    //                                      fondo       banda       bandaTxt    txt         sub         fecha       hora        hoy         man         parte       panel       tempHoy     tempMan     pill        pillTxt     raya
+    static final Tema[] TEMAS = {
+            new Tema(0xFFFBF8F1, 0xFFFBD3BC, NAVY,       NAVY, 0xFF3A4A60, 0xFF17402B, 0xFF17402B, 0xFFFFEFC2, 0xFFD9EAFB, 0xFFFFFFFF, 0xFFFFFFFF, NAVY,   NAVY,   0xFFFBE3A0, NAVY, 0x668FB59C, 0, 0, 0, NAVY, NAVY),   // banda
+            new Tema(0xFFFBF6EC, 0xFFA63D22, 0xFFFFFFFF, NAVY, 0xFF3A4A60, 0xFFCDE5F9, 0xFFFFFDF8, 0xFFDCE9D3, 0xFFFBE0CF, 0xFFFBE3A0, 0xFFFFFFFF, NAVY,   NAVY,   0xFFFBE3A0, NAVY, 0x33000000, 0, 0, 0, NAVY, NAVY),   // mosaico
+            new Tema(0xFFFBF6EC, 0xFF15395E, 0xFFFFFFFF, NAVY, 0xFF3A4A60, 0xFFD1EDE4, 0xFFEADDF4, 0xFFF6EBDA, 0xFFF6EBDA, 0xFFF6EBDA, 0xFFF6EBDA, ROJO,   TEAL,   0xFFFBE3A0, NAVY, 0x55000000, 0, 0, 0, NAVY, NAVY),   // bloques
+            new Tema(0xFFF3F4E6, 0xFFFBE7A0, NAVY,       NAVY, 0xFF3A4A60, 0xFFC9DDB8, 0xFFFDF9EE, 0xFFFDE5D0, 0xFFD8EAFB, 0xFFC9DDB8, 0xFFC9DDB8, ROJO,   TEAL,   0xFFFBE3A0, NAVY, 0x55000000, 0, 0, 0, NAVY, NAVY),   // lateral
+            new Tema(0xFFFBF9F4, 0xFFA63D22, 0xFFFFFFFF, NAVY, 0xFF3A4A60, 0xFFFBF9F4, 0xFFD4E7FA, 0xFFFFF0CB, 0xFFDFF2DC, 0xFFFBE3A0, 0xFFD4E7FA, NAVY,   NAVY,   0xFFFBE3A0, NAVY, 0x55000000, 0, 0, 0, NAVY, NAVY),   // titular
+            new Tema(0xFF6BA7BD, 0xFF0F4C5C, 0xFFFFFFFF, NAVY, 0xFF1C2A3E, 0xFFD6E8CE, 0xFFFFF8E8, 0xFFFBDCCB, 0xFFD9EBFA, 0xFFFBE3A0, 0xFFFFFFFF, NAVY,   NAVY,   0xFFFBE3A0, NAVY, 0x33000000, 0, 0, 0, NAVY, NAVY),   // marco
+            new Tema(0xFFFBF8F1, 0xFFFBF8F1, NAVY,       NAVY, 0xFF3A4A60, 0xFFFBF8F1, 0xFFFBF8F1, 0xFFFFF0CB, 0xFFDFF2DC, 0xFFBDD5E8, 0xFFFBF8F1, NAVY,   NAVY,   0xFFBDD5E8, NAVY, 0x66000000, 0, 0, 0, NAVY, NAVY),   // limpia
+            // Mensajes primero (seis combinaciones de color): fondo, banda, bandaTxt, txt, sub, fecha, hora, hoy, man, parte, panel, tempHoy, tempMan, pill, pillTxt, raya, msg1, msg2, cita, encTxt, citaTxt
+            new Tema(0xFFFAF7EE, 0xFF164957, 0xFFFFFFFF, NAVY, 0xFF3A4A60, 0xFFDCE8D3, 0xFFFFF5DF, 0xFFF6D9C4, 0xFFDDEBF5, 0xFFFFFFFF, 0xFFFFFFFF, NAVY, NAVY, 0xFFFBE3A0, NAVY, 0x55000000, 0xFFF6D9C4, 0xFFDDEBF5, 0xFFDCE8D3, NAVY, NAVY),   // salvia y melocotón
+            new Tema(0xFFFFFDF6, 0xFF9B352D, 0xFFFFFFFF, NAVY, 0xFF3A4A60, 0xFFFFF3D0, 0xFFDDEBF5, 0xFFFFF0C9, 0xFFDDEEE2, 0xFFFFFFFF, 0xFFFFFFFF, NAVY, NAVY, 0xFFFBE3A0, NAVY, 0x55000000, 0xFFFFF0C9, 0xFFDDEEE2, 0xFFFFF3D0, NAVY, NAVY),   // coral y menta
+            new Tema(0xFFFAF7EE, 0xFFFFE8A6, NAVY,       NAVY, 0xFF3A4A60, 0xFFDFE9CB, 0xFFFFF8E9, 0xFFF9DFC7, 0xFFDDEBF5, 0xFFFFFFFF, 0xFFFFFFFF, NAVY, NAVY, 0xFFFBE3A0, NAVY, 0x55000000, 0xFFF9DFC7, 0xFFDDEBF5, 0xFFDFE9CB, NAVY, NAVY),   // salvia y azul
+            new Tema(0xFFFFFBF3, 0xFF174561, 0xFFFFFFFF, NAVY, 0xFF3A4A60, 0xFFDDEEE8, 0xFFECE2F2, 0xFFF4E5D2, 0xFFDDEBE8, 0xFFFFFFFF, 0xFFFFFFFF, NAVY, NAVY, 0xFFFBE3A0, NAVY, 0x55000000, 0xFFF4E5D2, 0xFFDDEBE8, 0xFFDDEEE8, NAVY, NAVY),   // menta y lavanda
+            new Tema(0xFFFAF7EE, 0xFFA63B26, 0xFFFFFFFF, NAVY, 0xFF3A4A60, 0xFFDDEBF5, 0xFFFFFBF3, 0xFFDFE9D3, 0xFFF8DFCD, 0xFFFFFFFF, 0xFFFFFFFF, NAVY, NAVY, 0xFFFBE3A0, NAVY, 0x55000000, 0xFFDFE9D3, 0xFFF8DFCD, 0xFFDDEBF5, NAVY, NAVY),   // azul y terracota
+            new Tema(0xFFFFFCF3, 0xFFF6D9C4, NAVY,       NAVY, 0xFF3A4A60, 0xFF173F32, 0xFF173F32, 0xFFFFF0C5, 0xFFDDEBF5, 0xFFFFFFFF, 0xFFFFFFFF, NAVY, NAVY, 0xFFFBE3A0, NAVY, 0x55000000, 0xFFFFF0C5, 0xFFDDEBF5, 0xFF173F32, 0xFFFFFFFF, 0xFFFFFFFF),   // bosque y amarillo
+    };
+
+    private Tema tema;
+    private int tbIdx;
+    private boolean tbBandaFina;
+    private LinearLayout tbEnc, tbClima, tbZona, tbMsgsCol, tbEvCol, tbHoy, tbMan;
+    private int tbModoClima, tbFranjaHoy, tbFranjaMan;
+
+    private LinearLayout bloque(int fondo) {
+        LinearLayout t = new LinearLayout(this);
+        t.setOrientation(LinearLayout.VERTICAL);
+        t.setBackgroundDrawable(caja(fondo, 28, 0, 0));
+        t.setPadding(px(36), px(20), px(36), px(20));
+        return t;
+    }
+
+    /** La tarjeta agranda o encoge su contenido para llenar el hueco que le toque (como las demás). */
+    private void ajustable(final LinearLayout t, final float kmax) {
+        t.addOnLayoutChangeListener(new View.OnLayoutChangeListener() {
+            @Override public void onLayoutChange(View v, int l, int tp, int r, int b, int ol, int ot, int or, int ob) {
+                if (r - l == or - ol && b - tp == ob - ot) return;
+                llenar(t, kmax, true);
+            }
+        });
+    }
+
+    private LinearLayout.LayoutParams vp(float peso, int arriba) {
+        LinearLayout.LayoutParams l = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, peso);
+        l.topMargin = px(arriba);
+        return l;
+    }
+
+    private LinearLayout.LayoutParams hp(float peso, int izquierda) {
+        LinearLayout.LayoutParams l = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, peso);
+        l.leftMargin = px(izquierda);
+        return l;
+    }
+
+    private View rayaV(int color, float ancho) {
+        View v = new View(this);
+        v.setBackgroundColor(color);
+        v.setLayoutParams(lp(Math.max(2, px(ancho)), ViewGroup.LayoutParams.MATCH_PARENT));
+        return v;
+    }
+
+    private LinearLayout fila() {
+        LinearLayout f = new LinearLayout(this);
+        f.setOrientation(LinearLayout.HORIZONTAL);
+        return f;
+    }
+
+    private LinearLayout columna() {
+        LinearLayout f = new LinearLayout(this);
+        f.setOrientation(LinearLayout.VERTICAL);
+        return f;
+    }
+
+    private void colorReloj(int color, int hablada) {
+        tvDia.setTextColor(color);
+        tvFecha.setTextColor(color);
+        tvH.setTextColor(color);
+        tvDos.setTextColor(color);
+        tvM.setTextColor(color);
+        tvHablada.setTextColor(hablada);
+    }
+
+    /** El hueco de los mensajes y de la próxima cita; solo se ve si hay algo. */
+    private void anadirZonaTablero(LinearLayout padre) {
+        tbZona = fila();
+        tbMsgsCol = columna();
+        tbEvCol = columna();
+        tbZona.addView(tbMsgsCol, hp(1.7f, 0));
+        tbZona.addView(tbEvCol, hp(1f, 16));
+        padre.addView(tbZona, vp(1.5f, 14));
+    }
+
+    private void construirTablero(String d) {
+        tbIdx = indiceTablero(d);
+        tema = TEMAS[tbIdx];
+        tbBandaFina = false;
+        tbEnc = null; tbClima = null; tbHoy = null; tbMan = null;
+        compactoHora = false;
+        anchoHablada = -1;
+        raiz.setBackgroundColor(tema.fondo);
+        switch (tbIdx) {
+            case 0: tbBandaVerde(); break;
+            case 1: tbMosaico(false); break;
+            case 2: tbBloques(); break;
+            case 3: tbLateral(); break;
+            case 4: tbTitular(); break;
+            case 5: tbMosaico(true); break;
+            case 6: tbLimpia(); break;
+            default: tbMensajes(); break;
+        }
+    }
+
+    /** 1. Cabecera verde oscura con el día y la hora; debajo, Hoy, el momento del día y Mañana. */
+    private void tbBandaVerde() {
+        crearCampos(130, 60, 190, 44, 44);
+        tvHablada.setMaxLines(2);
+        colorReloj(0xFFFFFFFF, 0xFFE6F0E9);
+        LinearLayout enc = bloque(0xFF17402B);
+        enc.setOrientation(LinearLayout.HORIZONTAL);
+        enc.setGravity(Gravity.CENTER_VERTICAL);
+        enc.setPadding(px(48), px(14), px(48), px(14));
+        LinearLayout izq = columna();
+        izq.setGravity(Gravity.CENTER_VERTICAL);
+        izq.addView(tvDia);
+        izq.addView(tvFecha);
+        enc.addView(izq, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+        LinearLayout.LayoutParams lr = lp(Math.max(2, px(3)), ViewGroup.LayoutParams.MATCH_PARENT);
+        lr.leftMargin = px(28);
+        lr.rightMargin = px(28);
+        View raya = new View(this);
+        raya.setBackgroundColor(tema.raya);
+        enc.addView(raya, lr);
+        LinearLayout der = columna();
+        der.setGravity(Gravity.CENTER_VERTICAL);
+        der.addView(filaReloj(false));
+        der.addView(tvHablada);
+        enc.addView(der, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1.15f));
+        ajustable(enc, 1.5f);
+        raiz.addView(enc, vp(1.15f, 0));
+        tbEnc = enc;
+        anadirZonaTablero(raiz);
+        LinearLayout clima = fila();
+        tbHoy = bloque(tema.hoy);
+        tbMan = bloque(tema.man);
+        clima.addView(tbHoy, hp(1f, 0));
+        clima.addView(tbMan, hp(1f, 14));
+        raiz.addView(clima, vp(1f, 14));
+        tbClima = clima;
+        tbModoClima = 0;
+        tbFranjaHoy = 0xFFFAD97A;
+        tbFranjaMan = 0xFFB5D6F5;
+    }
+
+    /** 2 y 6. Cuatro cuadros: el día y la hora arriba; Hoy y Mañana abajo. El 6 lleva marco de color. */
+    private void tbMosaico(boolean marco) {
+        crearCampos(120, 56, 190, 44, 44);
+        tvHablada.setMaxLines(2);
+        colorReloj(tema.txt, tema.sub);
+        LinearLayout arriba = fila();
+        LinearLayout fecha = bloque(tema.fecha);
+        fecha.setGravity(Gravity.CENTER_VERTICAL);
+        fecha.addView(tvDia);
+        fecha.addView(tvFecha);
+        ajustable(fecha, 1.6f);
+        LinearLayout hora = bloque(tema.hora);
+        hora.setGravity(Gravity.CENTER_HORIZONTAL);
+        hora.addView(filaReloj(false), lp(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        hora.addView(tvHablada);
+        ajustable(hora, 1.5f);
+        arriba.addView(fecha, hp(1f, 0));
+        arriba.addView(hora, hp(1f, 14));
+        raiz.addView(arriba, vp(1.15f, 0));
+        tbEnc = arriba;
+        anadirZonaTablero(raiz);
+        LinearLayout clima = fila();
+        tbHoy = bloque(tema.hoy);
+        tbMan = bloque(tema.man);
+        clima.addView(tbHoy, hp(1f, 0));
+        clima.addView(tbMan, hp(1f, 14));
+        raiz.addView(clima, vp(1f, 14));
+        tbClima = clima;
+        tbModoClima = 1;
+        tbFranjaHoy = 0;
+        tbFranjaMan = 0;
+    }
+
+    /** 3. Dos bloques de color arriba (día y hora) y una tarjeta ancha con Hoy y Mañana. */
+    private void tbBloques() {
+        crearCampos(120, 56, 190, 44, 44);
+        tvHablada.setMaxLines(2);
+        colorReloj(tema.txt, tema.sub);
+        LinearLayout arriba = fila();
+        LinearLayout fecha = bloque(tema.fecha);
+        fecha.setGravity(Gravity.CENTER_VERTICAL);
+        fecha.addView(tvDia);
+        fecha.addView(tvFecha);
+        ajustable(fecha, 1.6f);
+        LinearLayout hora = bloque(tema.hora);
+        hora.setGravity(Gravity.CENTER_HORIZONTAL);
+        hora.addView(filaReloj(false), lp(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        hora.addView(tvHablada);
+        ajustable(hora, 1.5f);
+        arriba.addView(fecha, hp(1f, 0));
+        arriba.addView(hora, hp(1f, 14));
+        raiz.addView(arriba, vp(1.15f, 0));
+        tbEnc = arriba;
+        anadirZonaTablero(raiz);
+        LinearLayout clima = bloque(tema.hoy);
+        clima.setOrientation(LinearLayout.HORIZONTAL);
+        clima.setPadding(px(24), px(12), px(24), px(12));
+        tbHoy = columna();
+        tbMan = columna();
+        tbHoy.setGravity(Gravity.CENTER_VERTICAL);
+        tbMan.setGravity(Gravity.CENTER_VERTICAL);
+        clima.addView(tbHoy, hp(1f, 0));
+        clima.addView(rayaV(tema.raya, 3), lp(Math.max(2, px(3)), ViewGroup.LayoutParams.MATCH_PARENT));
+        clima.addView(tbMan, hp(1f, 24));
+        ajustable(clima, 1.5f);
+        raiz.addView(clima, vp(1f, 14));
+        tbClima = clima;
+        tbModoClima = 2;
+    }
+
+    /** 4. Columna verde a la izquierda con el día; a la derecha, la hora grande y Hoy y Mañana en dos filas. */
+    private void tbLateral() {
+        crearCampos(110, 56, 200, 46, 44);
+        tvHablada.setMaxLines(2);
+        colorReloj(tema.txt, tema.sub);
+        LinearLayout cuerpoT = fila();
+        LinearLayout izq = bloque(tema.fecha);
+        izq.setGravity(Gravity.CENTER);
+        izq.addView(tvDia, lp(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        tvFecha.setMaxLines(2);
+        izq.addView(tvFecha, lp(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        ajustable(izq, 1.4f);
+        cuerpoT.addView(izq, hp(0.72f, 0));
+        LinearLayout der = columna();
+        LinearLayout hora = bloque(tema.hora);
+        hora.setGravity(Gravity.CENTER_HORIZONTAL);
+        hora.addView(filaReloj(false), lp(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        hora.addView(tvHablada);
+        ajustable(hora, 1.5f);
+        der.addView(hora, vp(1.1f, 0));
+        tbEnc = hora;
+        anadirZonaTablero(der);
+        LinearLayout clima = columna();
+        tbHoy = bloque(tema.hoy);
+        tbMan = bloque(tema.man);
+        clima.addView(tbHoy, vp(1f, 0));
+        clima.addView(tbMan, vp(1f, 14));
+        der.addView(clima, vp(1.5f, 14));
+        tbClima = clima;
+        cuerpoT.addView(der, hp(1.7f, 14));
+        raiz.addView(cuerpoT, vp(1f, 0));
+        tbModoClima = 6;
+    }
+
+    /** 5. El día en letra enorme sin recuadro; a su lado, la hora; debajo, un panel con Hoy y Mañana. */
+    private void tbTitular() {
+        crearCampos(150, 66, 200, 46, 44);
+        tvHablada.setMaxLines(2);
+        colorReloj(tema.txt, tema.sub);
+        LinearLayout arriba = fila();
+        LinearLayout izq = columna();
+        izq.setGravity(Gravity.CENTER_VERTICAL);
+        izq.addView(tvDia, lp(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        izq.addView(tvFecha, lp(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        txBanda.setTextSize(TypedValue.COMPLEX_UNIT_PX, 44 * s);
+        txBanda.setTag(44f);
+        raiz.removeView(banda);                         // la cuenta atrás va debajo de la fecha, como una píldora
+        LinearLayout.LayoutParams lb = lp(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        lb.topMargin = px(14);
+        izq.addView(banda, lb);
+        izq.setPadding(px(8), 0, px(8), 0);
+        ajustable(izq, 1.5f);
+        arriba.addView(izq, hp(1.15f, 0));
+        LinearLayout hora = bloque(tema.hora);
+        hora.setGravity(Gravity.CENTER_HORIZONTAL);
+        hora.addView(filaReloj(false), lp(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        hora.addView(tvHablada);
+        ajustable(hora, 1.5f);
+        arriba.addView(hora, hp(1f, 14));
+        raiz.addView(arriba, vp(1.25f, 0));
+        tbEnc = arriba;
+        anadirZonaTablero(raiz);
+        LinearLayout panel = bloque(tema.panel);
+        LinearLayout filaC = fila();
+        tbHoy = bloque(tema.hoy);
+        tbMan = bloque(tema.man);
+        filaC.addView(tbHoy, hp(1f, 0));
+        filaC.addView(tbMan, hp(1f, 14));
+        LinearLayout.LayoutParams lf = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f);
+        panel.addView(filaC, lf);
+        raiz.addView(panel, vp(1.1f, 14));
+        tbClima = panel;
+        tbModoClima = 3;
+    }
+
+    /** 7. Muy limpia: letras grandes sobre el fondo, una banda con el momento del día y Hoy y Mañana. */
+    private void tbLimpia() {
+        crearCampos(130, 62, 230, 46, 44);
+        tvHablada.setMaxLines(1);
+        colorReloj(tema.txt, tema.txt);
+        tbBandaFina = true;
+        txBanda.setTextSize(TypedValue.COMPLEX_UNIT_PX, 40 * s);
+        txBanda.setTag(40f);
+        LinearLayout.LayoutParams lbf = (LinearLayout.LayoutParams) banda.getLayoutParams();
+        lbf.bottomMargin = px(4);
+        banda.setGravity(Gravity.LEFT | Gravity.CENTER_VERTICAL);
+        banda.setMinimumHeight(px(52));
+        LinearLayout.LayoutParams lic = (LinearLayout.LayoutParams) icBanda.getLayoutParams();
+        lic.width = px(40);
+        lic.height = px(40);
+        lic.rightMargin = px(16);
+        View r0 = new View(this);
+        r0.setBackgroundColor(tema.raya);
+        raiz.addView(r0, lp(ViewGroup.LayoutParams.MATCH_PARENT, Math.max(2, px(2))));
+        LinearLayout arriba = fila();
+        arriba.setGravity(Gravity.CENTER_VERTICAL);
+        arriba.setPadding(px(8), px(8), px(8), px(8));
+        LinearLayout izq = columna();
+        izq.setGravity(Gravity.CENTER_VERTICAL);
+        izq.addView(tvDia);
+        izq.addView(tvFecha);
+        arriba.addView(izq, hp(1.1f, 0));
+        LinearLayout.LayoutParams lr = lp(Math.max(2, px(3)), ViewGroup.LayoutParams.MATCH_PARENT);
+        lr.leftMargin = px(24);
+        lr.rightMargin = px(24);
+        View raya = new View(this);
+        raya.setBackgroundColor(tema.raya);
+        arriba.addView(raya, lr);
+        LinearLayout der = columna();
+        der.setGravity(Gravity.CENTER);
+        der.addView(filaReloj(false), lp(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        arriba.addView(der, hp(1f, 0));
+        ajustable(arriba, 1.6f);
+        raiz.addView(arriba, vp(1.25f, 0));
+        tbEnc = arriba;
+        LinearLayout franjaB = bloque(tema.parte);
+        franjaB.setOrientation(LinearLayout.HORIZONTAL);
+        franjaB.setGravity(Gravity.CENTER_VERTICAL);
+        franjaB.setPadding(px(40), px(8), px(40), px(8));
+        tvHablada.setGravity(Gravity.CENTER);
+        franjaB.addView(tvHablada, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+        ajustable(franjaB, 1.3f);
+        raiz.addView(franjaB, lp(ViewGroup.LayoutParams.MATCH_PARENT, px(110)));
+        anadirZonaTablero(raiz);
+        LinearLayout clima = fila();
+        tbHoy = bloque(tema.hoy);
+        tbMan = bloque(tema.man);
+        clima.addView(tbHoy, hp(1f, 0));
+        clima.addView(tbMan, hp(1f, 14));
+        raiz.addView(clima, vp(1f, 14));
+        tbClima = clima;
+        tbModoClima = 4;
+    }
+
+    /** El hueco de mensajes de "Mensajes primero": los mensajes a todo el ancho, uno debajo de otro, y la próxima cita en una banda debajo. */
+    private void anadirZonaMensajes(LinearLayout padre) {
+        tbZona = columna();
+        tbMsgsCol = columna();
+        tbEvCol = columna();
+        tbZona.addView(tbMsgsCol, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f));
+        tbZona.addView(tbEvCol, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        padre.addView(tbZona, vp(2.4f, 14));
+    }
+
+    /** 8 a 13. Mensajes primero: cabecera pequeña con el día y la hora, los mensajes lo más grandes posible, la próxima cita en una banda y el tiempo abajo. */
+    private void tbMensajes() {
+        crearCampos(110, 56, 150, 44, 44);
+        tvHablada.setMaxLines(2);
+        colorReloj(tema.encTxt, tema.encTxt);
+        LinearLayout arriba = fila();
+        LinearLayout fecha = bloque(tema.fecha);
+        fecha.setGravity(Gravity.CENTER_VERTICAL);
+        fecha.addView(tvDia);
+        fecha.addView(tvFecha);
+        ajustable(fecha, 1.6f);
+        LinearLayout hora = bloque(tema.hora);
+        hora.setGravity(Gravity.CENTER_VERTICAL);
+        hora.addView(filaReloj(false), lp(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        hora.addView(tvHablada);
+        ajustable(hora, 1.5f);
+        arriba.addView(fecha, hp(1f, 0));
+        arriba.addView(hora, hp(1f, 14));
+        raiz.addView(arriba, vp(1.25f, 0));
+        tbEnc = arriba;
+        anadirZonaMensajes(raiz);
+        LinearLayout clima = fila();
+        tbHoy = bloque(tema.hoy);
+        tbMan = bloque(tema.man);
+        clima.addView(tbHoy, hp(1f, 0));
+        clima.addView(tbMan, hp(1f, 14));
+        raiz.addView(clima, vp(1f, 14));
+        tbClima = clima;
+        tbModoClima = 1;
+    }
+
+    /** La próxima cita en una banda: "Próxima cita" y debajo "7:45, Analítica Mamá". Con varias, van saliendo una a una. */
+    private View tarjetaCitaBanda() {
+        final boolean[] man = new boolean[1];
+        final List<Datos.Evento> lista = citasQueToca(man);
+        if (lista.isEmpty()) return null;
+        final boolean deManana = man[0];
+        final LinearLayout t = bloque(tema.cita);
+        t.setGravity(Gravity.CENTER_VERTICAL);
+        t.setPadding(px(36), px(12), px(36), px(12));
+        llenarCitaBanda(t, lista.get(0), deManana, 0, lista.size());
+        ajustable(t, 1.4f);
+        rotar(t, lista.size(), new Mostrar() {
+            @Override public void en(int i) {
+                llenarCitaBanda(t, lista.get(i), deManana, i, lista.size());
+                t.post(new Runnable() { @Override public void run() { llenar(t, 1.4f, true); } });
+            }
+        });
+        return t;
+    }
+
+    private void llenarCitaBanda(LinearLayout t, Datos.Evento e, boolean deManana, int pos, int total) {
+        t.removeAllViews();
+        TextView et = texto(40, false);
+        et.setTextColor(tema.citaTxt);
+        et.setText((deManana ? "Próxima cita · mañana" : "Próxima cita") + (total > 1 ? "  ·  " + (pos + 1) + " de " + total : ""));
+        et.setMaxLines(1);
+        t.addView(et);
+        TextView tx = texto(56, true);
+        tx.setTextColor(tema.citaTxt);
+        tx.setText(cuandoNum(e) + ", " + e.titulo);
+        tx.setMaxLines(2);
+        t.addView(tx);
+    }
+
+    /** Pone en una tarjeta de tiempo: el día, los grados con su dibujo y el consejo. modo: 0 con franja, 1 vertical, 2 mitad de la tarjeta ancha, 3 y 4 en horizontal. */
+    private void climaContenido(LinearLayout cont, String titulo, int temp, int codigo, int modo, int acento, int franja) {
+        cont.removeAllViews();
+        int txt = tema.txt;
+        if (modo <= 2) {
+            cont.setOrientation(LinearLayout.VERTICAL);
+            TextView d = texto(modo == 0 ? 52 : 58, true);
+            d.setTextColor(txt);
+            d.setText(titulo);
+            d.setMaxLines(1);
+            if (franja != 0) {
+                d.setBackgroundDrawable(caja(franja, 20, 0, 0));
+                d.setPadding(px(20), px(6), px(20), px(6));
+            }
+            cont.addView(d, lp(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+            LinearLayout f = fila();
+            f.setGravity(Gravity.CENTER_VERTICAL);
+            TextView g = texto(modo == 2 ? 120 : 150, true);
+            g.setTextColor(acento);
+            g.setText(temp + "°");
+            g.setMaxLines(1);
+            f.addView(g, lp(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+            ImageView ic = iconoTiempo(codigo, 0xFF6F86A8, modo == 2 ? 110 : 130, true);
+            LinearLayout.LayoutParams li = lp(px(modo == 2 ? 110 : 130), px(modo == 2 ? 110 : 130));
+            li.leftMargin = px(24);
+            f.addView(ic, li);
+            LinearLayout.LayoutParams lf = lp(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+            lf.topMargin = px(6);
+            cont.addView(f, lf);
+            TextView e = texto(44, false);
+            e.setTextColor(txt);
+            e.setText(Texto.consejo(temp, codigo));
+            LinearLayout.LayoutParams le = lp(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+            le.topMargin = px(6);
+            cont.addView(e, le);
+        } else {
+            boolean compacto = modo == 5, enLinea = modo == 6;
+            cont.setOrientation(LinearLayout.HORIZONTAL);
+            cont.setGravity(Gravity.CENTER_VERTICAL);
+            LinearLayout col = compacto || enLinea ? fila() : columna();
+            col.setGravity(Gravity.CENTER_VERTICAL);
+            TextView d = texto(compacto ? 44 : 52, true);
+            d.setTextColor(txt);
+            d.setText(titulo);
+            d.setMaxLines(1);
+            col.addView(d);
+            TextView g = texto(compacto ? 76 : enLinea ? 120 : modo == 4 ? 110 : 130, true);
+            g.setTextColor(acento);
+            g.setText(temp + "°");
+            g.setMaxLines(1);
+            if (modo == 4) {
+                g.setBackgroundDrawable(caja(0xFFCFE2F3, 6, 0, 0));
+                g.setPadding(px(16), px(4), px(16), px(4));
+            }
+            LinearLayout.LayoutParams lg = lp(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+            if (compacto || enLinea) lg.leftMargin = px(16);
+            col.addView(g, lg);
+            cont.addView(col, lp(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+            float lado = compacto ? 76 : 110;
+            ImageView ic = iconoTiempo(codigo, 0xFF6F86A8, lado, true);
+            LinearLayout.LayoutParams li = lp(px(lado), px(lado));
+            li.leftMargin = px(compacto ? 14 : 18);
+            li.rightMargin = px(compacto ? 14 : 18);
+            cont.addView(ic, li);
+            cont.addView(rayaV(tema.raya, 3));
+            TextView e = texto(compacto ? 38 : 44, false);
+            e.setTextColor(txt);
+            e.setText(Texto.consejo(temp, codigo));
+            LinearLayout.LayoutParams le = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
+            le.leftMargin = px(compacto ? 16 : 20);
+            cont.addView(e, le);
+        }
+        ajustable(cont, 1.4f);
+    }
+
+    /** Pinta un tablero: textos del día, cuenta atrás, mensajes y próxima cita, y el tiempo. */
+    private void pintarTablero(Calendar ahora, int hora) {
+        raiz.setBackgroundColor(tema.fondo);
+        marco.setBackgroundColor(tema.fondo);
+        tvDia.setText(Texto.nombreDia(ahora));
+        tvFecha.setText(Texto.fecha(ahora));
+        // la cuenta atrás
+        if (datos == null || datos.cuenta == null) {
+            banda.setVisibility(View.GONE);
+        } else {
+            banda.setVisibility(View.VISIBLE);
+            icBanda.setImageResource(Texto.iconoDeLaCuenta(datos.cuenta.icono));
+            if (tbBandaFina) {
+                banda.setBackgroundDrawable(null);
+                icBanda.setColorFilter(tema.sub, PorterDuff.Mode.SRC_IN);
+                txBanda.setTextColor(tema.txt);
+            } else if (tbIdx >= 7) {
+                banda.setBackgroundDrawable(caja(tema.banda, 16, 0, 0));
+                icBanda.setColorFilter(tema.bandaTxt, PorterDuff.Mode.SRC_IN);
+                txBanda.setTextColor(tema.bandaTxt);
+            } else if (tbIdx == 5) {
+                banda.setBackgroundDrawable(caja(tema.banda, 28, 0, 0));
+                icBanda.setColorFilter(0xFFFFD25A, PorterDuff.Mode.SRC_IN);
+                txBanda.setTextColor(tema.bandaTxt);
+            } else {
+                banda.setBackgroundDrawable(caja(tema.banda, tbIdx == 4 ? 20 : 28, 0, 0));
+                icBanda.setColorFilter(tema.bandaTxt, PorterDuff.Mode.SRC_IN);
+                txBanda.setTextColor(tema.bandaTxt);
+            }
+            txBanda.setText(datos.cuenta.texto);
+        }
+        // mensajes y próxima cita
+        tbMsgsCol.removeAllViews();
+        tbEvCol.removeAllViews();
+        boolean conectada = !prefs.getString("url", "").isEmpty();
+        boolean hay = false;
+        if (!conectada) {
+            anadir(tbMsgsCol, tarjetaAviso("Falta conectar la pizarra."), 1f);
+            hay = true;
+        } else if (datos == null) {
+            anadir(tbMsgsCol, tarjetaAviso("Esperando a la pizarra…"), 1f);
+            hay = true;
+        } else {
+            int nm = datos.verMensajes ? Math.min(2, datos.mensajes.size()) : 0;
+            boolean mp = tbIdx >= 7;                          // Mensajes primero: mensajes de colores, a todo el ancho, y la cita en una banda
+            for (int i = 0; i < nm; i++) {
+                View mv = tarjetaMensaje(datos.mensajes.get(i), ahora, nm > 1);
+                if (mp) mv.setBackgroundDrawable(caja(i == 0 ? tema.msg1 : tema.msg2, 28, 0, 0));
+                anadir(tbMsgsCol, mv, 1f);
+            }
+            View ev = datos.verEventos ? (mp ? tarjetaCitaBanda() : tarjetaProximoCompacto()) : null;
+            if (ev != null) {
+                if (mp) {
+                    LinearLayout.LayoutParams le = lp(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+                    le.topMargin = px(nm > 0 ? 14 : 0);
+                    tbEvCol.addView(ev, le);
+                } else {
+                    anadir(tbEvCol, ev, 1f);
+                }
+            }
+            hay = nm > 0 || ev != null;
+            tbMsgsCol.setVisibility(nm > 0 ? View.VISIBLE : View.GONE);
+            tbEvCol.setVisibility(ev != null ? View.VISIBLE : View.GONE);
+            if (!mp && nm == 0 && ev != null) ((LinearLayout.LayoutParams) tbEvCol.getLayoutParams()).leftMargin = 0;
+        }
+        tbZona.setVisibility(hay ? View.VISIBLE : View.GONE);
+        // el tiempo
+        boolean tiempo = datos != null && datos.verTiempo && datos.hayTiempo;
+        boolean sinDatosVisible = tbIdx >= 7 && datos != null && datos.verTiempo && !datos.hayTiempo;      // Mensajes primero: dos tarjetas que dicen que no hay datos
+        tbClima.setVisibility(tiempo || sinDatosVisible ? View.VISIBLE : View.GONE);
+        boolean contenido = tbZona.getVisibility() == View.VISIBLE;
+        if (tbIdx == 6) ((View) tvHablada.getParent()).getLayoutParams().height = px(contenido ? 78 : 110);
+        int modo = contenido ? 5 : tbModoClima;           // con mensajes o cita, el tiempo se pone en una sola línea
+        if (tiempo) {
+            Datos.Dia hoy = datos.hoy;
+            if (hoy == null) {
+                hoy = new Datos.Dia();
+                hoy.temp = datos.temperatura;
+                hoy.codigo = datos.codigoTiempo;
+            }
+            climaContenido(tbHoy, "Hoy", hoy.temp, hoy.codigo, modo, tema.tempHoy, contenido ? 0 : tbFranjaHoy);
+            if (datos.manana != null) {
+                tbMan.setVisibility(View.VISIBLE);
+                climaContenido(tbMan, "Mañana", datos.manana.temp, datos.manana.codigo, modo, tema.tempMan, contenido ? 0 : tbFranjaMan);
+            } else {
+                tbMan.setVisibility(View.GONE);
+            }
+        }
+        if (sinDatosVisible) {
+            String[] dia = {"Hoy", "Mañana"};
+            LinearLayout[] cont = {tbHoy, tbMan};
+            for (int i = 0; i < 2; i++) {
+                cont[i].removeAllViews();
+                cont[i].setVisibility(View.VISIBLE);
+                cont[i].setGravity(Gravity.CENTER_VERTICAL);
+                TextView d = texto(52, true);
+                d.setTextColor(tema.txt);
+                d.setText(dia[i]);
+                cont[i].addView(d);
+                TextView n = texto(40, false);
+                n.setTextColor(tema.txt);
+                n.setText("Sin datos del tiempo");
+                cont[i].addView(n);
+                ajustable(cont[i], 1.3f);
+            }
+        }
+        // con mensajes o cita, la cabecera y el tiempo ceden sitio
+        boolean largo = false;                           // un mensaje largo pide más sitio: la cabecera y el tiempo ceden más
+        if (datos != null && datos.verMensajes) for (Datos.Mensaje m : datos.mensajes.subList(0, Math.min(2, datos.mensajes.size()))) if (m.texto.length() > 90) largo = true;
+        if (tbIdx >= 7) {                                // Mensajes primero: la cabecera y el tiempo, lo justo; los mensajes, el resto
+            ((LinearLayout.LayoutParams) tbEnc.getLayoutParams()).weight = contenido ? 0.9f : 1.25f;
+            ((LinearLayout.LayoutParams) tbClima.getLayoutParams()).weight = contenido ? 0.6f : 1f;
+            ((LinearLayout.LayoutParams) tbZona.getLayoutParams()).weight = largo ? 2.8f : 2.3f;
+        } else {
+            ((LinearLayout.LayoutParams) tbEnc.getLayoutParams()).weight = contenido ? (largo ? 0.82f : 0.85f) : 1.2f;
+            ((LinearLayout.LayoutParams) tbClima.getLayoutParams()).weight = contenido ? (tbIdx == 3 ? 0.95f : largo ? 0.62f : 0.65f) : 1f;
+            ((LinearLayout.LayoutParams) tbZona.getLayoutParams()).weight = largo ? 1.9f : 1.5f;
+        }
+        tbEnc.requestLayout();
+        raiz.requestLayout();
+    }
+
 
     /* ---------- Pantalla del recordatorio ---------- */
 
@@ -1150,7 +1976,9 @@ public class MainActivity extends Activity {
             x.setText("Falta conectar la pizarra.");
             t.addView(x);
             msgs.add(t);
-        } else if (datos != null) {
+        } else if (datos == null) {
+            msgs.add(tarjetaAviso("Esperando a la pizarra…"));
+        } else {
             int nm = datos.verMensajes ? Math.min(maxMsgs, datos.mensajes.size()) : 0;
             for (int i = 0; i < nm; i++) {
                 Datos.Mensaje m = datos.mensajes.get(i);
@@ -1238,38 +2066,56 @@ public class MainActivity extends Activity {
 
     /** Lo próximo en la franja de abajo: el icono, la hora en palabras y qué es. */
     private View tarjetaProximoCompacto() {
-        Datos.Evento e = null;
-        for (Datos.Evento x : datos.eventos) if (!x.manana) { e = x; break; }
-        if (e == null) return null;                      // sin nada apuntado hoy, no se enseña
-        LinearLayout t = tarjeta(false);
+        final boolean[] man = new boolean[1];
+        final List<Datos.Evento> lista = citasQueToca(man);
+        if (lista.isEmpty()) return null;
+        final boolean deManana = man[0];
+        final LinearLayout t = tarjeta(false);
         t.setBackgroundDrawable(caja(p.proximoFondo, 28, p.acentoTexto, 3));
         t.setOrientation(LinearLayout.HORIZONTAL);
         t.setGravity(Gravity.CENTER_VERTICAL);
         t.setPadding(px(32), px(16), px(32), px(16));
+        llenarProximoCompacto(t, lista.get(0), deManana, 0, lista.size());
+        agrandarAlHueco(t, 1.6f);
+        rotar(t, lista.size(), new Mostrar() {
+            @Override public void en(int i) {
+                llenarProximoCompacto(t, lista.get(i), deManana, i, lista.size());
+                t.post(new Runnable() { @Override public void run() { llenar(t, 1.6f, true); } });
+            }
+        });
+        return t;
+    }
+
+    private void llenarProximoCompacto(LinearLayout t, Datos.Evento e, boolean deManana, int pos, int total) {
+        t.removeAllViews();
         String tl = e.titulo.toLowerCase(new Locale("es"));
         int icono = R.drawable.ic_calendario;
         if (tl.contains("merienda") || tl.contains("café") || tl.contains("cafe") || tl.contains("desayuno")) icono = R.drawable.ic_taza;
         else if (tl.contains("cena") || tl.contains("comida") || tl.contains("almuerzo") || tl.contains("comer")) icono = R.drawable.ic_cubiertos;
         else if (tl.contains("llamar") || tl.contains("llamada") || tl.contains("teléfono")) icono = R.drawable.ic_telefono;
-        ImageView ic = iconoRedondo(icono, p.avatar, 96, 54);
+        ImageView ic = iconoEvento(e, icono, 96, 54);
         LinearLayout.LayoutParams lpIc = lp(px(96), px(96));
         lpIc.rightMargin = px(28);
         t.addView(ic, lpIc);
         LinearLayout col = new LinearLayout(this);
         col.setOrientation(LinearLayout.VERTICAL);
-        TextView hora = texto(44, true);
+        TextView hora = texto(56, true);
         hora.setTextColor(p.acentoTexto);
-        hora.setMaxLines(2);
-        hora.setText(e.hora.isEmpty() || Texto.aLas(e.hora).isEmpty() ? "Todo el día" : Texto.mayus(Texto.aLas(e.hora)));
+        hora.setMaxLines(1);
+        hora.setText((deManana ? "Mañana · " : "") + cuandoNum(e));
         TextView nombre = texto(56, true);
         nombre.setTextColor(p.texto);
         nombre.setMaxLines(2);
         nombre.setText(e.titulo);
         col.addView(hora);
         col.addView(nombre);
+        if (total > 1) {
+            TextView n = texto(36, false);
+            n.setTextColor(p.sub);
+            n.setText((pos + 1) + " de " + total);
+            col.addView(n);
+        }
         t.addView(col, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
-        agrandarAlHueco(t, 1.6f);
-        return t;
     }
 
     /** Un mensaje de la familia, con su foto (o la inicial) y la letra más grande que quepa. */
@@ -1333,7 +2179,7 @@ public class MainActivity extends Activity {
     /** Lo próximo del calendario; de noche, lo de mañana (o lo de hoy si ya pasó la medianoche). */
     private View tarjetaEventos(Calendar ahora, final boolean deNoche, boolean deManana) {
         final LinearLayout t = tarjeta(false);
-        List<Datos.Evento> lista = new ArrayList<>();
+        final List<Datos.Evento> lista = new ArrayList<>();
         for (Datos.Evento e : datos.eventos) if (e.manana == deManana) lista.add(e);
         if (lista.isEmpty()) return null;               // una tarjeta vacía no se enseña: las demás ocupan su sitio
 
@@ -1344,7 +2190,7 @@ public class MainActivity extends Activity {
             if (deManana) dia.add(Calendar.DAY_OF_YEAR, 1);
             titulo.setText((deManana ? "Mañana, " : "Hoy, ") + Texto.nombreDia(dia).toLowerCase(new Locale("es")));
         } else {
-            titulo.setText("Lo próximo");
+            titulo.setText(deManana ? "Mañana" : "Lo próximo");     // sin nada hoy, se enseña lo de mañana
         }
         t.addView(titulo);
 
@@ -1354,12 +2200,27 @@ public class MainActivity extends Activity {
         lpLista.topMargin = px(14);
         t.addView(listaEv, lpLista);
 
-        for (int i = 0; i < lista.size(); i++) listaEv.addView(itemEvento(lista.get(i), i == 0 && !deNoche, i > 0, deNoche));
+        final boolean girar = !deNoche && lista.size() > 1;            // de día, con varias citas se enseñan de una en una, grandes y enteras
+        final String base = titulo.getText().toString();
+        if (girar) {
+            listaEv.addView(itemEvento(lista.get(0), true, false, false));
+            titulo.setText(base + "  ·  1 de " + lista.size());
+            rotar(t, lista.size(), new Mostrar() {
+                @Override public void en(int i) {
+                    listaEv.removeAllViews();
+                    listaEv.addView(itemEvento(lista.get(i), true, false, false));
+                    titulo.setText(base + "  ·  " + (i + 1) + " de " + lista.size());
+                    t.post(new Runnable() { @Override public void run() { llenar(t, 1.7f, true); } });
+                }
+            });
+        } else {
+            for (int i = 0; i < lista.size(); i++) listaEv.addView(itemEvento(lista.get(i), i == 0 && !deNoche, i > 0, deNoche));
+        }
 
         t.addOnLayoutChangeListener(new View.OnLayoutChangeListener() {
             @Override public void onLayoutChange(View v, int l, int tp, int r, int b, int ol, int ot, int or, int ob) {
                 if (r - l == or - ol && b - tp == ob - ot) return;
-                if (!llenar(t, 1.7f)) recortarEventos(t, titulo, listaEv, deNoche);
+                if (!llenar(t, 1.7f, girar)) recortarEventos(t, titulo, listaEv, deNoche);
             }
         });
         return t;
@@ -1384,7 +2245,7 @@ public class MainActivity extends Activity {
             caja.setPadding(px(8), px(8), px(8), px(8));
         }
         float lado = proximo || grande ? 80 : 60;
-        ImageView ic = iconoRedondo(icono, p.avatar, lado, lado * 0.56f);
+        ImageView ic = iconoEvento(e, icono, lado, lado * 0.56f);
         LinearLayout.LayoutParams lpIc = lp(px(lado), px(lado));
         lpIc.rightMargin = px(20);
         caja.addView(ic, lpIc);
@@ -1392,8 +2253,8 @@ public class MainActivity extends Activity {
         col.setOrientation(LinearLayout.VERTICAL);
         TextView hora = texto(proximo ? 44 : grande ? 52 : 40, true);
         hora.setTextColor(p.texto);
-        hora.setText(e.hora.isEmpty() || Texto.aLas(e.hora).isEmpty() ? "Todo el día" : Texto.mayus(Texto.aLas(e.hora)));
-        hora.setMaxLines(2);
+        hora.setText(cuandoNum(e));
+        hora.setMaxLines(1);
         TextView nombre = texto(proximo ? 52 : grande ? 52 : 40, true);
         nombre.setTextColor(proximo || grande ? p.texto : p.sub);
         nombre.setText(e.titulo);
@@ -1463,7 +2324,7 @@ public class MainActivity extends Activity {
         LinearLayout fila = new LinearLayout(this);
         fila.setOrientation(LinearLayout.HORIZONTAL);
         fila.setGravity(Gravity.CENTER_VERTICAL);
-        ImageView ic = icono(Texto.iconoDelTiempo(codigo), p.acentoTexto, 72);
+        ImageView ic = iconoTiempo(codigo, p.acentoTexto, 72, false);
         LinearLayout.LayoutParams lpIc = lp(px(72), px(72));
         lpIc.rightMargin = px(20);
         fila.addView(ic, lpIc);
@@ -1538,8 +2399,7 @@ public class MainActivity extends Activity {
             que.setMaxLines(1);
             que.setEllipsize(TextUtils.TruncateAt.END);
             Datos.Evento e = lista.get(0);
-            String cuandoTxt = e.hora.isEmpty() ? "todo el día" : Texto.aLas(e.hora);
-            cuando.setText(dia + " " + (cuandoTxt.isEmpty() ? "todo el día" : cuandoTxt));      // "Mañana a las nueve"
+            cuando.setText(dia + " · " + cuandoNum(e).toLowerCase(new Locale("es")));      // "Mañana · 7:45"
             que.setText(Texto.mayus(e.titulo));
             t.addView(cuando);
             t.addView(que);

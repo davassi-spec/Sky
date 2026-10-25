@@ -75,6 +75,112 @@ las distribuciones de pantalla (Reloj a la izquierda, Lista, Sencillo) combinabl
 
 Con el script nuevo y la TV todavía en la 2.0, todo sigue funcionando (la 2.0 ignora los recordatorios). Y con el script anterior, la TV 3.0 también (simplemente no hay recordatorios).
 
+## Versión 6.1: móvil rediseñado, mejoras del script y arreglos de la TV
+
+### Arreglos de la TV (app 6.1)
+- **Pantalla vacía**: con la distribución "reloj" (y con cualquiera) solo se veía la cabecera. Causa probable: la TV no tenía datos
+  (dirección o clave guardadas mal; por ejemplo si se lanzó el comando de arranque con los textos de ejemplo
+  `TU_DIRECCION_EXEC`/`TU_CLAVE_DE_ADMINISTRADOR`) y el cuerpo quedaba en blanco. Ahora:
+  - la TV **no guarda** una dirección que no empiece por `https://` ni una clave de menos de 8 caracteres;
+  - sin datos, todas las distribuciones dicen "Esperando a la pizarra…";
+  - si una distribución falla al dibujarse, se pone la **Clásica**;
+  - sin nada apuntado hoy, "Lo próximo" enseña lo primero de mañana ("Mañana · A las doce").
+- **Palabras partidas**: ninguna palabra se parte nunca. La letra baja hasta 36 px; si aun así no cabe, el texto se recorta por
+  palabras con "…" (solo una palabra más larga que toda la línea se acorta ella sola).
+- **Versión instalada**: el panel enseña "Conectada hace… · app 6.1". Desde PowerShell:
+  `adb shell dumpsys package es.pizarra.tv | findstr versionName`.
+
+### App 6.8: citas en cifras y turnándose
+- La hora de una cita sale **en cifras**, en 24 horas ("7:45", "18:30"), en todas las pantallas (antes "A las ocho menos cuarto", que ocupaba dos líneas y dejaba
+  el nombre cortado). De noche: "Mañana · 7:45".
+- Con **varias citas**, la tarjeta enseña una cada 8 segundos, con un fundido, y dice cuál es ("1 de 2", "2 de 2"). Cada una se ve grande y entera.
+  Con una sola no se mueve. Se para al salir de la pizarra y se reanuda al volver. Código: `rotar`, `llenarProximoCompacto`, `llenarCitaBanda`.
+
+### App 6.7: "Mensajes primero", seis combinaciones de color
+Un diseño nuevo, a partir de los 24 PNG de ChatGPT (6 combinaciones × 4 estados): cabecera pequeña (día | hora), los **mensajes lo más grandes posible**
+a todo el ancho y de colores, la **próxima cita** en una banda, la cuenta atrás arriba y el tiempo abajo. Ids: `salvia_melocoton`, `coral_menta`, `salvia_azul`,
+`menta_lavanda`, `azul_terracota` y `bosque_amarillo`. En el panel salen agrupadas bajo "Mensajes primero".
+- Sin mensajes ni cita (estado A) los huecos punteados de los mockups **no se dibujan** (eran marcas de sitio): el tiempo y la cabecera ocupan el espacio.
+- Sin datos del tiempo (estado D) salen las dos tarjetas "Sin datos del tiempo", como en los mockups.
+- Los mockups llevaban el texto del tiempo a ~26 px; aquí se respeta el mínimo de 36 px (a 1080p).
+- Los colores y su contraste se comprueban en `TemasTest` (también el estilo de día elegido sobre los fondos de los mensajes). De noche, la Clásica.
+- Compatibilidad: hace falta la 6.7; una app anterior ve la Clásica (el panel lo avisa).
+
+### App 6.6: las siete pantallas sin "momento del día"
+Siguiendo los diseños revisados, las siete pantallas con diseño propio ya no llevan etiqueta ni píldora de "Al mediodía / Por la tarde": la hora
+hablada ("Es la una menos veintisiete del mediodía") ya lo dice. Banda verde pierde su tarjeta central y se queda con Hoy y Mañana.
+
+### App 6.5: el tiempo se mueve y el momento del día no lleva sol
+- **Iconos del tiempo animados** (`IconoTiempo.java`), en todas las distribuciones: el sol gira despacio y respira, las nubes se mecen, la lluvia y la
+  nieve caen, la tormenta destella y la niebla ondula. Se redibuja unas 20 veces por segundo; en las capturas de prueba se congela (`fasePrueba`).
+- **Sin sol en "Al mediodía"** en las siete pantallas con diseño propio: el momento del día es solo texto, para que no parezca una previsión de sol.
+
+### App 6.4: siete pantallas nuevas con diseño propio
+Además de Clásica, Reloj, Lista y Sencillo hay siete distribuciones más, hechas a partir de los diseños del usuario: **Banda verde, Mosaico, Bloques,
+Columna lateral, Titular grande, Marco azul y Limpia** (ids `banda`, `mosaico`, `bloques`, `lateral`, `titular`, `marco`, `limpia`). Se eligen en
+Panel › Gestión › Pantalla › Distribución.
+- **Colores**: cada una lleva los suyos de día (el estilo elegido solo cambia los mensajes, la próxima cita y de noche). **De noche** se ven como la
+  Clásica con el estilo de noche. Los recordatorios, vídeos y fotos no cambian.
+- **Con mensajes o cita**: el tiempo pasa a una sola línea y la cabecera se encoge para dejar sitio; sin nada de eso se ven como en el diseño.
+- **Compatibilidad**: hace falta la app **6.4**. Una app anterior (probado con el código de la 6.3) recibe el id nuevo, no lo conoce y dibuja la
+  **Clásica** idéntica, nunca en blanco. El panel lo avisa: "la app de la tele es la 6.3: hasta que instales la 6.4 seguirá viendo la Clásica".
+- Código: `construirTablero` y `pintarTablero` en `MainActivity.java`; colores en `TEMAS` (con prueba de contraste 4,5:1, `TemasTest`);
+  miniaturas del panel con `python3 madre/web-app/hacer-miniaturas.py <carpeta de capturas>`.
+- Revertir: elegir otra distribución en el panel, o instalar la 6.3 (`PizarraTV-6.3.apk`).
+
+### App 6.3: una cita solo de mañana ya se ve de día
+En la distribución Clásica, de día, "Lo próximo" solo dibujaba los eventos de hoy: si lo único apuntado era de mañana (por ejemplo "Mañana 07:45
+Analítica Mamá"), no salía nada. Ahora, sin nada hoy, la tarjeta se llama "Mañana" y enseña lo de mañana. Las otras tres distribuciones ya lo hacían desde la 6.1.
+
+### App 6.2: se abre sola al despertar la TV
+Una TV Android, al "apagarla" con el mando, no se reinicia: se duerme. Sin arranque no hay `BOOT_COMPLETED` y la pizarra no salía. Ahora un
+servicio (`Despertar`) escucha cuándo se enciende la pantalla (`SCREEN_ON`, `USER_PRESENT`, fin del salvapantallas) y abre la pizarra si no está
+delante. También se abre al arrancar (`BOOT_COMPLETED`, `QUICKBOOT_POWERON`) y tras instalar una versión nueva. **Sin probar en la Philips real**:
+si esa TV no emite esos avisos al despertar, hay que mirar su ajuste "al encender" (ver más abajo). Si mamá quiere ver un canal, usa el mando
+(Fuente/Inicio): la pizarra se abre cada vez que la TV se enciende.
+
+### Qué hay de nuevo
+- **App del móvil rediseñada** (estilo iPhone: listas agrupadas, fondo gris claro, una sola tinta azul, modo oscuro): Inicio
+  (estado de la tele, vista previa real, "A continuación"), Mandar (con nota de voz de mantener pulsado) y Enviados; el engranaje
+  guarda Pantalla, Recordatorios, Cuentas atrás, Visitas y rutina, Familia y Ajustes. El familiar ve Inicio, Mandar y Enviados.
+- **Todo se guarda al tocar**, "Deshacer" 10 s, miniaturas reales, programar un mensaje, "Volver a mandar", fijar un mensaje
+  (uno solo, solo el administrador), horas en 24 h, nombres con mayúscula, Familia sin enseñar el enlace con la clave
+  (solo "Copiar enlace" y "Enviar por WhatsApp") y errores junto a lo que falló.
+- **Script**: caché de eventos de 10 minutos (simulado: 952 → 142 ms de media y 1200 → 120 llamadas a Calendar cada 600 consultas),
+  limpieza diaria de Drive (medios vistos de más de 30 días; nunca fotos de perfil ni de recordatorios activos), copia diaria de los
+  datos en `Pizarra/Copias` (las últimas 7), aviso por correo si la TV lleva más de 30 min sin consultar (y otro al volver, máximo uno
+  de cada tipo cada 6 h), calendario de iCloud (`webcal://`, el enlace se guarda solo en el script), "Hoy viene…" y rutina semanal.
+- **TV**: lee en voz alta los mensajes nuevos (español, nunca de noche; sin voz española no falla), y "Hoy viene…" con la foto.
+
+### Iconos de la pantalla de inicio
+- **Administrador**: el televisor violeta con el corazón (`web-app/iconos/`).
+- **Familiares (Ana, Dani, María…)**: el mismo televisor en verde (`web-app/iconos-familia/`). El panel pone uno u otro según quién entra
+  (iPhone: `apple-touch-icon`; Android: iconos de 192/512 y manifiesto). Solo vale si guardan la app desde `…/Sky/tele/`, no desde la página de Google.
+- Para usar otro dibujo: `python3 madre/web-app/hacer-iconos.py mi-icono.png` (PNG cuadrado, mejor de 1024 px), después `python3 madre/web-app/construir.py` y `sh madre/web-app/publicar.sh`.
+  Quien ya añadió la app debe borrar el icono y volver a añadirla: iOS guarda el icono al añadirla.
+
+### Desplegar el script (la dirección `/exec` no cambia)
+1. Abre el proyecto en script.google.com; sustituye todo `Code.gs` y `Admin.html` por los de esta carpeta.
+2. Ejecuta una vez la función `autorizar` (crea el activador diario de limpieza y copias). **No hacen falta permisos nuevos.**
+3. Implementar › Administrar implementaciones › lápiz › **Nueva versión**. Nunca "Nueva implementación".
+
+### Instalar la 6.1 (PowerShell, de uno en uno)
+```powershell
+adb connect 192.168.1.83:5555
+adb install -r "$HOME\Downloads\PizarraTV-6.1.apk"
+```
+No hace falta repetir la dirección ni la clave. Si la TV las perdió, pásalas **reales** (nunca los textos de ejemplo):
+`adb shell am start -n es.pizarra.tv/.MainActivity --es url "https://script.google.com/macros/s/…/exec" --es k "TU_CLAVE"`.
+Volver a la 5.0: `adb uninstall es.pizarra.tv`, `adb install "$HOME\Downloads\PizarraTV-5.0.apk"` y el comando de arranque de arriba.
+La APK 6.1 lleva el mismo certificado que la 5.0 (SHA-256 `2ec1326a…0512972`).
+
+### Medir antes y después
+```powershell
+$u = "https://script.google.com/macros/s/…/exec"; $k = "TU_CLAVE"
+Invoke-RestMethod "$u`?a=metricas&k=$k" | ConvertTo-Json -Depth 6 | Out-File "$HOME\Downloads\metricas-antes.json" -Encoding utf8
+```
+(repetir con `metricas-despues.json` pasadas unas horas). Ajustes enseña las consultas de la TV por hora.
+
 ## Versión 5.0: distribuciones, audios/vídeos/fotos a distancia y app con icono
 
 Todo está en tres PR en borrador encadenados (#8 distribuciones → #9 audios y vídeos → #10 app con icono), sobre #7 (fase 3.1). Nada está fusionado.

@@ -104,6 +104,20 @@ final class Texto {
         return m < 30 ? base + " y " + NUM[m] : base + " menos " + NUM[60 - m];
     }
 
+    /** La hora de una cita en cifras: "7:45", "18:30" (24 horas, sin cero delante). Vacío si no es una hora. */
+    static String horaNumerica(String hhmm) {
+        if (hhmm == null) return "";
+        int i = hhmm.indexOf(':');
+        if (i < 0) return "";
+        try {
+            int h = Integer.parseInt(hhmm.substring(0, i).trim()), m = Integer.parseInt(hhmm.substring(i + 1).trim());
+            if (h < 0 || h > 23 || m < 0 || m > 59) return "";
+            return h + ":" + (m < 10 ? "0" : "") + m;
+        } catch (NumberFormatException e) {
+            return "";
+        }
+    }
+
     static String mayus(String t) {
         return t.isEmpty() ? t : Character.toUpperCase(t.charAt(0)) + t.substring(1);
     }
