@@ -90,6 +90,10 @@ Con el script nuevo y la TV todavía en la 2.0, todo sigue funcionando (la 2.0 i
 - **Versión instalada**: el panel enseña "Conectada hace… · app 6.1". Desde PowerShell:
   `adb shell dumpsys package es.pizarra.tv | findstr versionName`.
 
+### App 6.6: las siete pantallas sin "momento del día"
+Siguiendo los diseños revisados, las siete pantallas con diseño propio ya no llevan etiqueta ni píldora de "Al mediodía / Por la tarde": la hora
+hablada ("Es la una menos veintisiete del mediodía") ya lo dice. Banda verde pierde su tarjeta central y se queda con Hoy y Mañana.
+
 ### App 6.5: el tiempo se mueve y el momento del día no lleva sol
 - **Iconos del tiempo animados** (`IconoTiempo.java`), en todas las distribuciones: el sol gira despacio y respira, las nubes se mecen, la lluvia y la
   nieve caen, la tormenta destella y la niebla ondula. Se redibuja unas 20 veces por segundo; en las capturas de prueba se congela (`fasePrueba`).

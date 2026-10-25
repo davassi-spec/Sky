@@ -1108,7 +1108,6 @@ public class MainActivity extends Activity {
     private int tbIdx;
     private boolean tbBandaFina;
     private LinearLayout tbEnc, tbClima, tbZona, tbMsgsCol, tbEvCol, tbHoy, tbMan;
-    private TextView tbParteTxt;
     private int tbModoClima, tbFranjaHoy, tbFranjaMan;
 
     private LinearLayout bloque(int fondo) {
@@ -1167,34 +1166,6 @@ public class MainActivity extends Activity {
         tvDos.setTextColor(color);
         tvM.setTextColor(color);
         tvHablada.setTextColor(hablada);
-    }
-
-    /** "Al mediodía" en una píldora (sin dibujos: un sol ahí se confundiría con el tiempo que hará). */
-    private LinearLayout pildoraTablero() {
-        LinearLayout pl = fila();
-        pl.setGravity(Gravity.CENTER_VERTICAL);
-        pl.setTag("parte");
-        pl.setBackgroundDrawable(caja(tema.pill, 40, 0, 0));
-        pl.setPadding(px(26), px(8), px(30), px(8));
-        tbParteTxt = texto(46, true);
-        tbParteTxt.setMaxLines(1);
-        tbParteTxt.setTextColor(tema.pillTxt);
-        pl.addView(tbParteTxt);
-        return pl;
-    }
-
-    /** "Al mediodía" en letra grande, sin dibujos. */
-    private LinearLayout parteGrande(int fondo) {
-        LinearLayout t = bloque(fondo);
-        t.setTag("parte");
-        t.setGravity(Gravity.CENTER);
-        tbParteTxt = texto(60, true);
-        tbParteTxt.setMaxLines(3);
-        tbParteTxt.setGravity(Gravity.CENTER);
-        tbParteTxt.setTextColor(tema.txt);
-        t.addView(tbParteTxt, lp(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-        ajustable(t, 1.4f);
-        return t;
     }
 
     /** El hueco de los mensajes y de la próxima cita; solo se ve si hay algo. */
@@ -1259,7 +1230,6 @@ public class MainActivity extends Activity {
         tbHoy = bloque(tema.hoy);
         tbMan = bloque(tema.man);
         clima.addView(tbHoy, hp(1f, 0));
-        clima.addView(parteGrande(tema.parte), hp(0.6f, 14));
         clima.addView(tbMan, hp(1f, 14));
         raiz.addView(clima, vp(1f, 14));
         tbClima = clima;
@@ -1283,10 +1253,6 @@ public class MainActivity extends Activity {
         hora.setGravity(Gravity.CENTER_HORIZONTAL);
         hora.addView(filaReloj(false), lp(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
         hora.addView(tvHablada);
-        LinearLayout pl = pildoraTablero();
-        LinearLayout.LayoutParams lpl = lp(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        lpl.topMargin = px(10);
-        hora.addView(pl, lpl);
         ajustable(hora, 1.5f);
         arriba.addView(fecha, hp(1f, 0));
         arriba.addView(hora, hp(1f, 14));
@@ -1336,16 +1302,6 @@ public class MainActivity extends Activity {
         clima.addView(tbHoy, hp(1f, 0));
         clima.addView(rayaV(tema.raya, 3), lp(Math.max(2, px(3)), ViewGroup.LayoutParams.MATCH_PARENT));
         clima.addView(tbMan, hp(1f, 24));
-        LinearLayout pl = columna();
-        pl.setTag("parte");
-        pl.setGravity(Gravity.CENTER);
-        TextView t = texto(40, true);
-        t.setTextColor(tema.txt);
-        t.setMaxLines(2);
-        t.setGravity(Gravity.CENTER);
-        tbParteTxt = t;
-        pl.addView(t, lp(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-        clima.addView(pl, hp(0.55f, 20));
         ajustable(clima, 1.5f);
         raiz.addView(clima, vp(1f, 14));
         tbClima = clima;
@@ -1363,16 +1319,6 @@ public class MainActivity extends Activity {
         izq.addView(tvDia, lp(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
         tvFecha.setMaxLines(2);
         izq.addView(tvFecha, lp(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-        View raya = new View(this);
-        raya.setBackgroundColor(tema.raya);
-        LinearLayout.LayoutParams lr = lp(ViewGroup.LayoutParams.MATCH_PARENT, Math.max(2, px(3)));
-        lr.topMargin = px(18);
-        lr.bottomMargin = px(18);
-        izq.addView(raya, lr);
-        tbParteTxt = texto(50, true);
-        tbParteTxt.setTextColor(tema.txt);
-        tbParteTxt.setMaxLines(2);
-        izq.addView(tbParteTxt, lp(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
         ajustable(izq, 1.4f);
         cuerpoT.addView(izq, hp(0.72f, 0));
         LinearLayout der = columna();
@@ -1425,17 +1371,12 @@ public class MainActivity extends Activity {
         tbEnc = arriba;
         anadirZonaTablero(raiz);
         LinearLayout panel = bloque(tema.panel);
-        LinearLayout cab = fila();
-        LinearLayout pl = pildoraTablero();
-        cab.addView(pl, lp(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-        panel.addView(cab, lp(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
         LinearLayout filaC = fila();
         tbHoy = bloque(tema.hoy);
         tbMan = bloque(tema.man);
         filaC.addView(tbHoy, hp(1f, 0));
         filaC.addView(tbMan, hp(1f, 14));
         LinearLayout.LayoutParams lf = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f);
-        lf.topMargin = px(12);
         panel.addView(filaC, lf);
         raiz.addView(panel, vp(1.1f, 14));
         tbClima = panel;
@@ -1486,16 +1427,7 @@ public class MainActivity extends Activity {
         franjaB.setOrientation(LinearLayout.HORIZONTAL);
         franjaB.setGravity(Gravity.CENTER_VERTICAL);
         franjaB.setPadding(px(40), px(8), px(40), px(8));
-        tbParteTxt = texto(60, true);
-        tbParteTxt.setTextColor(tema.txt);
-        tbParteTxt.setMaxLines(1);
-        franjaB.addView(tbParteTxt, lp(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-        LinearLayout.LayoutParams lr2 = lp(Math.max(2, px(3)), px(48));
-        lr2.leftMargin = px(28);
-        lr2.rightMargin = px(28);
-        View raya2 = new View(this);
-        raya2.setBackgroundColor(tema.raya);
-        franjaB.addView(raya2, lr2);
+        tvHablada.setGravity(Gravity.CENTER);
         franjaB.addView(tvHablada, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
         ajustable(franjaB, 1.3f);
         raiz.addView(franjaB, lp(ViewGroup.LayoutParams.MATCH_PARENT, px(110)));
@@ -1591,11 +1523,6 @@ public class MainActivity extends Activity {
         marco.setBackgroundColor(tema.fondo);
         tvDia.setText(Texto.nombreDia(ahora));
         tvFecha.setText(Texto.fecha(ahora));
-        tbParteTxt.setText(Texto.etiquetaParte(hora));
-        boolean parte = datos == null || datos.verParte;
-        View padreParte = (View) tbParteTxt.getParent();
-        if ("parte".equals(padreParte.getTag())) padreParte.setVisibility(parte ? View.VISIBLE : View.GONE);
-        else tbParteTxt.setVisibility(parte ? View.VISIBLE : View.GONE);
         // la cuenta atrás
         if (datos == null || datos.cuenta == null) {
             banda.setVisibility(View.GONE);
@@ -1643,8 +1570,7 @@ public class MainActivity extends Activity {
         boolean tiempo = datos != null && datos.verTiempo && datos.hayTiempo;
         tbClima.setVisibility(tiempo ? View.VISIBLE : View.GONE);
         boolean contenido = tbZona.getVisibility() == View.VISIBLE;
-        if ((tbIdx == 1 || tbIdx == 4 || tbIdx == 5) && contenido) padreParte.setVisibility(View.GONE);      // con mensajes, el momento del día ya va en la hora hablada
-        if (tbIdx == 6) padreParte.getLayoutParams().height = px(contenido ? 78 : 110);
+        if (tbIdx == 6) ((View) tvHablada.getParent()).getLayoutParams().height = px(contenido ? 78 : 110);
         int modo = contenido ? 5 : tbModoClima;           // con mensajes o cita, el tiempo se pone en una sola línea
         if (tiempo) {
             Datos.Dia hoy = datos.hoy;
