@@ -733,6 +733,11 @@ function calendarios_() {
   return out;
 }
 
+/** Lo que se leyó la última vez de cada calendario: { t, g (eventos de Google), i (de iCloud, null si no hay), eg, ei (errores) }. */
+function calendariosResumen_() {
+  try { return JSON.parse(CacheService.getScriptCache().get('cal_resumen') || 'null'); } catch (e) { return null; }
+}
+
 /** Los calendarios elegidos que el script no encuentra (se borraron, o ya no se comparten con la cuenta del script). */
 function calendariosPerdidos_() {
   try { return JSON.parse(CacheService.getScriptCache().get('cal_perdidos') || '[]'); } catch (e) { return []; }
@@ -785,6 +790,7 @@ function admEstado(k) {
     avisos: { activos: avisosActivos_(), destino: destinoCorreo_(d), minutos: AVISO_MIN },
     calendarios: calendarios_(),
     calendariosPerdidos: calendariosPerdidos_(),
+    calendariosResumen: calendariosResumen_(),
     vista: vistaPreviaTV_(d),
     enlaceBase: ScriptApp.getService().getUrl()
   };
@@ -1509,10 +1515,10 @@ function eventosDeCalendarios_(d, ahora) {
   var clave = 'eventos3_' + versionEventos_() + '_' + claveDia_(ahora) + '_' + (d.calendarios || []).join(',') + '_' + (d.icloud ? 'i' : '');
   var hit = cache.get(clave);
   if (hit) return JSON.parse(hit);
-  var out = [];
-  try { out = out.concat(eventosDeGoogle_(d.calendarios, v)); } catch (e) { Logger.log('Calendario de Google: ' + e); }
-  if (d.icloud) { try { out = out.concat(eventosDeICloud_(d.icloud, v)); } catch (e2) { Logger.log('Calendario de iCloud: ' + e2); } }
-  try { cache.put(clave, JSON.stringify(out), CACHE_EVENTOS_S); } catch (e3) { /* sin caché */ }
+  var out = [], res = { t: Date.now(), g: 0, i: null, eg: '', ei: '' };      // res: qué se ha leído de cada sitio, para enseñarlo en Ajustes
+  try { var g = eventosDeGoogle_(d.calendarios, v); res.g = g.length; out = out.concat(g); } catch (e) { res.eg = String(e && e.message || e).slice(0, 160); Logger.log('Calendario de Google: ' + e); }
+  if (d.icloud) { try { var ic = eventosDeICloud_(d.icloud, v); res.i = ic.length; out = out.concat(ic); } catch (e2) { res.i = 0; res.ei = String(e2 && e2.message || e2).slice(0, 160); Logger.log('Calendario de iCloud: ' + e2); } }
+  try { cache.put(clave, JSON.stringify(out), CACHE_EVENTOS_S); cache.put('cal_resumen', JSON.stringify(res), 3600); } catch (e3) { /* sin caché */ }
   return out;
 }
 

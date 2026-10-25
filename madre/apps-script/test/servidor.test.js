@@ -979,5 +979,19 @@ const JPEG = 'data:image/jpeg;base64,' + Buffer.from('foto-de-prueba').toString(
   t('el administrador y el familiar lo reciben', typeof s.run("admEstado('ADMINKEY')").datos.idWeb === 'string' && typeof s.run(`admEstado('${ana.clave}')`).idWeb === 'string');
 }
 
+/* ---------- Lo que lee el script de cada calendario (para enseñarlo en Ajustes) ---------- */
+{
+  const ev = (titulo, ini, fin) => ({ isAllDayEvent: () => false, getTitle: () => titulo, getStartTime: () => new Date(ini), getEndTime: () => new Date(fin) });
+  const h = (hh, mm = 0) => new Date(2026, 9, 20, hh, mm).getTime();
+  const s = crear({ ahora: h(10, 0), eventos: [ev('Médico', h(12, 0), h(13, 0))] });
+  JSON.parse(s.run("servir_({parameter:{a:'estado',k:'ADMINKEY'}}).s"));
+  const r = s.run("admEstado('ADMINKEY')").calendariosResumen;
+  t('tras leer, el panel sabe cuántos eventos vio en Google', r && r.g >= 1 && r.i === null && !r.eg);
+  s.run("admAjustes('ADMINKEY', {icloud:'webcal://ejemplo.invalid/x.ics'})");
+  JSON.parse(s.run("servir_({parameter:{a:'estado',k:'ADMINKEY'}}).s"));
+  const r2 = s.run("admEstado('ADMINKEY')").calendariosResumen;
+  t('con iCloud puesto, cuenta también sus eventos o dice el error', r2 && r2.i === 0);
+}
+
 console.log(bien + ' bien, ' + mal + ' fallos');
 process.exit(mal ? 1 : 0);

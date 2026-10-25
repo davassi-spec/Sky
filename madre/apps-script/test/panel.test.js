@@ -447,6 +447,14 @@ const PRUEBAS = {
     S.calendariosPerdidos = ['mama@gmail.com']; ir('ajustes'); await espera(300);
     t('con uno perdido lo dice junto a los calendarios', !!document.getElementById('cal-perdidos') && document.getElementById('cal-perdidos').textContent.indexOf('no encuentra uno de los calendarios') >= 0 && document.getElementById('cal-perdidos').closest('#calendarios'));
     S.calendariosPerdidos = [];`,
+  'admin: Ajustes dice qué lee el script de cada calendario': `
+    S.calendariosResumen = null; ir('ajustes'); await espera(300);
+    t('sin lectura, lo dice', document.getElementById('cal-resumen').textContent.indexOf('Todavía no se ha leído') >= 0);
+    S.calendariosResumen = { t: Math.floor(Date.now() / 1000), g: 3, i: 0, eg: '', ei: '' }; ir('ajustes'); await espera(300);
+    t('con lectura, cuenta los de Google y los de iCloud', document.getElementById('cal-resumen').textContent.indexOf('Google: 3 eventos') >= 0 && document.getElementById('cal-resumen').textContent.indexOf('iCloud: 0 eventos') >= 0);
+    S.calendariosResumen = { t: Math.floor(Date.now() / 1000), g: 1, i: 0, eg: '', ei: 'HTTP 404' }; ir('ajustes'); await espera(300);
+    t('si iCloud falla, enseña el error en rojo', document.getElementById('cal-resumen').textContent.indexOf('no se pudo leer (HTTP 404)') >= 0 && document.getElementById('cal-resumen').className === 'error-inline');
+    S.calendariosResumen = null;`,
   'admin: errores junto a lo que falló': `
     ir('mandar'); await espera(100);
     procesarArchivo(new File([new Uint8Array(10)], 'v.mkv', { type: 'video/x-matroska' })); await espera(500);

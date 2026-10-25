@@ -1646,9 +1646,17 @@
         d.calendarios = marcados.slice(); guardarAjuste({ calendarios: marcados });
       }));
     });
+    var resumenCalendarios = function () {
+      var r = S.calendariosResumen;
+      if (!r) return el('p', { class: 'ayuda', id: 'cal-resumen' }, 'Todavía no se ha leído ningún calendario. Mira "Inicio" dentro de un momento.');
+      var parte = function (nombre, n, err) { return err ? nombre + ': no se pudo leer (' + err + ')' : nombre + ': ' + n + (n === 1 ? ' evento' : ' eventos'); };
+      var txt = parte('Google', r.g, r.eg) + (r.i === null ? '' : ' · ' + parte('iCloud', r.i, r.ei));
+      return el('p', { class: r.eg || r.ei ? 'error-inline' : 'ayuda', id: 'cal-resumen' }, 'Lo que lee el script de hoy y mañana (' + hace(Math.floor(r.t / 1000)) + '): ' + txt + '.');
+    };
     var perdidos = S.calendariosPerdidos || [];
     w.appendChild(el('div', { class: 'tarjeta', id: 'calendarios' }, el('h2', {}, 'Calendarios de Google'),
       perdidos.length ? el('p', { class: 'error-inline', id: 'cal-perdidos', role: 'alert' }, perdidos.length === 1 ? 'El script no encuentra uno de los calendarios elegidos, así que no sale lo que hay en él. Vuelve a marcarlo o compártelo con la cuenta del script.' : 'El script no encuentra ' + perdidos.length + ' de los calendarios elegidos, así que no sale lo que hay en ellos. Vuelve a marcarlos o compártelos con la cuenta del script.') : null,
+      resumenCalendarios(),
       cals));
     var ic = el('input', { type: 'url', id: 'icloud', maxlength: '480', autocomplete: 'off', inputmode: 'url', placeholder: 'webcal://p00-caldav.icloud.com/published/…', value: d.icloud || '', 'aria-label': 'Enlace del calendario de iCloud' });
     var icRes = el('p', { class: 'ayuda', id: 'icloud-res' });
