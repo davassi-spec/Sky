@@ -40,6 +40,7 @@ public class CapturasTest {
     @After
     public void restaura() {
         Hora.fijar(null);
+        IconoTiempo.fasePrueba = null;
     }
 
     private static long epoch(int dia, int h, int m) {
@@ -87,6 +88,7 @@ public class CapturasTest {
     }
 
     private void captura(String nombre, String json, int dia, int h, int m) throws Exception {
+        IconoTiempo.fasePrueba = 0.3f;          // la animación del tiempo congelada: las capturas salen siempre igual
         Context ctx = RuntimeEnvironment.getApplication();
         Calendar c = Calendar.getInstance(TimeZone.getTimeZone("Europe/Madrid"));
         c.clear();

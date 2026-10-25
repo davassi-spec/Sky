@@ -395,6 +395,14 @@ public class MainActivity extends Activity {
         return v;
     }
 
+    /** El dibujo del tiempo con su movimiento. multicolor: sol ámbar, nube pizarra, gotas azules; si no, todo de un color. */
+    private ImageView iconoTiempo(int codigo, int color, float lado, boolean multicolor) {
+        IconoTiempo v = new IconoTiempo(this, codigo, color, multicolor);
+        v.setLayoutParams(lp(px(lado), px(lado)));
+        v.setTag(new float[]{lado, lado});
+        return v;
+    }
+
     /** El círculo de un evento de "Lo próximo": la foto de quien viene si es de la familia y la tenemos; si no, el icono de siempre. */
     private ImageView iconoEvento(Datos.Evento e, int icono, float diametro, float interior) {
         Bitmap foto = e.autor.isEmpty() ? null : Fotos.circulo(this, e.autor, e.foto, px(Math.max(diametro, 240)));
@@ -1101,7 +1109,6 @@ public class MainActivity extends Activity {
     private boolean tbBandaFina;
     private LinearLayout tbEnc, tbClima, tbZona, tbMsgsCol, tbEvCol, tbHoy, tbMan;
     private TextView tbParteTxt;
-    private ImageView tbParteIc;
     private int tbModoClima, tbFranjaHoy, tbFranjaMan;
 
     private LinearLayout bloque(int fondo) {
@@ -1162,17 +1169,13 @@ public class MainActivity extends Activity {
         tvHablada.setTextColor(hablada);
     }
 
-    /** "Al mediodía" con su sol, en una píldora. */
+    /** "Al mediodía" en una píldora (sin dibujos: un sol ahí se confundiría con el tiempo que hará). */
     private LinearLayout pildoraTablero() {
         LinearLayout pl = fila();
         pl.setGravity(Gravity.CENTER_VERTICAL);
         pl.setTag("parte");
         pl.setBackgroundDrawable(caja(tema.pill, 40, 0, 0));
         pl.setPadding(px(26), px(8), px(30), px(8));
-        tbParteIc = icono(R.drawable.ic_sol, tema.pillTxt, 48);
-        LinearLayout.LayoutParams l = lp(px(48), px(48));
-        l.rightMargin = px(14);
-        pl.addView(tbParteIc, l);
         tbParteTxt = texto(46, true);
         tbParteTxt.setMaxLines(1);
         tbParteTxt.setTextColor(tema.pillTxt);
@@ -1180,21 +1183,16 @@ public class MainActivity extends Activity {
         return pl;
     }
 
-    /** "Al mediodía" y un sol grande, uno encima del otro. */
+    /** "Al mediodía" en letra grande, sin dibujos. */
     private LinearLayout parteGrande(int fondo) {
         LinearLayout t = bloque(fondo);
         t.setTag("parte");
         t.setGravity(Gravity.CENTER);
-        tbParteTxt = texto(54, true);
-        tbParteTxt.setMaxLines(2);
+        tbParteTxt = texto(60, true);
+        tbParteTxt.setMaxLines(3);
         tbParteTxt.setGravity(Gravity.CENTER);
         tbParteTxt.setTextColor(tema.txt);
         t.addView(tbParteTxt, lp(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-        tbParteIc = icono(R.drawable.ic_sol, 0xFFF2A81D, 150);
-        LinearLayout.LayoutParams l = lp(px(150), px(150));
-        l.gravity = Gravity.CENTER_HORIZONTAL;
-        l.topMargin = px(14);
-        t.addView(tbParteIc, l);
         ajustable(t, 1.4f);
         return t;
     }
@@ -1347,10 +1345,6 @@ public class MainActivity extends Activity {
         t.setGravity(Gravity.CENTER);
         tbParteTxt = t;
         pl.addView(t, lp(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-        tbParteIc = icono(R.drawable.ic_sol, 0xFFF2A81D, 88);
-        LinearLayout.LayoutParams li = lp(px(88), px(88));
-        li.gravity = Gravity.CENTER_HORIZONTAL;
-        pl.addView(tbParteIc, li);
         clima.addView(pl, hp(0.55f, 20));
         ajustable(clima, 1.5f);
         raiz.addView(clima, vp(1f, 14));
@@ -1365,7 +1359,7 @@ public class MainActivity extends Activity {
         colorReloj(tema.txt, tema.sub);
         LinearLayout cuerpoT = fila();
         LinearLayout izq = bloque(tema.fecha);
-        izq.setGravity(Gravity.CENTER_HORIZONTAL);
+        izq.setGravity(Gravity.CENTER);
         izq.addView(tvDia, lp(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
         tvFecha.setMaxLines(2);
         izq.addView(tvFecha, lp(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
@@ -1379,11 +1373,6 @@ public class MainActivity extends Activity {
         tbParteTxt.setTextColor(tema.txt);
         tbParteTxt.setMaxLines(2);
         izq.addView(tbParteTxt, lp(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-        tbParteIc = icono(R.drawable.ic_sol, 0xFFF2A81D, 190);
-        LinearLayout.LayoutParams li = lp(px(190), px(190));
-        li.gravity = Gravity.CENTER_HORIZONTAL;
-        li.topMargin = px(16);
-        izq.addView(tbParteIc, li);
         ajustable(izq, 1.4f);
         cuerpoT.addView(izq, hp(0.72f, 0));
         LinearLayout der = columna();
@@ -1500,10 +1489,6 @@ public class MainActivity extends Activity {
         tbParteTxt = texto(60, true);
         tbParteTxt.setTextColor(tema.txt);
         tbParteTxt.setMaxLines(1);
-        tbParteIc = icono(R.drawable.ic_sol, 0xFFF2A81D, 56);
-        LinearLayout.LayoutParams lp0 = lp(px(56), px(56));
-        lp0.rightMargin = px(18);
-        franjaB.addView(tbParteIc, lp0);
         franjaB.addView(tbParteTxt, lp(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
         LinearLayout.LayoutParams lr2 = lp(Math.max(2, px(3)), px(48));
         lr2.leftMargin = px(28);
@@ -1547,7 +1532,7 @@ public class MainActivity extends Activity {
             g.setText(temp + "°");
             g.setMaxLines(1);
             f.addView(g, lp(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-            ImageView ic = icono(Texto.iconoDelTiempo(codigo), 0xFF6F86A8, modo == 2 ? 110 : 130);
+            ImageView ic = iconoTiempo(codigo, 0xFF6F86A8, modo == 2 ? 110 : 130, true);
             LinearLayout.LayoutParams li = lp(px(modo == 2 ? 110 : 130), px(modo == 2 ? 110 : 130));
             li.leftMargin = px(24);
             f.addView(ic, li);
@@ -1584,7 +1569,7 @@ public class MainActivity extends Activity {
             col.addView(g, lg);
             cont.addView(col, lp(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
             float lado = compacto ? 76 : 110;
-            ImageView ic = icono(Texto.iconoDelTiempo(codigo), 0xFF6F86A8, lado);
+            ImageView ic = iconoTiempo(codigo, 0xFF6F86A8, lado, true);
             LinearLayout.LayoutParams li = lp(px(lado), px(lado));
             li.leftMargin = px(compacto ? 14 : 18);
             li.rightMargin = px(compacto ? 14 : 18);
@@ -1607,11 +1592,10 @@ public class MainActivity extends Activity {
         tvDia.setText(Texto.nombreDia(ahora));
         tvFecha.setText(Texto.fecha(ahora));
         tbParteTxt.setText(Texto.etiquetaParte(hora));
-        tbParteIc.setImageResource(R.drawable.ic_sol);
         boolean parte = datos == null || datos.verParte;
         View padreParte = (View) tbParteTxt.getParent();
         if ("parte".equals(padreParte.getTag())) padreParte.setVisibility(parte ? View.VISIBLE : View.GONE);
-        else { tbParteTxt.setVisibility(parte ? View.VISIBLE : View.GONE); tbParteIc.setVisibility(parte ? View.VISIBLE : View.GONE); }
+        else tbParteTxt.setVisibility(parte ? View.VISIBLE : View.GONE);
         // la cuenta atrás
         if (datos == null || datos.cuenta == null) {
             banda.setVisibility(View.GONE);
@@ -2200,7 +2184,7 @@ public class MainActivity extends Activity {
         LinearLayout fila = new LinearLayout(this);
         fila.setOrientation(LinearLayout.HORIZONTAL);
         fila.setGravity(Gravity.CENTER_VERTICAL);
-        ImageView ic = icono(Texto.iconoDelTiempo(codigo), p.acentoTexto, 72);
+        ImageView ic = iconoTiempo(codigo, p.acentoTexto, 72, false);
         LinearLayout.LayoutParams lpIc = lp(px(72), px(72));
         lpIc.rightMargin = px(20);
         fila.addView(ic, lpIc);

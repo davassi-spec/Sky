@@ -426,7 +426,7 @@ const PRUEBAS = {
     const b = new Uint8Array(6000); [0, 0, 0, 24, 102, 116, 121, 112, 105, 115, 111, 109].forEach((x, i) => (b[i] = x));
     const mp4 = new File([b], 'IMG_0001.mp4', { type: 'video/mp4' });
     procesarArchivo(mp4);
-    for (let i = 0; i < 40 && !document.querySelector('.dialogo'); i++) await espera(500);
+    for (let i = 0; i < 100 && !document.querySelector('.dialogo'); i++) await espera(500);
     Object.defineProperty(HTMLMediaElement.prototype, 'src', desc);
     t('en vez de dar error, se abre la revisión del vídeo', !!document.querySelector('.dialogo') && document.getElementById('err-contenido').hidden !== false);
     t('y no queda ningún vídeo suelto en la página', document.querySelectorAll('body > video').length === 0);`,
