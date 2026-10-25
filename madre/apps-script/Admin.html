@@ -670,7 +670,9 @@
     var p = PALETAS[estilo || 'calido'][modo], ahora = new Date(), h = ahora.getHours(), m = ahora.getMinutes();
     var ver = {}; (v.bloques || []).forEach(function (b) { ver[b.id] = b.activo; });
     var msgs = ver.mensajes ? (v.mensajes || []).slice(0, 2) : [];
-    var ev = ver.proximo ? (v.eventos || []).filter(function (e) { return e.dia === 0; })[0] || null : null;
+    var evs = ver.proximo ? (v.eventos || []) : [];
+    var ev = evs.filter(function (e) { return e.dia === 0; })[0] || null, evManana = false;
+    if (!ev) { ev = evs.filter(function (e) { return e.dia === 1; })[0] || null; evManana = !!ev; }      // sin nada hoy, lo de mañana (como la tele)
     var cuenta = ver.cuentaAtras ? v.cuentaAtras : null;
     var tiempo = ver.tiempo ? v.tiempo : null;
     var noche = modo === 'noche';
@@ -703,7 +705,7 @@
     } else {
       if (ev) {
         var hh = ev.hora ? ev.hora.split(':') : null;
-        der.appendChild(el('div', { style: tarj({ flex: '1' }) }, el('div', { style: css({ 'font-size': '40px', color: p.acento }) }, 'Lo próximo'),
+        der.appendChild(el('div', { style: tarj({ flex: '1' }) }, el('div', { style: css({ 'font-size': '40px', color: p.acento }) }, evManana ? 'Mañana' : 'Lo próximo'),
           el('div', { style: css({ 'font-size': '44px', 'margin-top': '6px' }) }, hh ? mayus(aLas(Number(hh[0]), Number(hh[1]))) : 'Todo el día'),
           el('div', { style: css({ 'font-size': '60px', 'margin-top': '4px', 'line-height': '1.1' }) }, ev.titulo)));
       }
@@ -732,7 +734,7 @@
   /** ¿La columna de la derecha quedará vacía? Entonces los mensajes ocupan todo el ancho (como en la TV). */
   function der_vacia(v, ver, noche) {
     if (noche) return false;
-    var hayEv = ver.proximo && (v.eventos || []).some(function (e) { return e.dia === 0; });
+    var hayEv = ver.proximo && (v.eventos || []).length > 0;
     return !hayEv && !(ver.tiempo && v.tiempo);
   }
   function modoActual() {
@@ -982,9 +984,12 @@
     w.appendChild(seccion('Ahora en la tele', bloqueAhora()));
     w.appendChild(bloqueCola());
     if (ROL === 'admin') {
-      var v = S.vista, prox = (v.eventos || []).filter(function (e) { return e.dia === 0; })[0], hh = prox && prox.hora ? prox.hora.split(':') : null;
-      w.appendChild(seccion('Lo próximo', grupo([prox ? fila({ icono: 'calendario', titulo: prox.titulo, sub: hh ? mayus(aLas(Number(hh[0]), Number(hh[1]))) : 'Todo el día' })
-        : fila({ icono: 'calendario', titulo: 'Hoy no hay nada apuntado en el calendario' })])));
+      var v = S.vista, evs = v.eventos || [], prox = evs.filter(function (e) { return e.dia === 0; })[0], deManana = false;
+      if (!prox) { prox = evs.filter(function (e) { return e.dia === 1; })[0]; deManana = !!prox; }          // sin nada hoy, lo de mañana
+      var hh = prox && prox.hora ? prox.hora.split(':') : null;
+      var cuando = hh ? mayus(aLas(Number(hh[0]), Number(hh[1]))) : 'Todo el día';
+      w.appendChild(seccion('Lo próximo', grupo([prox ? fila({ icono: 'calendario', titulo: prox.titulo, sub: deManana ? 'Mañana · ' + cuando : cuando })
+        : fila({ icono: 'calendario', titulo: 'Ni hoy ni mañana hay nada apuntado en el calendario' })])));
       var hechos = (d.recordatorios || []).filter(function (r) { return r.confirmadoHoy; });
       if (hechos.length) w.appendChild(seccion('Confirmados hoy', grupo(hechos.map(function (r) { return fila({ icono: 'campana', titulo: r.texto, sub: textoConfirmado(r) }); }), 'confirmados')));
     }

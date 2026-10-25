@@ -455,6 +455,15 @@ const PRUEBAS = {
     S.calendariosResumen = { t: Math.floor(Date.now() / 1000), g: 1, i: 0, eg: '', ei: 'HTTP 404' }; ir('ajustes'); await espera(300);
     t('si iCloud falla, enseña el error en rojo', document.getElementById('cal-resumen').textContent.indexOf('no se pudo leer (HTTP 404)') >= 0 && document.getElementById('cal-resumen').className === 'error-inline');
     S.calendariosResumen = null;`,
+  'admin: "Lo próximo" enseña lo de mañana si hoy no hay nada': `
+    const guarda = S.vista.eventos;
+    S.vista.eventos = [{ dia: 1, titulo: 'Analítica Mamá', hora: '07:45', orden: '07:45' }]; ir('inicio'); await espera(300);
+    t('en Inicio sale la cita de mañana con su hora', texto().indexOf('Analítica Mamá') >= 0 && texto().indexOf('Mañana · ') >= 0 && texto().indexOf('Ni hoy ni mañana') < 0);
+    S.vista.eventos = [{ dia: 0, titulo: 'Merienda', hora: '18:30', orden: '18:30' }, { dia: 1, titulo: 'Analítica Mamá', hora: '07:45', orden: '07:45' }]; ir('inicio'); await espera(300);
+    t('si hay algo hoy, sale lo de hoy', texto().indexOf('Merienda') >= 0 && texto().indexOf('Mañana · ') < 0);
+    S.vista.eventos = []; ir('inicio'); await espera(300);
+    t('sin nada, lo dice', texto().indexOf('Ni hoy ni mañana hay nada apuntado') >= 0);
+    S.vista.eventos = guarda;`,
   'admin: errores junto a lo que falló': `
     ir('mandar'); await espera(100);
     procesarArchivo(new File([new Uint8Array(10)], 'v.mkv', { type: 'video/x-matroska' })); await espera(500);
