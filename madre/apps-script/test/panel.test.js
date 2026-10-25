@@ -14,6 +14,7 @@ const AYUDAS = `
   const escribe = (sel, v) => { const e = document.querySelector(sel); if (!e) throw new Error('no hay ' + sel); e.value = v; e.dispatchEvent(new Event('input', { bubbles: true })); e.dispatchEvent(new Event('change', { bubbles: true })); };
   const texto = () => document.getElementById('app').textContent;
   const toast = () => document.getElementById('aviso').textContent;
+  const rpc = (fn, ...args) => new Promise((ok, ko) => google.script.run.withSuccessHandler(ok).withFailureHandler(ko)[fn](...args));
 `;
 const FIN = `; document.body.setAttribute('data-resultado', JSON.stringify(R));`;
 
@@ -112,6 +113,93 @@ const PRUEBAS = {
     const sw = Array.from(document.querySelectorAll('[role=switch]')).find((b) => b.getAttribute('aria-label') === 'Mamá'); sw.click();
     await clic('Guardar ajustes'); await espera(300); t('calendario elegido', S.datos.calendarios.length === 1);
     await clic('Oscuro'); t('aspecto oscuro', document.documentElement.getAttribute('data-tema') === 'oscuro');`,
+  'admin: recordatorios (crear, foto, días, confirmar, probar, borrar)': `
+    ir('recordatorios'); await espera(100);
+    t('empieza vacío', texto().indexOf('Todavía no hay ninguno') >= 0);
+    await clic('Añadir recordatorio'); await espera(50);
+    await clic('Guardar recordatorio'); t('sin texto avisa', toast().indexOf('Escribe qué hay que hacer') >= 0 && vista === 'recordatorio');
+    escribe('#r-texto', 'Salir a pasear'); await clic('Guardar recordatorio'); t('sin hora avisa', toast().indexOf('Elige la hora') >= 0);
+    escribe('#r-texto2', 'Con calma'); escribe('#r-hora', '17:00'); escribe('#r-dur', '30');
+    await clic('Sábado'); await clic('Domingo');
+    t('los días se pueden desmarcar', recEditando.dias.join() === '1,2,3,4,5' && texto().indexOf('De lunes a viernes') >= 0);
+    await clic('Hay que confirmarlo'); t('confirmar avisa de que faltan los avisos por correo', recEditando.confirmar === true && texto().indexOf('todavía no están activados') >= 0);
+    const c = document.createElement('canvas'); c.width = 1600; c.height = 900; const g = c.getContext('2d'); g.fillStyle = '#4a7'; g.fillRect(0, 0, 1600, 900);
+    const blob = await new Promise((r) => c.toBlob(r, 'image/jpeg', 0.9));
+    const url = await reducirFotoLibre(new File([blob], 'f.jpg', { type: 'image/jpeg' }), 900);
+    const im = new Image(); await new Promise((r) => { im.onload = r; im.src = url; });
+    t('la foto del recordatorio no se deforma y se reduce', im.width === 900 && im.height === 506 && url.length < 400000);
+    recEditando._foto = url;
+    await clic('Guardar recordatorio'); await espera(300);
+    const r = S.datos.recordatorios[0];
+    t('se guarda con todos sus datos', r && r.texto === 'Salir a pasear' && r.texto2 === 'Con calma' && r.hora === '17:00' && r.dias.join() === '1,2,3,4,5' && r.duracion === 30 && r.confirmar === true && r.tieneFoto === true);
+    t('vuelve a la lista con el resumen', vista === 'recordatorios' && texto().indexOf('Salir a pasear') >= 0 && texto().indexOf('De lunes a viernes') >= 0 && texto().indexOf('hay que confirmarlo') >= 0);
+    await espera(500); t('se ve la miniatura de su foto', !!document.querySelector('.mini-foto img'));
+    ir('inicio'); await espera(100);
+    t('Inicio enseña lo pendiente, con el botón', texto().indexOf('Pendiente de confirmar') >= 0 && texto().indexOf('Salir a pasear') >= 0 && !!boton('Confirmar que lo ha tomado'));
+    t('la TV lo estaría enseñando ahora', (await llamar('estado_')).recordatorio.texto === 'Salir a pasear');
+    await clic('Confirmar que lo ha tomado'); await espera(300);
+    t('al confirmar desaparece de Inicio', S.pendientes.length === 0 && texto().indexOf('Pendiente de confirmar') < 0);
+    t('y la TV vuelve a la pizarra', (await llamar('estado_')).recordatorio === null);
+    ir('recordatorios'); await espera(100);
+    Array.from(document.querySelectorAll('[role=switch]')).find((b) => b.getAttribute('aria-label') === 'Activar: Salir a pasear').click(); await espera(400);
+    t('se puede apagar sin borrarlo', S.datos.recordatorios[0].activo === false && S.datos.recordatorios.length === 1);
+    recEditando = Object.assign({}, S.datos.recordatorios[0]); ir('recordatorio'); await espera(500);
+    t('al editar se carga la foto actual', !!document.querySelector('#r-foto img'));
+    await clic('Guardar y probar 1 minuto'); await espera(600);
+    const tv = (await llamar('estado_')).recordatorio;
+    t('probar 1 minuto lo enseña en la TV', tv && tv.prueba === true && tv.texto === 'Salir a pasear');
+    recEditando = Object.assign({}, S.datos.recordatorios[0]); ir('recordatorio'); await espera(100);
+    await clic('Quitar foto'); await clic('Guardar recordatorio'); await espera(300);
+    t('se puede quitar la foto', S.datos.recordatorios[0].tieneFoto === false);
+    recEditando = Object.assign({}, S.datos.recordatorios[0]); ir('recordatorio'); await espera(100);
+    await clic('Borrar', document.getElementById('app')); t('borrar pide confirmación', !!document.querySelector('[role=dialog]'));
+    await clic('Borrar', document.querySelector('[role=dialog]')); await espera(300);
+    t('se borra', S.datos.recordatorios.length === 0 && vista === 'recordatorios');`,
+  'admin: avisos por correo en Ajustes': `
+    ir('ajustes'); await espera(100);
+    t('avisa de que aún no están activados', texto().indexOf('Todavía no están activados') >= 0 && texto().indexOf('autorizar') >= 0);
+    t('enseña el correo real, ya puesto', document.querySelector('#a-correo').value === 'yo@ejemplo.com' && texto().indexOf('Ahora mismo los avisos llegan a yo@ejemplo.com') >= 0);
+    await clic('Guardar correo'); await espera(200); t('guardarlo tal cual no fija ninguno (sigue el de la cuenta)', S.datos.correoAviso === '');
+    escribe('#a-correo', 'esto no es un correo'); await clic('Guardar correo'); t('rechaza un correo mal escrito', toast().indexOf('no parece válido') >= 0);
+    escribe('#a-correo', 'dani@ejemplo.com'); await clic('Guardar correo'); await espera(200);
+    t('guarda el correo', S.datos.correoAviso === 'dani@ejemplo.com' && toast().indexOf('Correo guardado') >= 0);
+    await clic('Enviar un correo de prueba'); await espera(300); t('envía el de prueba', toast().indexOf('Correo de prueba enviado a dani@ejemplo.com') >= 0);`,
+  'admin: encuadrar la foto en un círculo': `
+    const mk = async () => {
+      const c = document.createElement('canvas'); c.width = 1600; c.height = 900; const g = c.getContext('2d'); g.fillStyle = '#44aa77'; g.fillRect(0, 0, 1600, 900); g.fillStyle = '#ffcc00'; g.fillRect(500, 200, 600, 500);
+      return new File([await new Promise((r) => c.toBlob(r, 'image/jpeg', 0.95))], 'f.jpg', { type: 'image/jpeg' });
+    };
+    const pixel = async (url, x, y) => { const im = new Image(); await new Promise((r) => { im.onload = r; im.src = url; }); const c = document.createElement('canvas'); c.width = im.width; c.height = im.height; const g = c.getContext('2d'); g.drawImage(im, 0, 0); return Array.from(g.getImageData(x, y, 1, 1).data); };
+    const amarillo = (p) => p[0] > 200 && p[1] > 150 && p[2] < 90, verde = (p) => p[0] < 120 && p[1] > 130 && p[2] > 80;
+    let p1 = recortarCirculo(await mk()); await espera(500);
+    t('abre el diálogo de encuadre con deslizador', !!document.querySelector('[role=dialog] .recorte canvas') && !!document.getElementById('recorte-zoom'));
+    await clic('Usar esta foto'); const u1 = await p1;
+    const im1 = new Image(); await new Promise((r) => { im1.onload = r; im1.src = u1; });
+    t('sale un JPEG cuadrado de 512 px', u1.indexOf('data:image/jpeg;base64,') === 0 && im1.width === 512 && im1.height === 512 && u1.length < 400000);
+    t('sin acercar se ve todo el lado menor (centro amarillo, borde verde)', amarillo(await pixel(u1, 256, 256)) && verde(await pixel(u1, 40, 256)));
+    t('el diálogo se cierra', !document.querySelector('[role=dialog]'));
+    let p2 = recortarCirculo(await mk()); await espera(500);
+    escribe('#recorte-zoom', '3');
+    await clic('Usar esta foto'); const u2 = await p2;
+    t('acercado: el borde izquierdo ya es amarillo', amarillo(await pixel(u2, 40, 256)));
+    let p3 = recortarCirculo(await mk()); await espera(500);
+    escribe('#recorte-zoom', '3');
+    const cv = document.querySelector('.recorte canvas'); const ev = (tipo, x) => cv.dispatchEvent(new PointerEvent(tipo, { clientX: x, clientY: 100, pointerId: 1, bubbles: true }));
+    ev('pointerdown', 50); ev('pointermove', 350); ev('pointerup', 350);
+    await clic('Usar esta foto'); const u3 = await p3;
+    t('arrastrando la foto cambia el encuadre (el borde izquierdo vuelve a ser verde)', verde(await pixel(u3, 37, 256)));
+    let p4 = recortarCirculo(await mk()); await espera(500);
+    await clic('Cancelar', document.querySelector('[role=dialog]')); let cancelado = false; try { await p4; } catch (e) { cancelado = e.message === 'cancelado'; }
+    t('cancelar no guarda nada', cancelado && !document.querySelector('[role=dialog]'));`,
+  'admin: ve quién confirmó un recordatorio': `
+    await accion('admRecordatorioGuardar', [{ texto: 'Comer con calma', hora: '17:00', dias: [], duracion: 30, confirmar: true }, null, false], null);
+    const ana = S.datos.familia.find((f) => f.nombre === 'Ana');
+    const clave = S.pendientes[0].clave;
+    await rpc('admRecordatorioConfirmar', ana.clave, clave); await cargar(false); await espera(300);
+    ir('inicio'); await espera(200);
+    t('Inicio dice quién lo confirmó y cuándo', texto().indexOf('Confirmados hoy') >= 0 && texto().indexOf('Confirmado por Ana a las 17:15') >= 0);
+    t('ya no está pendiente', S.pendientes.length === 0 && texto().indexOf('Pendiente de confirmar') < 0);
+    ir('recordatorios'); await espera(200); t('la lista también lo dice', texto().indexOf('Confirmado por Ana a las 17:15') >= 0);`,
   'miniatura: noche y bloques apagados': `
     const v = S.vista; const claseTexto = (n) => n.textContent;
     const noche = miniatura(v, 'noche', 'lavanda'); document.body.appendChild(noche);
@@ -132,7 +220,18 @@ const PRUEBAS = {
     const propio = S.mensajes.find((m) => m.texto === 'Voy a las cinco.'); t('se envía firmado con su nombre', propio && propio.de === 'Ana');
     await clic('Quitar el mensaje: Voy a las cinco.'); t('puede quitar lo suyo', !S.mensajes.find((m) => m.texto === 'Voy a las cinco.' && (!m.hasta || m.hasta * 1000 > Date.now())));
     let denegado = false; try { await llamar('admAjustes', { estiloDia: 'salvia' }); } catch (e) { denegado = true; } t('el servidor le niega los ajustes', denegado);
-    t('sigue teniendo su foto tras enviar y quitar', S.tieneFoto === true && S.miId && !!document.querySelector('.avatar img'));` },
+    t('sigue teniendo su foto tras enviar y quitar', S.tieneFoto === true && S.miId && !!document.querySelector('.avatar img'));
+    t('la vista previa de la tele no se enseña hasta que se pide', !document.querySelector('.miniatura') && texto().indexOf('Ver cómo se ve la tele') >= 0);
+    await rpc('admRecordatorioGuardar', 'ADMINKEY', { texto: 'Comer con calma', hora: '17:00', dias: [], duracion: 30, confirmar: true }, null, false); await cargar(false); await espera(300);
+    t('el familiar ve lo pendiente de confirmar', texto().indexOf('Pendiente de confirmar') >= 0 && texto().indexOf('Comer con calma') >= 0);
+    await clic('Confirmar que lo ha tomado'); await espera(500);
+    t('y lo puede confirmar', S.pendientes.length === 0 && texto().indexOf('Pendiente de confirmar') < 0);
+    await clic('Ver cómo se ve la tele'); await espera(600);
+    t('el familiar puede previsualizar la pantalla de la tele', !!document.querySelector('#previa-tv .miniatura') && texto().indexOf('Es solo para mirar') >= 0);
+    t('y ve lo que hay ahora en la tele', document.querySelector('#previa-tv .miniatura').textContent.indexOf('Hoy viene Ana a las seis.') >= 0 && document.querySelector('#previa-tv .miniatura').textContent.indexOf('Merienda con Ana') >= 0);
+    await clic('Actualizar'); await espera(500); t('se puede actualizar', !!document.querySelector('#previa-tv .miniatura'));
+    await clic('Ocultar'); t('y ocultar', !document.querySelector('.miniatura') && texto().indexOf('Ver cómo se ve la tele') >= 0);
+    let sigueSinPoder = false; try { await llamar('admAjustes', { estiloDia: 'salvia' }); } catch (e) { sigueSinPoder = true; } t('mirar no le da permiso para cambiar nada', sigueSinPoder);` },
 };
 
 function chrome(url) {
