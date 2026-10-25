@@ -979,6 +979,7 @@ public class MainActivity extends Activity {
             int nm = datos.verMensajes ? Math.min(2, datos.mensajes.size()) : 0;
             for (int i = 0; i < nm; i++) izq.add(tarjetaMensaje(datos.mensajes.get(i), ahora, nm > 1));
             View ev = datos.verEventos ? tarjetaEventos(ahora, false, false) : null;
+            if (ev == null && datos.verEventos) ev = tarjetaEventos(ahora, false, true);       // nada hoy: lo de mañana (antes no salía nada)
             View tp = datos.verTiempo && datos.hayTiempo ? tarjetaTiempo() : null;
             if (nm > 0) {
                 if (ev != null) der.add(ev);
@@ -1447,7 +1448,7 @@ public class MainActivity extends Activity {
             if (deManana) dia.add(Calendar.DAY_OF_YEAR, 1);
             titulo.setText((deManana ? "Mañana, " : "Hoy, ") + Texto.nombreDia(dia).toLowerCase(new Locale("es")));
         } else {
-            titulo.setText("Lo próximo");
+            titulo.setText(deManana ? "Mañana" : "Lo próximo");     // sin nada hoy, se enseña lo de mañana
         }
         t.addView(titulo);
 

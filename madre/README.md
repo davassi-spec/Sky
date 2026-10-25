@@ -90,6 +90,10 @@ Con el script nuevo y la TV todavía en la 2.0, todo sigue funcionando (la 2.0 i
 - **Versión instalada**: el panel enseña "Conectada hace… · app 6.1". Desde PowerShell:
   `adb shell dumpsys package es.pizarra.tv | findstr versionName`.
 
+### App 6.3: una cita solo de mañana ya se ve de día
+En la distribución Clásica, de día, "Lo próximo" solo dibujaba los eventos de hoy: si lo único apuntado era de mañana (por ejemplo "Mañana 07:45
+Analítica Mamá"), no salía nada. Ahora, sin nada hoy, la tarjeta se llama "Mañana" y enseña lo de mañana. Las otras tres distribuciones ya lo hacían desde la 6.1.
+
 ### App 6.2: se abre sola al despertar la TV
 Una TV Android, al "apagarla" con el mando, no se reinicia: se duerme. Sin arranque no hay `BOOT_COMPLETED` y la pizarra no salía. Ahora un
 servicio (`Despertar`) escucha cuándo se enciende la pantalla (`SCREEN_ON`, `USER_PRESENT`, fin del salvapantallas) y abre la pizarra si no está

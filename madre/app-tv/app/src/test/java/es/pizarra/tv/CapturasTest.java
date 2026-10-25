@@ -240,6 +240,8 @@ public class CapturasTest {
         String cuenta = "{\"id\":\"c1\",\"texto\":\"Faltan 11 días para Tots Sants\",\"icono\":\"calendario\",\"dias\":11}";
         for (String d : new String[]{"clasica", "reloj", "lista", "sencillo"}) {
             captura("r1-" + d + "-calido-caso-real", conDistribucion(json("calido", "", ev, TIEMPO, cuenta), d), 20, 17, 15);
+            captura("r4-" + d + "-calido-analitica-manana", conDistribucion(json("calido", "", "[{\"dia\":1,\"titulo\":\"Analítica Mamá\",\"hora\":\"07:45\",\"orden\":1}]", TIEMPO, "null"), d), 20, 12, 43);
+            assertTrue(d + ": una cita solo de mañana se ve de día", contenidoDelCuerpo(new File(System.getProperty("capturas.dir"), "r4-" + d + "-calido-analitica-manana.png")) > 8);
             captura("r1-" + d + "-calido-solo-la-hora", conDistribucion(json("calido", "", "[]", "null", "null"), d), 20, 17, 15);
         }
     }
