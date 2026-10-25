@@ -339,6 +339,66 @@ public class CapturasTest {
         for (String d : new String[]{"banda", "mosaico", "bloques", "lateral", "titular", "marco", "limpia", "salvia_melocoton", "coral_menta", "salvia_azul", "menta_lavanda", "azul_terracota", "bosque_amarillo"}) assertEquals(d, Datos.valida(d));
     }
 
+
+    /** Las citas: la hora en cifras (7:45) y, con varias, se turnan de una en una. */
+    @Test
+    public void citasEnCifrasYTurnandose() throws Exception {
+        foto();
+        File dir = new File(System.getProperty("capturas.dir"));
+        String dos = "[{\"dia\":1,\"titulo\":\"Analítica Mamá\",\"hora\":\"07:45\",\"orden\":1},{\"dia\":1,\"titulo\":\"Fisioterapia con Marta\",\"hora\":\"11:30\",\"orden\":2}]";
+        assertEquals("7:45", Texto.horaNumerica("07:45"));
+        assertEquals("18:30", Texto.horaNumerica("18:30"));
+        assertEquals("0:05", Texto.horaNumerica("00:05"));
+        assertEquals("", Texto.horaNumerica("")); 
+        assertEquals("", Texto.horaNumerica("25:00"));
+        for (String d : new String[]{"clasica", "reloj", "lista", "sencillo", "banda", "mosaico", "bloques", "lateral", "titular", "marco", "limpia", "salvia_melocoton", "bosque_amarillo"}) {
+            captura("c8-" + d + "-dos-citas-primera", conDistribucion(json("calido", ANA, dos, TIEMPO, "null"), d), 25, 19, 15);
+            assertTrue(d + ": la cita se ve", contenidoDelCuerpo(new File(dir, "c8-" + d + "-dos-citas-primera.png")) > 8);
+        }
+        // pasados unos segundos, aparece la segunda
+        Context ctx = RuntimeEnvironment.getApplication();
+        Calendar c = Calendar.getInstance(TimeZone.getTimeZone("Europe/Madrid"));
+        c.clear();
+        c.set(2026, Calendar.OCTOBER, 25, 19, 15, 0);
+        Hora.fijar(c);
+        IconoTiempo.fasePrueba = 0.3f;
+        ctx.getSharedPreferences("pizarra", Context.MODE_PRIVATE).edit().putString("url", "http://127.0.0.1:1/x").putString("k", "k")
+                .putString("cache", conDistribucion(json("calido", ANA, dos, TIEMPO, "null"), "clasica")).putLong("cacheT", System.currentTimeMillis()).commit();
+        Activity a = Robolectric.buildActivity(MainActivity.class).setup().get();
+        View raiz = a.getWindow().getDecorView();
+        for (int i = 0; i < 3; i++) {
+            raiz.measure(View.MeasureSpec.makeMeasureSpec(1920, View.MeasureSpec.EXACTLY), View.MeasureSpec.makeMeasureSpec(1080, View.MeasureSpec.EXACTLY));
+            raiz.layout(0, 0, 1920, 1080);
+            ShadowLooper.idleMainLooper();
+        }
+        assertTrue("al principio sale la primera", textos(raiz).contains("Analítica Mamá") && textos(raiz).contains("7:45") && textos(raiz).contains("1 de 2"));
+        ShadowLooper.idleMainLooper(9, java.util.concurrent.TimeUnit.SECONDS);
+        for (int i = 0; i < 3; i++) {
+            raiz.measure(View.MeasureSpec.makeMeasureSpec(1920, View.MeasureSpec.EXACTLY), View.MeasureSpec.makeMeasureSpec(1080, View.MeasureSpec.EXACTLY));
+            raiz.layout(0, 0, 1920, 1080);
+            ShadowLooper.idleMainLooper();
+        }
+        String t2 = textos(raiz);
+        assertTrue("a los 9 segundos sale la segunda: " + t2, t2.contains("Fisioterapia con Marta") && t2.contains("11:30") && t2.contains("2 de 2") && !t2.contains("Analítica Mamá"));
+        Bitmap b = Bitmap.createBitmap(1920, 1080, Bitmap.Config.ARGB_8888);
+        raiz.draw(new Canvas(b));
+        try (FileOutputStream o = new FileOutputStream(new File(dir, "c8-clasica-dos-citas-segunda.png"))) {
+            b.compress(Bitmap.CompressFormat.PNG, 100, o);
+        }
+        ShadowLooper.idleMainLooper(9, java.util.concurrent.TimeUnit.SECONDS);
+        assertTrue("y vuelve a la primera", textos(raiz).contains("Analítica Mamá"));
+    }
+
+    private static String textos(View v) {
+        StringBuilder sb = new StringBuilder();
+        if (v instanceof android.widget.TextView && v.getVisibility() == View.VISIBLE) sb.append(((android.widget.TextView) v).getText()).append('\n');
+        if (v instanceof android.view.ViewGroup && v.getVisibility() == View.VISIBLE) {
+            android.view.ViewGroup g = (android.view.ViewGroup) v;
+            for (int i = 0; i < g.getChildCount(); i++) sb.append(textos(g.getChildAt(i)));
+        }
+        return sb.toString();
+    }
+
     private static String conMedio(String json, String medio) {
         return json.replace("\"version\":2", "\"version\":2,\"rapido\":true,\"medio\":" + medio);
     }

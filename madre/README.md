@@ -90,6 +90,12 @@ Con el script nuevo y la TV todavía en la 2.0, todo sigue funcionando (la 2.0 i
 - **Versión instalada**: el panel enseña "Conectada hace… · app 6.1". Desde PowerShell:
   `adb shell dumpsys package es.pizarra.tv | findstr versionName`.
 
+### App 6.8: citas en cifras y turnándose
+- La hora de una cita sale **en cifras**, en 24 horas ("7:45", "18:30"), en todas las pantallas (antes "A las ocho menos cuarto", que ocupaba dos líneas y dejaba
+  el nombre cortado). De noche: "Mañana · 7:45".
+- Con **varias citas**, la tarjeta enseña una cada 8 segundos, con un fundido, y dice cuál es ("1 de 2", "2 de 2"). Cada una se ve grande y entera.
+  Con una sola no se mueve. Se para al salir de la pizarra y se reanuda al volver. Código: `rotar`, `llenarProximoCompacto`, `llenarCitaBanda`.
+
 ### App 6.7: "Mensajes primero", seis combinaciones de color
 Un diseño nuevo, a partir de los 24 PNG de ChatGPT (6 combinaciones × 4 estados): cabecera pequeña (día | hora), los **mensajes lo más grandes posible**
 a todo el ancho y de colores, la **próxima cita** en una banda, la cuenta atrás arriba y el tiempo abajo. Ids: `salvia_melocoton`, `coral_menta`, `salvia_azul`,

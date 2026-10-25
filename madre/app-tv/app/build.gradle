@@ -11,8 +11,8 @@ android {
         // La Philips 50PUH6400 trae Android 5.1.1 (API 22).
         minSdk 21
         targetSdk 28
-        versionCode 14
-        versionName '6.7'
+        versionCode 15
+        versionName '6.8'
     }
 
     compileOptions {

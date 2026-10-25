@@ -125,6 +125,7 @@ public class MainActivity extends Activity {
     protected void onResume() {
         super.onResume();
         enPrimerPlano = true;
+        reanudarRotaciones();
         h.removeCallbacks(tic);
         h.removeCallbacks(busca);
         h.post(tic);
@@ -142,6 +143,7 @@ public class MainActivity extends Activity {
         super.onPause();
         enPrimerPlano = false;
         cerrarMedio(false);
+        pararRotaciones(false);
         h.removeCallbacks(tic);
         h.removeCallbacks(busca);
     }
@@ -395,6 +397,61 @@ public class MainActivity extends Activity {
         return v;
     }
 
+    /* ---------- Citas que se van turnando ---------- */
+
+    private static final int ROTA_MS = 8000;
+    private final List<Runnable> rotaciones = new ArrayList<>();
+
+    private interface Mostrar {
+        void en(int i);
+    }
+
+    /** Si hay más de una cita, la tarjeta enseña una cada pocos segundos (con un fundido) para que cada una se vea grande y entera. */
+    private void rotar(final View vista, final int total, final Mostrar m) {
+        if (total < 2) return;
+        final int[] i = {0};
+        Runnable r = new Runnable() {
+            @Override public void run() {
+                i[0] = (i[0] + 1) % total;
+                vista.animate().alpha(0f).setDuration(350).withEndAction(new Runnable() {
+                    @Override public void run() {
+                        m.en(i[0]);
+                        vista.animate().alpha(1f).setDuration(350).start();
+                    }
+                }).start();
+                h.postDelayed(this, ROTA_MS);
+            }
+        };
+        rotaciones.add(r);
+        h.postDelayed(r, ROTA_MS);
+    }
+
+    private void pararRotaciones(boolean olvidar) {
+        for (Runnable r : rotaciones) h.removeCallbacks(r);
+        if (olvidar) rotaciones.clear();
+    }
+
+    private void reanudarRotaciones() {
+        for (Runnable r : rotaciones) {
+            h.removeCallbacks(r);
+            h.postDelayed(r, ROTA_MS);
+        }
+    }
+
+    /** "7:45" o "Todo el día". */
+    private static String cuandoNum(Datos.Evento e) {
+        String n = Texto.horaNumerica(e.hora);
+        return n.isEmpty() ? "Todo el día" : n;
+    }
+
+    /** Las citas que tocan: las de hoy y, si hoy no hay ninguna, las de mañana. */
+    private List<Datos.Evento> citasQueToca(boolean[] deManana) {
+        List<Datos.Evento> hoy = new ArrayList<>(), man = new ArrayList<>();
+        for (Datos.Evento x : datos.eventos) (x.manana ? man : hoy).add(x);
+        deManana[0] = hoy.isEmpty();
+        return hoy.isEmpty() ? man : hoy;
+    }
+
     /** El dibujo del tiempo con su movimiento. multicolor: sol ámbar, nube pizarra, gotas azules; si no, todo de un color. */
     private ImageView iconoTiempo(int codigo, int color, float lado, boolean multicolor) {
         IconoTiempo v = new IconoTiempo(this, codigo, color, multicolor);
@@ -539,6 +596,7 @@ public class MainActivity extends Activity {
 
     private void construirRaiz(String dist) {
         raiz.removeAllViews();
+        pararRotaciones(true);
         distActual = dist;
         anchoHablada = -1;
         compactoHora = false;
@@ -1494,29 +1552,38 @@ public class MainActivity extends Activity {
         tbModoClima = 1;
     }
 
-    /** La próxima cita en una banda: "Próxima cita" y debajo "A las seis y media, Merienda con Ana". */
+    /** La próxima cita en una banda: "Próxima cita" y debajo "7:45, Analítica Mamá". Con varias, van saliendo una a una. */
     private View tarjetaCitaBanda() {
-        Datos.Evento e = null;
-        boolean deManana = false;
-        for (Datos.Evento x : datos.eventos) if (!x.manana) { e = x; break; }
-        if (e == null) for (Datos.Evento x : datos.eventos) if (x.manana) { e = x; deManana = true; break; }
-        if (e == null) return null;
-        LinearLayout t = bloque(tema.cita);
+        final boolean[] man = new boolean[1];
+        final List<Datos.Evento> lista = citasQueToca(man);
+        if (lista.isEmpty()) return null;
+        final boolean deManana = man[0];
+        final LinearLayout t = bloque(tema.cita);
         t.setGravity(Gravity.CENTER_VERTICAL);
         t.setPadding(px(36), px(12), px(36), px(12));
+        llenarCitaBanda(t, lista.get(0), deManana, 0, lista.size());
+        ajustable(t, 1.4f);
+        rotar(t, lista.size(), new Mostrar() {
+            @Override public void en(int i) {
+                llenarCitaBanda(t, lista.get(i), deManana, i, lista.size());
+                t.post(new Runnable() { @Override public void run() { llenar(t, 1.4f, true); } });
+            }
+        });
+        return t;
+    }
+
+    private void llenarCitaBanda(LinearLayout t, Datos.Evento e, boolean deManana, int pos, int total) {
+        t.removeAllViews();
         TextView et = texto(40, false);
         et.setTextColor(tema.citaTxt);
-        et.setText(deManana ? "Próxima cita · mañana" : "Próxima cita");
+        et.setText((deManana ? "Próxima cita · mañana" : "Próxima cita") + (total > 1 ? "  ·  " + (pos + 1) + " de " + total : ""));
         et.setMaxLines(1);
         t.addView(et);
-        String cuando = e.hora.isEmpty() || Texto.aLas(e.hora).isEmpty() ? "Todo el día" : Texto.mayus(Texto.aLas(e.hora));
         TextView tx = texto(56, true);
         tx.setTextColor(tema.citaTxt);
-        tx.setText(cuando + ", " + e.titulo);
+        tx.setText(cuandoNum(e) + ", " + e.titulo);
         tx.setMaxLines(2);
         t.addView(tx);
-        ajustable(t, 1.4f);
-        return t;
     }
 
     /** Pone en una tarjeta de tiempo: el día, los grados con su dibujo y el consejo. modo: 0 con franja, 1 vertical, 2 mitad de la tarjeta ancha, 3 y 4 en horizontal. */
@@ -1999,18 +2066,28 @@ public class MainActivity extends Activity {
 
     /** Lo próximo en la franja de abajo: el icono, la hora en palabras y qué es. */
     private View tarjetaProximoCompacto() {
-        Datos.Evento e = null;
-        for (Datos.Evento x : datos.eventos) if (!x.manana) { e = x; break; }
-        boolean deManana = false;
-        if (e == null) {                                  // sin nada apuntado hoy, se enseña lo primero de mañana
-            for (Datos.Evento x : datos.eventos) if (x.manana) { e = x; deManana = true; break; }
-        }
-        if (e == null) return null;
-        LinearLayout t = tarjeta(false);
+        final boolean[] man = new boolean[1];
+        final List<Datos.Evento> lista = citasQueToca(man);
+        if (lista.isEmpty()) return null;
+        final boolean deManana = man[0];
+        final LinearLayout t = tarjeta(false);
         t.setBackgroundDrawable(caja(p.proximoFondo, 28, p.acentoTexto, 3));
         t.setOrientation(LinearLayout.HORIZONTAL);
         t.setGravity(Gravity.CENTER_VERTICAL);
         t.setPadding(px(32), px(16), px(32), px(16));
+        llenarProximoCompacto(t, lista.get(0), deManana, 0, lista.size());
+        agrandarAlHueco(t, 1.6f);
+        rotar(t, lista.size(), new Mostrar() {
+            @Override public void en(int i) {
+                llenarProximoCompacto(t, lista.get(i), deManana, i, lista.size());
+                t.post(new Runnable() { @Override public void run() { llenar(t, 1.6f, true); } });
+            }
+        });
+        return t;
+    }
+
+    private void llenarProximoCompacto(LinearLayout t, Datos.Evento e, boolean deManana, int pos, int total) {
+        t.removeAllViews();
         String tl = e.titulo.toLowerCase(new Locale("es"));
         int icono = R.drawable.ic_calendario;
         if (tl.contains("merienda") || tl.contains("café") || tl.contains("cafe") || tl.contains("desayuno")) icono = R.drawable.ic_taza;
@@ -2022,20 +2099,23 @@ public class MainActivity extends Activity {
         t.addView(ic, lpIc);
         LinearLayout col = new LinearLayout(this);
         col.setOrientation(LinearLayout.VERTICAL);
-        TextView hora = texto(44, true);
+        TextView hora = texto(56, true);
         hora.setTextColor(p.acentoTexto);
-        hora.setMaxLines(2);
-        String cuando = e.hora.isEmpty() || Texto.aLas(e.hora).isEmpty() ? "Todo el día" : Texto.mayus(Texto.aLas(e.hora));
-        hora.setText(deManana ? "Mañana · " + cuando : cuando);
+        hora.setMaxLines(1);
+        hora.setText((deManana ? "Mañana · " : "") + cuandoNum(e));
         TextView nombre = texto(56, true);
         nombre.setTextColor(p.texto);
         nombre.setMaxLines(2);
         nombre.setText(e.titulo);
         col.addView(hora);
         col.addView(nombre);
+        if (total > 1) {
+            TextView n = texto(36, false);
+            n.setTextColor(p.sub);
+            n.setText((pos + 1) + " de " + total);
+            col.addView(n);
+        }
         t.addView(col, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
-        agrandarAlHueco(t, 1.6f);
-        return t;
     }
 
     /** Un mensaje de la familia, con su foto (o la inicial) y la letra más grande que quepa. */
@@ -2099,7 +2179,7 @@ public class MainActivity extends Activity {
     /** Lo próximo del calendario; de noche, lo de mañana (o lo de hoy si ya pasó la medianoche). */
     private View tarjetaEventos(Calendar ahora, final boolean deNoche, boolean deManana) {
         final LinearLayout t = tarjeta(false);
-        List<Datos.Evento> lista = new ArrayList<>();
+        final List<Datos.Evento> lista = new ArrayList<>();
         for (Datos.Evento e : datos.eventos) if (e.manana == deManana) lista.add(e);
         if (lista.isEmpty()) return null;               // una tarjeta vacía no se enseña: las demás ocupan su sitio
 
@@ -2120,12 +2200,27 @@ public class MainActivity extends Activity {
         lpLista.topMargin = px(14);
         t.addView(listaEv, lpLista);
 
-        for (int i = 0; i < lista.size(); i++) listaEv.addView(itemEvento(lista.get(i), i == 0 && !deNoche, i > 0, deNoche));
+        final boolean girar = !deNoche && lista.size() > 1;            // de día, con varias citas se enseñan de una en una, grandes y enteras
+        final String base = titulo.getText().toString();
+        if (girar) {
+            listaEv.addView(itemEvento(lista.get(0), true, false, false));
+            titulo.setText(base + "  ·  1 de " + lista.size());
+            rotar(t, lista.size(), new Mostrar() {
+                @Override public void en(int i) {
+                    listaEv.removeAllViews();
+                    listaEv.addView(itemEvento(lista.get(i), true, false, false));
+                    titulo.setText(base + "  ·  " + (i + 1) + " de " + lista.size());
+                    t.post(new Runnable() { @Override public void run() { llenar(t, 1.7f, true); } });
+                }
+            });
+        } else {
+            for (int i = 0; i < lista.size(); i++) listaEv.addView(itemEvento(lista.get(i), i == 0 && !deNoche, i > 0, deNoche));
+        }
 
         t.addOnLayoutChangeListener(new View.OnLayoutChangeListener() {
             @Override public void onLayoutChange(View v, int l, int tp, int r, int b, int ol, int ot, int or, int ob) {
                 if (r - l == or - ol && b - tp == ob - ot) return;
-                if (!llenar(t, 1.7f)) recortarEventos(t, titulo, listaEv, deNoche);
+                if (!llenar(t, 1.7f, girar)) recortarEventos(t, titulo, listaEv, deNoche);
             }
         });
         return t;
@@ -2158,8 +2253,8 @@ public class MainActivity extends Activity {
         col.setOrientation(LinearLayout.VERTICAL);
         TextView hora = texto(proximo ? 44 : grande ? 52 : 40, true);
         hora.setTextColor(p.texto);
-        hora.setText(e.hora.isEmpty() || Texto.aLas(e.hora).isEmpty() ? "Todo el día" : Texto.mayus(Texto.aLas(e.hora)));
-        hora.setMaxLines(2);
+        hora.setText(cuandoNum(e));
+        hora.setMaxLines(1);
         TextView nombre = texto(proximo ? 52 : grande ? 52 : 40, true);
         nombre.setTextColor(proximo || grande ? p.texto : p.sub);
         nombre.setText(e.titulo);
@@ -2304,8 +2399,7 @@ public class MainActivity extends Activity {
             que.setMaxLines(1);
             que.setEllipsize(TextUtils.TruncateAt.END);
             Datos.Evento e = lista.get(0);
-            String cuandoTxt = e.hora.isEmpty() ? "todo el día" : Texto.aLas(e.hora);
-            cuando.setText(dia + " " + (cuandoTxt.isEmpty() ? "todo el día" : cuandoTxt));      // "Mañana a las nueve"
+            cuando.setText(dia + " · " + cuandoNum(e).toLowerCase(new Locale("es")));      // "Mañana · 7:45"
             que.setText(Texto.mayus(e.titulo));
             t.addView(cuando);
             t.addView(que);
