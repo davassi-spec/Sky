@@ -441,6 +441,12 @@ const PRUEBAS = {
     await clic('Copiar enlace de ' + bonito(f.nombre)); await espera(200);
     t('y explica qué hacer', toast().indexOf('Abre una vez el panel desde la app') >= 0);
     BASE = base0; S.datos.idWeb = id0;`,
+  'admin: avisa si el script no encuentra un calendario elegido': `
+    S.calendariosPerdidos = []; ir('ajustes'); await espera(300);
+    t('sin calendarios perdidos no hay aviso', !document.getElementById('cal-perdidos'));
+    S.calendariosPerdidos = ['mama@gmail.com']; ir('ajustes'); await espera(300);
+    t('con uno perdido lo dice junto a los calendarios', !!document.getElementById('cal-perdidos') && document.getElementById('cal-perdidos').textContent.indexOf('no encuentra uno de los calendarios') >= 0 && document.getElementById('cal-perdidos').closest('#calendarios'));
+    S.calendariosPerdidos = [];`,
   'admin: errores junto a lo que falló': `
     ir('mandar'); await espera(100);
     procesarArchivo(new File([new Uint8Array(10)], 'v.mkv', { type: 'video/x-matroska' })); await espera(500);

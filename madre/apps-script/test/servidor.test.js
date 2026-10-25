@@ -719,10 +719,10 @@ const JPEG = 'data:image/jpeg;base64,' + Buffer.from('foto-de-prueba').toString(
   t('pasados 10 minutos, vuelve a preguntar (y solo una vez)', s.contarCalendario() === base + 2);
   tv(); tv();
   t('y otra vez a la caché', s.contarCalendario() === base + 2);
-  s.run("admAjustes('ADMINKEY', {calendarios:['c1']})");
-  s.run("CalendarApp.getCalendarById = function () { return { getEventsForDay: function () { return []; } }; }");
-  const antes = s.contarCalendario(); tv();
-  t('si se cambian los calendarios en Ajustes, se borra la caché y se vuelve a leer ya', JSON.parse(s.run("servir_({parameter:{a:'estado',k:'ADMINKEY'}}).s")).eventos.every((e) => e.titulo !== 'Fisio') && tv().length === 0);
+  const antes = s.contarCalendario();
+  s.run("admAjustes('ADMINKEY', {calendarios:['c1']})"); tv();
+  t('si se cambian los calendarios en Ajustes, se borra la caché y se vuelve a leer ya', s.contarCalendario() > antes);
+  t('si el calendario elegido no se encuentra, se usa el principal y el panel lo avisa', JSON.parse(s.run("servir_({parameter:{a:'estado',k:'ADMINKEY'}}).s")).eventos.length > 0 && JSON.stringify(s.run("admEstado('ADMINKEY')").calendariosPerdidos) === '["c1"]');
   s.fijar(new Date(2026, 9, 21, 9, 0).getTime());
   t('al día siguiente, otra clave', Object.keys(s.cacheMapa).some((k) => /^eventos3_.*_2026-10-20_/.test(k)) && !Object.keys(s.cacheMapa).some((k) => /^eventos3_.*_2026-10-21_/.test(k)) && (tv(), Object.keys(s.cacheMapa).some((k) => /^eventos3_.*_2026-10-21_/.test(k))));
   // la TV cuenta sus consultas por hora

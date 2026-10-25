@@ -733,6 +733,11 @@ function calendarios_() {
   return out;
 }
 
+/** Los calendarios elegidos que el script no encuentra (se borraron, o ya no se comparten con la cuenta del script). */
+function calendariosPerdidos_() {
+  try { return JSON.parse(CacheService.getScriptCache().get('cal_perdidos') || '[]'); } catch (e) { return []; }
+}
+
 function admEstado(k) {
   var q = alguien_(k);
   var d = leer_();
@@ -779,6 +784,7 @@ function admEstado(k) {
     pendientes: pendientes_(d, ahora),
     avisos: { activos: avisosActivos_(), destino: destinoCorreo_(d), minutos: AVISO_MIN },
     calendarios: calendarios_(),
+    calendariosPerdidos: calendariosPerdidos_(),
     vista: vistaPreviaTV_(d),
     enlaceBase: ScriptApp.getService().getUrl()
   };
@@ -1479,9 +1485,10 @@ function ventanaEventos_(ahora) {
 
 /** Un evento "crudo" (lo que se guarda en la caché): dia 0 = hoy, 1 = mañana. */
 function eventosDeGoogle_(ids, v) {
-  var cals = [];
-  if (ids && ids.length) ids.forEach(function (id) { var c = CalendarApp.getCalendarById(id); if (c) cals.push(c); });
-  else cals.push(CalendarApp.getDefaultCalendar());
+  var cals = [], perdidos = [];
+  if (ids && ids.length) ids.forEach(function (id) { var c = CalendarApp.getCalendarById(id); if (c) cals.push(c); else perdidos.push(id); });
+  if (!cals.length) cals.push(CalendarApp.getDefaultCalendar());     // sin elegir nada (o si ninguno de los elegidos se encuentra), el principal: nunca se queda sin calendario
+  try { CacheService.getScriptCache().put('cal_perdidos', JSON.stringify(perdidos), 900); } catch (e) { /* sin caché */ }
   var tz = Session.getScriptTimeZone(), out = [];
   v.dias.forEach(function (dia, i) {
     cals.forEach(function (c) {
