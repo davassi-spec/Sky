@@ -90,6 +90,16 @@ Con el script nuevo y la TV todavía en la 2.0, todo sigue funcionando (la 2.0 i
 - **Versión instalada**: el panel enseña "Conectada hace… · app 6.1". Desde PowerShell:
   `adb shell dumpsys package es.pizarra.tv | findstr versionName`.
 
+### App 6.9: todos los mensajes, de uno en uno y con su hora
+Antes la tele enseñaba como mucho 2 mensajes a la vez, pequeños. Ahora:
+- **Se ven todos** (el script manda hasta 8, los más nuevos primero; el fijado siempre el primero) y se van **pasando de uno en uno**, grandes, con un fundido.
+  Cada uno se queda el tiempo de leerlo con calma: 12 s como mínimo, +0,15 s por letra, 40 s como máximo (`lecturaMs`). Con uno solo no se mueve.
+- **Cada mensaje dice cuándo se mandó, claro y en cifras**: "Enviado a las 11:31" ("Enviado ayer a las 18:16"), y "Mensaje 2 de 3". De uno programado, la hora es
+  la de cuando salió.
+- Desaparecen solos: los de familia a los 30 minutos (regla de arriba).
+- Compatibilidad: una app anterior sigue enseñando los dos primeros (ignora los demás). Hace falta la 6.9 para verlos todos y la hora.
+- Vale en todas las distribuciones, incluidos los siete diseños y "Mensajes primero" (en esos, los colores de los mensajes se alternan).
+
 ### Reglas para los familiares: un mensaje cada vez, 30 minutos y "Mandar cuando…"
 Para que no se llene la pantalla (las hermanas mandan muchos mensajes):
 - **Un solo mensaje por persona**, en la tele o programado. Si ya tiene uno, el panel lo dice ("Tu mensaje ahora", con hasta cuándo se ve y un botón

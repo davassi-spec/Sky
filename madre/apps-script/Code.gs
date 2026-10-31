@@ -476,7 +476,7 @@ function estado_() {
     noche: d.noche,
     nocheTexto: d.nocheTexto,
     contacto: d.contacto,
-    mensajes: verMsg ? vivos.slice(0, 2).map(function (m) { return mensajeParaTV_(m, d); }) : [],
+    mensajes: verMsg ? vivos.slice(0, MAX_MENSAJES_TV).map(function (m) { return mensajeParaTV_(m, d); }) : [],      // todos (hasta 8): la tele los va pasando de uno en uno
     eventos: verEv ? eventos_(d) : [],
     tiempo: verT ? tiempo_(d.latitud, d.longitud) : null,
     // Novedades de la versión 2:
@@ -514,10 +514,11 @@ function anotarVistos_(msgs) {
   modificar_(function (d) { d.mensajes.forEach(function (m) { if (ids[m.id] && !m.visto) m.visto = ahora; }); });
 }
 
+var MAX_MENSAJES_TV = 8;
 function mensajeParaTV_(m, d) {
   var f = null;
   for (var i = 0; i < d.familia.length; i++) if (d.familia[i].id === m.autor) f = d.familia[i];
-  return { id: m.id, de: bonito_(m.de), texto: m.texto, t: m.t, hasta: m.hasta, autor: m.autor, foto: f && f.foto ? f.foto.v : null };
+  return { id: m.id, de: bonito_(m.de), texto: m.texto, t: m.desde || m.t, hasta: m.hasta, autor: m.autor, foto: f && f.foto ? f.foto.v : null };
 }
 
 function tiempo_(lat, lon) {

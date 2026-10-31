@@ -399,6 +399,59 @@ public class CapturasTest {
         return sb.toString();
     }
 
+
+    /** Todos los mensajes se ven, de uno en uno, cada uno con la hora a la que se mandó, y pasan solos. */
+    @Test
+    public void mensajesTurnandose() throws Exception {
+        foto();
+        File dir = new File(System.getProperty("capturas.dir"));
+        String tres = DANIEL + "," + ANA + ",{\"id\":\"9\",\"de\":\"María\",\"texto\":\"Hola mamá, ¿me llamas para saludarte? No tengo trabajo y estoy muy aburrida. Besos.\",\"t\":" + epoch(20, 16, 56) + ",\"autor\":\"p3\",\"foto\":null}";
+        assertEquals(12000, MainActivity.lecturaMs(msg("Te quiero")));
+        assertEquals(40000, MainActivity.lecturaMs(msg(new String(new char[400]).replace('\0', 'x'))));
+        for (String d : new String[]{"clasica", "reloj", "lista", "sencillo", "banda", "mosaico", "salvia_melocoton", "bosque_amarillo"}) {
+            captura("m9-" + d + "-tres-mensajes", conDistribucion(json("calido", tres, EV_DIA, TIEMPO, "null"), d), 20, 17, 15);
+            assertTrue(d + ": se ve", contenidoDelCuerpo(new File(dir, "m9-" + d + "-tres-mensajes.png")) > 8);
+        }
+        Context ctx = RuntimeEnvironment.getApplication();
+        Calendar c = Calendar.getInstance(TimeZone.getTimeZone("Europe/Madrid"));
+        c.clear();
+        c.set(2026, Calendar.OCTOBER, 20, 17, 15, 0);
+        Hora.fijar(c);
+        IconoTiempo.fasePrueba = 0.3f;
+        ctx.getSharedPreferences("pizarra", Context.MODE_PRIVATE).edit().putString("url", "http://127.0.0.1:1/x").putString("k", "k")
+                .putString("cache", conDistribucion(json("calido", tres, EV_DIA, TIEMPO, "null"), "clasica")).putLong("cacheT", System.currentTimeMillis()).commit();
+        Activity a = Robolectric.buildActivity(MainActivity.class).setup().get();
+        View raiz = a.getWindow().getDecorView();
+        String[][] esperado = {{"Hoy viene Ana a las seis.", "1 de 3", "Enviado a las 16:05"}, {"Llevaré la merienda", "2 de 3", "Enviado a las 16:40"}, {"Hola mamá", "3 de 3", "Enviado a las 16:56"}, {"Hoy viene Ana a las seis.", "1 de 3", "Enviado a las 16:05"}};
+        for (int k = 0; k < esperado.length; k++) {
+            for (int i = 0; i < 3; i++) {
+                raiz.measure(View.MeasureSpec.makeMeasureSpec(1920, View.MeasureSpec.EXACTLY), View.MeasureSpec.makeMeasureSpec(1080, View.MeasureSpec.EXACTLY));
+                raiz.layout(0, 0, 1920, 1080);
+                ShadowLooper.idleMainLooper();
+            }
+            String t = textos(raiz);
+            for (String e : esperado[k]) assertTrue("mensaje " + (k + 1) + " debería tener «" + e + "»:\n" + t, t.contains(e));
+            if (k < 2) {
+                Bitmap b = Bitmap.createBitmap(1920, 1080, Bitmap.Config.ARGB_8888);
+                raiz.draw(new Canvas(b));
+                try (FileOutputStream o = new FileOutputStream(new File(dir, "m9-clasica-mensaje-" + (k + 1) + ".png"))) {
+                    b.compress(Bitmap.CompressFormat.PNG, 100, o);
+                }
+            }
+            ShadowLooper.idleMainLooper(MainActivity.lecturaMs(msgDe(k)) + 1000, java.util.concurrent.TimeUnit.MILLISECONDS);
+        }
+    }
+
+    private static Datos.Mensaje msg(String texto) {
+        Datos.Mensaje m = new Datos.Mensaje();
+        m.texto = texto;
+        return m;
+    }
+
+    private static Datos.Mensaje msgDe(int k) {
+        return msg(new String[]{"Hoy viene Ana a las seis.", "Llevaré la merienda. Te quiero, mamá.", "Hola mamá, ¿me llamas para saludarte? No tengo trabajo y estoy muy aburrida. Besos."}[k % 3]);
+    }
+
     private static String conMedio(String json, String medio) {
         return json.replace("\"version\":2", "\"version\":2,\"rapido\":true,\"medio\":" + medio);
     }

@@ -919,9 +919,9 @@ const JPEG = 'data:image/jpeg;base64,' + Buffer.from('foto-de-prueba').toString(
   const idBuenos = ids.find((x) => x.endsWith('|Buenos días')).split('|')[0];
   paso(); s.run("admEnviar('ADMINKEY', 'Daniel', 'Otro más nuevo', 'hoy', null)");
   const tv = () => JSON.parse(s.run("servir_({parameter:{a:'estado',k:'ADMINKEY'}}).s")).mensajes.map((x) => x.texto);
-  t('sin fijar, salen los dos más nuevos', tv().join() === 'Otro más nuevo,Hoy viene Ana');
+  t('sin fijar, salen primero los más nuevos', tv().slice(0, 2).join() === 'Otro más nuevo,Hoy viene Ana');
   s.run(`admFijar('ADMINKEY', ${J(idBuenos)}, true)`);
-  t('el mensaje fijado se queda arriba aunque haya otros más nuevos', tv()[0] === 'Buenos días' && tv().length === 2);
+  t('el mensaje fijado se queda arriba aunque haya otros más nuevos', tv()[0] === 'Buenos días' && tv().indexOf('Otro más nuevo') > 0);
   const id2 = s.run('leer_().mensajes.find(function (m) { return m.texto === "Hoy viene Ana"; }).id');
   s.run(`admFijar('ADMINKEY', ${J(id2)}, true)`);
   t('solo hay uno fijado a la vez', s.run('leer_().mensajes.filter(function (m) { return m.fijado; }).length') === 1 && tv()[0] === 'Hoy viene Ana');
@@ -1039,6 +1039,20 @@ const JPEG = 'data:image/jpeg;base64,' + Buffer.from('foto-de-prueba').toString(
   const prog = s.run('leer_().mensajes.find(function (m) { return m.texto === "Para la tarde"; })');
   t('el programado también dura 30 minutos desde que sale', prog.hasta - prog.desde >= 1790 && prog.hasta - prog.desde <= 1810);
   t('el familiar recibe las reglas para enseñárselas', JSON.stringify(s.run(`admEstado(${J(ana.clave)})`).reglas) === '{"mensajes":1,"minutos":30}');
+}
+
+/* ---------- La tele recibe todos los mensajes (hasta 8) y la hora a la que salieron ---------- */
+{
+  const h = (hh, mm = 0) => new Date(2026, 9, 20, hh, mm).getTime();
+  const s = crear({ ahora: h(12, 0) });
+  for (let i = 1; i <= 10; i++) { s.fijar(h(12, i)); s.run(`admEnviar('ADMINKEY', 'Daniel', 'Mensaje ${i}', 'hoy', null)`); }
+  const est = JSON.parse(s.run("servir_({parameter:{a:'estado',k:'ADMINKEY'}}).s"));
+  t('la tele recibe todos los mensajes, hasta 8, los más nuevos primero', est.mensajes.length === 8 && est.mensajes[0].texto === 'Mensaje 10' && est.mensajes[7].texto === 'Mensaje 3');
+  s.fijar(h(12, 20)); s.run("admEnviar('ADMINKEY', 'Daniel', 'Para luego', 'hoy', {fecha:'2026-10-20', hora:'18:00'})");
+  s.fijar(h(18, 1));
+  const est2 = JSON.parse(s.run("servir_({parameter:{a:'estado',k:'ADMINKEY'}}).s"));
+  const luego = est2.mensajes.find((m) => m.texto === 'Para luego');
+  t('de uno programado, la hora que se enseña es la de cuando sale', !!luego && Math.abs(luego.t * 1000 - h(18, 0)) < 120000);
 }
 
 console.log(bien + ' bien, ' + mal + ' fallos');

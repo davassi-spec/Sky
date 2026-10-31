@@ -163,6 +163,18 @@ final class Texto {
         return "Lo escribió " + dia + ", " + parte;
     }
 
+    /** Cuándo se mandó un mensaje, con la hora en cifras: "Enviado a las 11:31", "Enviado ayer a las 18:16". */
+    static String cuandoSeMando(long segundos, Calendar ahora) {
+        Calendar t = Calendar.getInstance(ahora.getTimeZone());        // en la hora de la pantalla (la misma que el reloj)
+        t.setTimeInMillis(segundos * 1000);
+        Calendar ayer = (Calendar) ahora.clone();
+        ayer.add(Calendar.DAY_OF_YEAR, -1);
+        String hm = horaNumerica(t.get(Calendar.HOUR_OF_DAY) + ":" + t.get(Calendar.MINUTE));
+        if (mismoDia(t, ahora)) return "Enviado a las " + hm;
+        if (mismoDia(t, ayer)) return "Enviado ayer a las " + hm;
+        return "Enviado el " + DIAS[t.get(Calendar.DAY_OF_WEEK) - 1] + " a las " + hm;
+    }
+
     private static boolean mismoDia(Calendar a, Calendar b) {
         return a.get(Calendar.YEAR) == b.get(Calendar.YEAR) && a.get(Calendar.DAY_OF_YEAR) == b.get(Calendar.DAY_OF_YEAR);
     }

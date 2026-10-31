@@ -444,6 +444,49 @@ public class MainActivity extends Activity {
         return n.isEmpty() ? "Todo el día" : n;
     }
 
+    /* ---------- Mensajes que se van turnando ---------- */
+
+    private interface FabricaMensaje {
+        View crea(Datos.Mensaje m, int pos, int total);
+    }
+
+    /** Cuánto se deja un mensaje en pantalla antes de pasar al siguiente: lo que se tarda en leerlo con calma (12 a 40 segundos). */
+    static long lecturaMs(Datos.Mensaje m) {
+        return Math.max(12000, Math.min(40000, 10000 + 150L * m.texto.length()));
+    }
+
+    /**
+     * Todos los mensajes que hay, de uno en uno y grandes, para que se puedan leer con calma; pasan solos, con un fundido, y cada uno dice cuándo se mandó.
+     * Con uno solo no se mueve.
+     */
+    private View mensajesRotando(final FabricaMensaje f) {
+        final List<Datos.Mensaje> lista = datos.mensajes;
+        if (!datos.verMensajes || lista.isEmpty()) return null;
+        final int n = lista.size();
+        final LinearLayout cont = new LinearLayout(this);
+        cont.setOrientation(LinearLayout.VERTICAL);
+        cont.addView(f.crea(lista.get(0), 0, n), new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        if (n > 1) {
+            final int[] i = {0};
+            Runnable r = new Runnable() {
+                @Override public void run() {
+                    i[0] = (i[0] + 1) % n;
+                    cont.animate().alpha(0f).setDuration(350).withEndAction(new Runnable() {
+                        @Override public void run() {
+                            cont.removeAllViews();
+                            cont.addView(f.crea(lista.get(i[0]), i[0], n), new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+                            cont.animate().alpha(1f).setDuration(350).start();
+                        }
+                    }).start();
+                    h.postDelayed(this, lecturaMs(lista.get(i[0])));
+                }
+            };
+            rotaciones.add(r);
+            h.postDelayed(r, lecturaMs(lista.get(0)));
+        }
+        return cont;
+    }
+
     /** Las citas que tocan: las de hoy y, si hoy no hay ninguna, las de mañana. */
     private List<Datos.Evento> citasQueToca(boolean[] deManana) {
         List<Datos.Evento> hoy = new ArrayList<>(), man = new ArrayList<>();
@@ -1035,11 +1078,15 @@ public class MainActivity extends Activity {
             izq.add(tarjetaAviso("Esperando a la pizarra…"));
         } else if (datos != null && noche) {
             boolean deManana = hora >= 12;      // pasada la medianoche, "lo de mañana" ya es lo de hoy
-            int nm = datos.verMensajes ? Math.min(2, datos.mensajes.size()) : 0;
+            final Calendar ahoraF = ahora;
+            View mv = mensajesRotando(new FabricaMensaje() {
+                @Override public View crea(Datos.Mensaje m, int pos, int total) { return tarjetaMensaje(m, ahoraF, false, pos, total); }
+            });
+            int nm = mv != null ? 1 : 0;
             List<Datos.Evento> lista = new ArrayList<>();
             for (Datos.Evento e : datos.eventos) if (e.manana == deManana) lista.add(e);
             if (nm > 0) {
-                for (int i = 0; i < nm; i++) izq.add(tarjetaMensaje(datos.mensajes.get(i), ahora, nm > 1));
+                izq.add(mv);
                 der.add(tarjetaDormir(datos.verEventos, lista, deManana));
             } else {
                 if (datos.verEventos) izq.add(tarjetaEventos(ahora, true, deManana));
@@ -1048,8 +1095,12 @@ public class MainActivity extends Activity {
             if (!datos.contactoNombre.isEmpty()) der.add(tarjetaTelefono());
             pesoTiempo = 0.8f;
         } else if (datos != null) {
-            int nm = datos.verMensajes ? Math.min(2, datos.mensajes.size()) : 0;
-            for (int i = 0; i < nm; i++) izq.add(tarjetaMensaje(datos.mensajes.get(i), ahora, nm > 1));
+            final Calendar ahoraF = ahora;
+            View mv = mensajesRotando(new FabricaMensaje() {
+                @Override public View crea(Datos.Mensaje m, int pos, int total) { return tarjetaMensaje(m, ahoraF, false, pos, total); }
+            });
+            int nm = mv != null ? 1 : 0;
+            if (mv != null) izq.add(mv);
             View ev = datos.verEventos ? tarjetaEventos(ahora, false, false) : null;
             if (ev == null && datos.verEventos) ev = tarjetaEventos(ahora, false, true);       // nada hoy: lo de mañana (antes no salía nada)
             View tp = datos.verTiempo && datos.hayTiempo ? tarjetaTiempo() : null;
@@ -1704,13 +1755,17 @@ public class MainActivity extends Activity {
             anadir(tbMsgsCol, tarjetaAviso("Esperando a la pizarra…"), 1f);
             hay = true;
         } else {
-            int nm = datos.verMensajes ? Math.min(2, datos.mensajes.size()) : 0;
-            boolean mp = tbIdx >= 7;                          // Mensajes primero: mensajes de colores, a todo el ancho, y la cita en una banda
-            for (int i = 0; i < nm; i++) {
-                View mv = tarjetaMensaje(datos.mensajes.get(i), ahora, nm > 1);
-                if (mp) mv.setBackgroundDrawable(caja(i == 0 ? tema.msg1 : tema.msg2, 28, 0, 0));
-                anadir(tbMsgsCol, mv, 1f);
-            }
+            final boolean mp = tbIdx >= 7;                    // Mensajes primero: mensajes de colores, a todo el ancho, y la cita en una banda
+            final Calendar ahoraF = ahora;
+            View mvr = mensajesRotando(new FabricaMensaje() {
+                @Override public View crea(Datos.Mensaje m, int pos, int total) {
+                    View mv = tarjetaMensaje(m, ahoraF, false, pos, total);
+                    if (mp) mv.setBackgroundDrawable(caja(pos % 2 == 0 ? tema.msg1 : tema.msg2, 28, 0, 0));
+                    return mv;
+                }
+            });
+            int nm = mvr != null ? 1 : 0;
+            if (mvr != null) anadir(tbMsgsCol, mvr, 1f);
             View ev = datos.verEventos ? (mp ? tarjetaCitaBanda() : tarjetaProximoCompacto()) : null;
             if (ev != null) {
                 if (mp) {
@@ -1979,11 +2034,15 @@ public class MainActivity extends Activity {
         } else if (datos == null) {
             msgs.add(tarjetaAviso("Esperando a la pizarra…"));
         } else {
-            int nm = datos.verMensajes ? Math.min(maxMsgs, datos.mensajes.size()) : 0;
-            for (int i = 0; i < nm; i++) {
-                Datos.Mensaje m = datos.mensajes.get(i);
-                msgs.add(esLista ? tarjetaMensajeLista(m, nm > 1) : tarjetaMensaje(m, ahora, nm > 1));
-            }
+            final Calendar ahoraF = ahora;
+            final boolean listaF = esLista;
+            View mv = mensajesRotando(new FabricaMensaje() {
+                @Override public View crea(Datos.Mensaje m, int pos, int total) {
+                    return listaF ? tarjetaMensajeLista(m, false, pos, total) : tarjetaMensaje(m, ahoraF, false, pos, total);
+                }
+            });
+            int nm = mv != null ? 1 : 0;
+            if (mv != null) msgs.add(mv);
             if (noche) {
                 boolean deManana = hora >= 12;
                 List<Datos.Evento> lista = new ArrayList<>();
@@ -2015,6 +2074,10 @@ public class MainActivity extends Activity {
 
     /** Un mensaje de Lista: la foto o la inicial grande a la izquierda y, a su lado, quién lo dice y el mensaje. */
     private View tarjetaMensajeLista(final Datos.Mensaje m, final boolean dos) {
+        return tarjetaMensajeLista(m, dos, 0, 1);
+    }
+
+    private View tarjetaMensajeLista(final Datos.Mensaje m, final boolean dos, int pos, int total) {
         final LinearLayout t = tarjeta(false);
         t.setOrientation(LinearLayout.HORIZONTAL);
         t.setGravity(Gravity.CENTER_VERTICAL);
@@ -2042,8 +2105,13 @@ public class MainActivity extends Activity {
         final TextView quien = texto(dos ? 48 : 56, true);
         quien.setTextColor(p.acentoTexto);
         quien.setMaxLines(1);
-        quien.setText(m.de.isEmpty() ? "Mensaje" : m.de + " dice");
+        quien.setText(m.de.isEmpty() ? "Mensaje" : m.de + " dice" + (total > 1 ? "  ·  mensaje " + (pos + 1) + " de " + total : ""));
         col.addView(quien);
+        final TextView envio = texto(dos ? 40 : 46, true);
+        envio.setTextColor(p.texto);
+        envio.setMaxLines(1);
+        envio.setText(Texto.cuandoSeMando(m.t, Hora.ahora()));
+        col.addView(envio);
         final TextView tx = texto(76, true);
         tx.setTextColor(p.texto);
         tx.setLineSpacing(0, 1.05f);
@@ -2057,7 +2125,7 @@ public class MainActivity extends Activity {
                 if (r - l == or - ol && b - tp == ob - ot) return;
                 quien.measure(View.MeasureSpec.makeMeasureSpec(t.getWidth(), View.MeasureSpec.AT_MOST), View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED));
                 int ancho = t.getWidth() - t.getPaddingLeft() - t.getPaddingRight() - usado;
-                int alto = t.getHeight() - t.getPaddingTop() - t.getPaddingBottom() - quien.getMeasuredHeight();
+                int alto = t.getHeight() - t.getPaddingTop() - t.getPaddingBottom() - quien.getMeasuredHeight() - envio.getMeasuredHeight() - px(10);
                 llenarTexto(tx, m.texto, negrita, ancho, alto, tamanos, 1.05f);
             }
         });
@@ -2120,6 +2188,10 @@ public class MainActivity extends Activity {
 
     /** Un mensaje de la familia, con su foto (o la inicial) y la letra más grande que quepa. */
     private View tarjetaMensaje(final Datos.Mensaje m, Calendar ahora, boolean dos) {
+        return tarjetaMensaje(m, ahora, dos, 0, 1);
+    }
+
+    private View tarjetaMensaje(final Datos.Mensaje m, Calendar ahora, boolean dos, int pos, int total) {
         final LinearLayout t = tarjeta(false);
         t.setGravity(Gravity.CENTER_VERTICAL);
         int lado = dos ? 64 : 84;
@@ -2149,7 +2221,18 @@ public class MainActivity extends Activity {
         quien.setTextColor(p.acentoTexto);
         quien.setText(m.de.isEmpty() ? "Mensaje" : m.de + " dice");
         col.addView(quien);
-        cab.addView(col);
+        TextView envio = texto(dos ? 40 : 46, true);               // la hora a la que se mandó, clara y en cifras
+        envio.setTextColor(p.texto);
+        envio.setMaxLines(1);
+        envio.setText(Texto.cuandoSeMando(m.t, ahora));
+        col.addView(envio);
+        cab.addView(col, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+        if (total > 1) {
+            TextView n = texto(40, false);
+            n.setTextColor(p.texto);
+            n.setText("Mensaje " + (pos + 1) + " de " + total);
+            cab.addView(n, lp(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        }
         t.addView(cab);
 
         final TextView tx = texto(76, true);
