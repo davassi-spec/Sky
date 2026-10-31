@@ -1124,6 +1124,7 @@
     var f = (borrador.fecha || hoyISO()).split('-');
     return { valor: { fecha: borrador.fecha || hoyISO(), hora: borrador.hora }, ok: 'Programado: saldrá ' + (borrador.fecha === hoyISO() ? 'hoy' : 'el ' + Number(f[2]) + ' de ' + MESES[Number(f[1]) - 1]) + ' a las ' + borrador.hora + '.' };
   }
+  var MAXT = 120;                                           // letras por mensaje
   var FRASES = ['Te queremos mucho.', 'Hoy comemos juntos.', 'Hoy viene alguien a verte.', 'Te llamamos a las seis.'];
 
   /** El micrófono de mantener pulsado: se graba mientras se pulsa, al soltar se guarda como nota de voz y se desliza a un lado para cancelar. */
@@ -1194,18 +1195,17 @@
 
   function vistaMandar() {
     var familia = ROL === 'familia', w = document.createDocumentFragment(), sc = familia ? null : selectorCuando();
-    var min = (S.reglas && S.reglas.minutos) || 30;
     var propio = familia ? misMensajes().filter(function (m) { return activo(m); })[0] : null;
     if (familia) {
       w.appendChild(seccion('Antes de mandar', grupo([
-        fila({ icono: 'enviar', titulo: 'Un mensaje cada vez', sub: 'Solo puedes tener uno en la tele (o programado). Cuando desaparezca, podrás mandar otro.' }),
-        fila({ icono: 'campana', titulo: 'Se ve ' + min + ' minutos', sub: 'Sale en la tele y, pasados ' + min + ' minutos, se quita solo.' })])));
+        fila({ icono: 'enviar', titulo: 'Un mensaje por persona', sub: 'Si escribes otro, el anterior desaparece de la tele.' }),
+        fila({ icono: 'campana', titulo: 'Hasta cuándo se ve', sub: 'Por la mañana, hasta las 13:00. De 13:00 a 17:00, hasta las 17:00. De 17:00 a 21:00, hasta las 21:00. Máximo ' + MAXT + ' letras.' })])));
       if (propio) {
         var prog = programado(propio);
         w.appendChild(seccion('Tu mensaje ahora', grupo([
           fila({ icono: 'enviar', titulo: propio.texto, sub: prog ? textoProgramado(propio) : propio.hasta ? 'En la tele hasta las ' + hora(propio.hasta) : 'En la tele' }),
           el('div', { class: 'fl' }, el('button', { class: 'btn suave', type: 'button', id: 'quitar-mio', onclick: function (e) { quitarMensajes(propio.id, e.currentTarget); } }, 'Quitar mi mensaje'))]),
-          'Cuando desaparezca (o lo quites) podrás mandar otro.'));
+          'Si mandas otro, este desaparecerá.'));
         if (propio.hasta && !prog) {                                      // al acabarse, se vuelve a poder mandar
           var falta = propio.hasta * 1000 - Date.now();
           if (falta > 0 && falta < 3600000) setTimeout(function () { if (vista === 'mandar') pintar(); }, falta + 800);
@@ -1217,16 +1217,16 @@
         el('input', { type: 'text', id: 'de', maxlength: '30', autocomplete: 'off', placeholder: 'Daniel', 'aria-label': 'Firmas como', value: borrador.de || leerLocal('de'),
           oninput: function (e) { borrador.de = e.target.value; guardarLocal('de', e.target.value); } }))])));
     }
-    var ta = el('textarea', { id: 'texto', maxlength: '200', placeholder: 'Hoy comemos juntos.', 'aria-label': 'Tu mensaje', 'aria-describedby': 'cuenta',
-      oninput: function (e) { borrador.texto = e.target.value; $('cuenta').textContent = e.target.value.length + '/200'; } });
+    var ta = el('textarea', { id: 'texto', maxlength: String(MAXT), placeholder: 'Hoy comemos juntos.', 'aria-label': 'Tu mensaje', 'aria-describedby': 'cuenta',
+      oninput: function (e) { borrador.texto = e.target.value; $('cuenta').textContent = e.target.value.length + '/' + MAXT; } });
     ta.value = borrador.texto;
     var mic = el('button', { class: 'mic', type: 'button', id: 'mic', 'aria-label': 'Mantén pulsado para grabar una nota de voz' }, icono('micro'));
     ligarMic(mic);
     w.appendChild(seccion('Tu mensaje', el('div', { class: 'grupo' }, ta,
-      el('div', { class: 'compositor-pie' }, el('span', { class: 'contador', id: 'cuenta' }, borrador.texto.length + '/200'), el('span', { class: 't', style: 'text-align:right' }, 'Nota de voz: mantén pulsado'), mic)),
+      el('div', { class: 'compositor-pie' }, el('span', { class: 'contador', id: 'cuenta' }, borrador.texto.length + '/' + MAXT), el('span', { class: 't', style: 'text-align:right' }, 'Nota de voz: mantén pulsado'), mic)),
       null, null, el('div', { class: 'error-inline', id: 'err-mic', role: 'alert', hidden: true })));
     var chips = el('div', { class: 'chips' });
-    FRASES.forEach(function (f) { chips.appendChild(el('button', { class: 'chip', type: 'button', onclick: function () { ta.value = f; borrador.texto = f; $('cuenta').textContent = f.length + '/200'; ta.focus(); } }, f)); });
+    FRASES.forEach(function (f) { chips.appendChild(el('button', { class: 'chip', type: 'button', onclick: function () { ta.value = f; borrador.texto = f; $('cuenta').textContent = f.length + '/' + MAXT; ta.focus(); } }, f)); });
     w.appendChild(seccion('Frases rápidas', el('div', { class: 'grupo' }, chips)));
     if (!familia) { w.appendChild(sc.duracion); w.appendChild(sc.cuando); }
     w.appendChild(seccion('Añadir contenido (opcional)', grupo([
@@ -1247,8 +1247,7 @@
       if (familia) { dialogoCuando(t); return; }
       var c = cuandoElegido(); if (c.error) { aviso(c.error, 'error'); return; }
       accion('admEnviar', [ROL === 'admin' ? (borrador.de || leerLocal('de')) : S.nombre, t, borrador.duracion, c.valor], c.ok, enviar).then(function () { borrador.texto = ''; filtroEnv = 'todos'; pintar(); });
-    } }, icono('enviar'), familia ? (propio ? 'Ya tienes un mensaje en la tele' : 'Mandar cuando…') : borrador.cuando === 'hora' ? 'Programar para la TV' : 'Enviar a la TV');
-    if (familia && propio) enviar.disabled = true;
+    } }, icono('enviar'), familia ? 'Mandar cuando…' : borrador.cuando === 'hora' ? 'Programar para la TV' : 'Enviar a la TV');
     w.appendChild(el('div', { class: 'envio' }, enviar));
     return w;
   }
@@ -1263,16 +1262,17 @@
   }
   function nombreTipo(t) { return t === 'foto' ? 'foto' : t === 'video' ? 'vídeo' : 'audio'; }
   function dialogoCuando(texto, medio) {
-    var min = (S.reglas && S.reglas.minutos) || 30, ahora = new Date();
+    var ahora = new Date(), anterior = medio ? null : misMensajes().filter(function (m) { return activo(m); })[0];
+    var finDe = function (d) { var h = d.getHours(); return h < 13 ? '13:00' : h < 17 ? '17:00' : h < 21 ? '21:00' : '13:00 de mañana'; };
     var iso = function (d) { return d.getFullYear() + '-' + dos(d.getMonth() + 1) + '-' + dos(d.getDate()); };
     var hm = function (d) { return dos(d.getHours()) + ':' + dos(d.getMinutes()); };
     var enUnaHora = new Date(ahora.getTime() + 3600000); enUnaHora.setMinutes(Math.ceil(enUnaHora.getMinutes() / 5) * 5, 0, 0);
     var manana = new Date(ahora.getTime() + 86400000);
     var opciones = [
-      { id: 'ahora', txt: 'Ahora', sub: 'Sale en menos de un minuto', valor: null, ok: 'Enviado. Saldrá en la tele en menos de un minuto.' },
-      { id: 'hora', txt: 'Dentro de una hora', sub: 'A las ' + hm(enUnaHora), valor: { fecha: iso(enUnaHora), hora: hm(enUnaHora) }, ok: 'Programado: saldrá a las ' + hm(enUnaHora) + '.' }];
-    if (ahora.getHours() < 17) opciones.push({ id: 'tarde', txt: 'Esta tarde', sub: 'A las 18:00', valor: { fecha: iso(ahora), hora: '18:00' }, ok: 'Programado: saldrá hoy a las 18:00.' });
-    opciones.push({ id: 'manana', txt: 'Mañana por la mañana', sub: 'A las 09:00', valor: { fecha: iso(manana), hora: '09:00' }, ok: 'Programado: saldrá mañana a las 09:00.' });
+      { id: 'ahora', txt: 'Ahora', sub: 'Sale en menos de un minuto · se quita a las ' + finDe(ahora), valor: null, ok: 'Enviado. Saldrá en la tele en menos de un minuto.' },
+      { id: 'hora', txt: 'Dentro de una hora', sub: 'A las ' + hm(enUnaHora) + ' · se quita a las ' + finDe(enUnaHora), valor: { fecha: iso(enUnaHora), hora: hm(enUnaHora) }, ok: 'Programado: saldrá a las ' + hm(enUnaHora) + '.' }];
+    if (ahora.getHours() < 17) opciones.push({ id: 'tarde', txt: 'Esta tarde', sub: 'A las 18:00 · se quita a las 21:00', valor: { fecha: iso(ahora), hora: '18:00' }, ok: 'Programado: saldrá hoy a las 18:00.' });
+    opciones.push({ id: 'manana', txt: 'Mañana por la mañana', sub: 'A las 09:00 · se quita a las 13:00', valor: { fecha: iso(manana), hora: '09:00' }, ok: 'Programado: saldrá mañana a las 09:00.' });
     opciones.push({ id: 'otra', txt: 'Elegir día y hora', sub: 'Tú decides', valor: undefined });
     var elegida = opciones[0].id, fecha = iso(ahora), horaTxt = '';
     var botones = [], extra = el('div', { hidden: true, id: 'otra-hora', style: 'margin-top:8px' });
@@ -1302,7 +1302,8 @@
     marcar();
     abrirDialogo([el('h2', {}, '¿Cuándo quieres que salga?'), el('p', { class: 'sub' }, medio ? 'Tu ' + nombreTipo(medio.tipo) : '"' + (texto.length > 60 ? texto.slice(0, 57) + '…' : texto) + '"')].concat(botones, [extra,
       el('p', { class: 'sub', style: 'margin-top:12px' }, medio ? 'Sale una sola vez en la tele y se queda como mucho ' + ((S.reglas && S.reglas.minutosMedio) || 5) + ' minutos. No se puede repetir. Solo puedes tener uno esperando su turno.'
-        : 'Se verá ' + min + ' minutos en la tele y luego desaparece. Solo puedes tener un mensaje a la vez.'),
+        : 'Se quita solo a las 13:00, 17:00 o 21:00, según cuándo salga.'),
+      anterior ? el('p', { class: 'aviso-anterior', id: 'aviso-anterior', role: 'alert', style: 'margin-top:8px;font-weight:600;color:var(--peligro, #b3261e)' }, 'Atención: el mensaje que has escrito antes («' + (anterior.texto.length > 50 ? anterior.texto.slice(0, 47) + '…' : anterior.texto) + '») desaparecerá. Solo puedes tener un mensaje.') : null,
       err, el('div', { class: 'fila', style: 'margin-top:12px' }, cancelar, mandar)]));
   }
 
@@ -2187,7 +2188,7 @@
     else if (tipo === 'video') vista = el('video', { src: url, controls: true, playsinline: true, style: 'width:100%;border-radius:14px;max-height:50vh;background:#000' });
     else vista = el('audio', { src: url, controls: true, style: 'width:100%' });
     if (tipo === 'video') vista.addEventListener('loadedmetadata', function () { if (isFinite(vista.duration) && vista.duration > 0) seg = vista.duration; });
-    var texto = tipo === 'foto' ? el('input', { type: 'text', id: 'medio-texto', maxlength: '200', placeholder: 'Un mensaje con la foto (si quieres)', 'aria-label': 'Mensaje con la foto' }) : null;
+    var texto = tipo === 'foto' ? el('input', { type: 'text', id: 'medio-texto', maxlength: String(MAXT), placeholder: 'Un mensaje con la foto (si quieres)', 'aria-label': 'Mensaje con la foto' }) : null;
     var barra = el('div', { class: 'barra-subida', hidden: true, 'aria-live': 'polite' });
     var estado = el('p', { class: 'sub', id: 'medio-estado' }, 'Mírala' + (tipo === 'foto' ? '' : ' o escúchala') + ' antes de mandarla.' + (ROL === 'familia' ? ' Sale una sola vez en la tele, como mucho 5 minutos. Después te preguntaré cuándo quieres que salga.' : ''));
     var enviar = el('button', { class: 'btn', type: 'button' }, icono('enviar'), 'Mandar a la tele');
