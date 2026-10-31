@@ -33,6 +33,15 @@ final class Datos {
         int dias;
     }
 
+    /** Un recordatorio que la TV debe enseñar ahora (el script solo lo manda mientras toca y de día). */
+    static final class Recordatorio {
+        String id = "", clave = "", texto = "", texto2 = "";
+        int foto;               // versión de su foto; 0 si no tiene
+        boolean confirmar, prueba;
+        long hasta;             // cuándo deja de verse, en ms (calculado al recibirlo)
+    }
+
+    Recordatorio recordatorio;
     String estiloDia = "lavanda";
     String estiloNoche = "calido";
     String pruebaEstilo;            // "Probar 1 minuto" desde el panel; null si no hay prueba
@@ -57,6 +66,11 @@ final class Datos {
     int codigoTiempo;
 
     static Datos parse(String json) throws JSONException {
+        return parse(json, System.currentTimeMillis());
+    }
+
+    /** recibidoMs: cuándo llegó ese JSON (de él se cuenta cuánto le queda al recordatorio). */
+    static Datos parse(String json, long recibidoMs) throws JSONException {
         JSONObject o = new JSONObject(json);
         if (o.has("error")) throw new JSONException("El servidor respondió: " + o.optString("error"));
         Datos d = new Datos();
@@ -91,6 +105,19 @@ final class Datos {
             d.cuenta.texto = ca.optString("texto").trim();
             d.cuenta.icono = ca.optString("icono", "calendario");
             d.cuenta.dias = ca.optInt("dias", 0);
+        }
+        JSONObject rc = o.optJSONObject("recordatorio");
+        if (rc != null && !rc.optString("texto", "").trim().isEmpty()) {
+            Recordatorio r = new Recordatorio();
+            r.id = rc.optString("id", "");
+            r.clave = rc.optString("clave", "");
+            r.texto = rc.optString("texto").trim();
+            r.texto2 = rc.optString("texto2", "").trim();
+            r.foto = rc.isNull("foto") ? 0 : rc.optInt("foto", 0);
+            r.confirmar = rc.optBoolean("confirmar", false);
+            r.prueba = rc.optBoolean("prueba", false);
+            r.hasta = recibidoMs + rc.optLong("segundos", 0) * 1000L;
+            d.recordatorio = r;
         }
         JSONObject n = o.optJSONObject("noche");
         if (n != null) {
@@ -145,6 +172,7 @@ final class Datos {
         if (hoy != null) b.append(hoy.temp).append(hoy.codigo);
         if (manana != null) b.append(manana.temp).append(manana.codigo);
         if (cuenta != null) b.append('|').append(cuenta.texto).append(cuenta.icono);
+        if (recordatorio != null) b.append("|R").append(recordatorio.clave).append(recordatorio.texto).append(recordatorio.texto2).append(recordatorio.foto);
         return b.toString().hashCode() + "";
     }
 

@@ -79,6 +79,35 @@ final class Texto {
         return "De noche";
     }
 
+    /** "a las seis y media", "a la una", "a las nueve menos cuarto" a partir de "18:30". Vacío si no es una hora. */
+    static String aLas(String hhmm) {
+        if (hhmm == null) return "";
+        int i = hhmm.indexOf(':');
+        if (i < 0) return "";
+        int h, m;
+        try {
+            h = Integer.parseInt(hhmm.substring(0, i).trim());
+            m = Integer.parseInt(hhmm.substring(i + 1).trim());
+        } catch (NumberFormatException e) {
+            return "";
+        }
+        if (h < 0 || h > 23 || m < 0 || m > 59) return "";
+        int hh = m > 30 ? (h + 1) % 24 : h;
+        int h12 = hh % 12 == 0 ? 12 : hh % 12;
+        String base = (h12 == 1 ? "a la " : "a las ") + HORAS[h12];
+        if (m == 0) return base;
+        if (m == 15) return base + " y cuarto";
+        if (m == 30) return base + " y media";
+        if (m == 45) return base + " menos cuarto";
+        if (m == 1) return base + " y un minuto";
+        if (m == 59) return base + " menos un minuto";
+        return m < 30 ? base + " y " + NUM[m] : base + " menos " + NUM[60 - m];
+    }
+
+    static String mayus(String t) {
+        return t.isEmpty() ? t : Character.toUpperCase(t.charAt(0)) + t.substring(1);
+    }
+
     /** Mañana 6:00-11:59, tarde 12:00-19:59, noche 20:00-5:59. */
     static int franja(int hora) {
         if (hora >= 6 && hora < 12) return MANANA;

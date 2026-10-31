@@ -99,6 +99,44 @@ public class CompatibilidadTest {
         assertEquals("De noche", Texto.etiquetaParte(3));
     }
 
+    @Test
+    public void lasHorasDeLosEventosEnPalabras() {
+        assertEquals("a las nueve", Texto.aLas("09:00"));
+        assertEquals("a las seis y media", Texto.aLas("18:30"));
+        assertEquals("a la una", Texto.aLas("13:00"));
+        assertEquals("a la una y cuarto", Texto.aLas("01:15"));
+        assertEquals("a las nueve menos cuarto", Texto.aLas("08:45"));
+        assertEquals("a las nueve y diez", Texto.aLas("9:10"));
+        assertEquals("a las doce menos diez", Texto.aLas("23:50"));
+        assertEquals("a las doce y media", Texto.aLas("00:30"));
+        assertEquals("a las doce", Texto.aLas("12:00"));
+        assertEquals("a las ocho y un minuto", Texto.aLas("08:01"));
+        assertEquals("a las nueve menos un minuto", Texto.aLas("08:59"));
+        assertEquals("", Texto.aLas(""));
+        assertEquals("", Texto.aLas("25:00"));
+        assertEquals("", Texto.aLas("no es una hora"));
+        assertEquals("A las seis y media", Texto.mayus(Texto.aLas("18:30")));
+    }
+
+    @Test
+    public void leeElRecordatorioDelScript() throws Exception {
+        String json = "{\"mensajes\":[],\"eventos\":[],\"recordatorio\":{\"id\":\"r1\",\"clave\":\"r1|2026-10-20\",\"texto\":\"Hora de la merienda\","
+                + "\"texto2\":\"Con calma\",\"foto\":3,\"confirmar\":true,\"segundos\":600,\"prueba\":false}}";
+        long llegada = 1_000_000L;
+        Datos d = Datos.parse(json, llegada);
+        assertNotNull(d.recordatorio);
+        assertEquals("Hora de la merienda", d.recordatorio.texto);
+        assertEquals("Con calma", d.recordatorio.texto2);
+        assertEquals(3, d.recordatorio.foto);
+        assertTrue(d.recordatorio.confirmar);
+        assertEquals(llegada + 600_000L, d.recordatorio.hasta);      // caduca contando desde que llegó
+        assertNull(Datos.parse("{\"recordatorio\":null}").recordatorio);
+        assertNull(Datos.parse("{\"recordatorio\":{\"texto\":\"  \"}}").recordatorio);
+        Datos sinFoto = Datos.parse("{\"recordatorio\":{\"id\":\"r2\",\"texto\":\"Algo\",\"foto\":null,\"segundos\":60}}");
+        assertEquals(0, sinFoto.recordatorio.foto);
+        assertTrue(!d.firma().equals(Datos.parse("{\"mensajes\":[],\"eventos\":[]}").firma()));   // un recordatorio cambia lo que se ve
+    }
+
     private static String hora(int h, int m) {
         Calendar c = Calendar.getInstance();
         c.set(Calendar.HOUR_OF_DAY, h);
