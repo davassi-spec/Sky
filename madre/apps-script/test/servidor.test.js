@@ -6,6 +6,7 @@ let bien = 0, mal = 0;
 const t = (n, c) => { if (c) bien++; else { mal++; console.log('FALLA:', n); } };
 const falla = (f) => { try { f(); return false; } catch (e) { return true; } };
 const J = (s) => JSON.stringify(s);
+const libre = (sim, autorId) => sim.run('modificar_(function (d) { d.mensajes.forEach(function (m) { if (m.autor === ' + JSON.stringify(autorId) + ') m.hasta = 1; }); })');   // caduca lo de esa persona (para probar otra cosa)
 const diaRelativo = (n) => { const d = new Date(); d.setDate(d.getDate() + n); const p = (x) => String(x).padStart(2, '0'); return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()); };
 const JPEG = 'data:image/jpeg;base64,' + Buffer.from('foto-de-prueba').toString('base64');
 
@@ -934,7 +935,7 @@ const JPEG = 'data:image/jpeg;base64,' + Buffer.from('foto-de-prueba').toString(
   t('quitado: ya no sale en la tele', !tv().includes('Hoy viene Ana'));
   s.run(`admMensajeRestaurar('ADMINKEY', ${J([{ id: id2, hasta: antes }])})`);
   t('Deshacer lo devuelve con su duración de antes', tv().includes('Hoy viene Ana') && s.run('leer_().mensajes.find(function (m) { return m.id === ' + J(id2) + '; })').hasta === antes);
-  paso(); s.run(`admEnviar(${J(ka)}, '', 'De Ana', 'hoy', null)`);
+  libre(s, s.run('leer_().familia[0].id')); paso(); s.run(`admEnviar(${J(ka)}, '', 'De Ana', 'hoy', null)`);
   const idAna = s.run('leer_().mensajes.find(function (m) { return m.texto === "De Ana"; }).id');
   s.run(`admBorrar(${J(ka)}, ${J(idAna)})`);
   s.run(`admMensajeRestaurar(${J(ka)}, ${J([{ id: idAna, hasta: null }])})`);
@@ -1007,6 +1008,37 @@ const JPEG = 'data:image/jpeg;base64,' + Buffer.from('foto-de-prueba').toString(
   s.run("admProbarEstilo('ADMINKEY', 'calido', 'dia', 'mosaico')");
   t('se puede probar un minuto con un tablero', s.run("admEstado('ADMINKEY')").datos.prueba.distribucion === 'mosaico');
   t('las cuatro de siempre siguen valiendo', ['clasica', 'reloj', 'lista', 'sencillo'].every((id) => { s.run(`admAjustes('ADMINKEY', {distribucion:'${id}'})`); return s.run("admEstado('ADMINKEY')").datos.distribucion === id; }));
+}
+
+/* ---------- Un mensaje por persona, que se ve 30 minutos ---------- */
+{
+  const h = (hh, mm = 0) => new Date(2026, 9, 20, hh, mm).getTime();
+  const s = crear({ ahora: h(12, 0) });
+  s.run("admFamiliaAnadir('ADMINKEY','Ana')"); s.run("admFamiliaAnadir('ADMINKEY','María')");
+  const [ana, maria] = s.run('leer_()').familia;
+  s.run(`admEnviar(${J(ana.clave)}, '', 'Hoy voy a verte', 'siempre', null)`);
+  const m1 = s.run('leer_().mensajes.find(function (m) { return m.texto === "Hoy voy a verte"; })');
+  t('a una familiar se le ve 30 minutos, pida la duración que pida', m1.hasta - m1.t >= 1790 && m1.hasta - m1.t <= 1810);
+  const err = (() => { try { s.run(`admEnviar(${J(ana.clave)}, '', 'Otro', 'hoy', null)`); return ''; } catch (e) { return e.message; } })();
+  t('con uno en la tele no puede mandar otro, y se le dice hasta cuándo', /Ya tienes un mensaje en la tele/.test(err) && /12:30/.test(err));
+  t('el segundo no se guarda', s.run('leer_().mensajes.filter(function (m) { return m.autor === ' + J(ana.id) + '; })').length === 1);
+  s.run(`admEnviar(${J(maria.clave)}, '', 'Hola mamá', 'hoy', null)`);
+  t('el límite es por persona: otra familiar sí puede', s.run('leer_().mensajes.filter(function (m) { return m.autor === ' + J(maria.id) + '; })').length === 1);
+  t('el administrador no tiene límite', (() => { s.run("admEnviar('ADMINKEY', 'Daniel', 'Uno', '1h', null)"); s.run("admEnviar('ADMINKEY', 'Daniel', 'Dos', '30m', null)"); return s.run('leer_().mensajes.filter(function (m) { return m.autor === "admin"; })').length === 2; })());
+  t('el administrador puede elegir 30 minutos', (() => { const x = s.run('leer_().mensajes.find(function (m) { return m.texto === "Dos"; })'); return x.hasta - x.t >= 1790 && x.hasta - x.t <= 1810; })());
+  s.fijar(h(12, 31));
+  s.run(`admEnviar(${J(ana.clave)}, '', 'Ya pasó media hora', 'hoy', null)`);
+  t('a los 30 minutos desaparece y ya puede mandar otro', s.run('leer_().mensajes.filter(function (m) { return m.autor === ' + J(ana.id) + ' && !m.hasta || m.autor === ' + J(ana.id) + ' && m.hasta * 1000 > Date.now(); })').length === 1);
+  // programado: también cuenta
+  const err2 = (() => { try { s.run(`admEnviar(${J(ana.clave)}, '', 'Y otro', 'hoy', {fecha:'2026-10-20', hora:'18:00'})`); return ''; } catch (e) { return e.message; } })();
+  t('con uno ya puesto, tampoco puede programar otro', /Ya tienes un mensaje en la tele/.test(err2));
+  s.run(`admBorrar(${J(ana.clave)}, ${J(s.run('leer_().mensajes.find(function (m) { return m.texto === "Ya pasó media hora"; }).id'))})`);
+  s.run(`admEnviar(${J(ana.clave)}, '', 'Para la tarde', 'hoy', {fecha:'2026-10-20', hora:'18:00'})`);
+  const err3 = (() => { try { s.run(`admEnviar(${J(ana.clave)}, '', 'Otro más', 'hoy', null)`); return ''; } catch (e) { return e.message; } })();
+  t('un mensaje programado cuenta como el suyo y se le dice a qué hora sale', /programado para las 18:00/.test(err3));
+  const prog = s.run('leer_().mensajes.find(function (m) { return m.texto === "Para la tarde"; })');
+  t('el programado también dura 30 minutos desde que sale', prog.hasta - prog.desde >= 1790 && prog.hasta - prog.desde <= 1810);
+  t('el familiar recibe las reglas para enseñárselas', JSON.stringify(s.run(`admEstado(${J(ana.clave)})`).reglas) === '{"mensajes":1,"minutos":30}');
 }
 
 console.log(bien + ' bien, ' + mal + ' fallos');

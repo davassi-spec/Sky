@@ -328,7 +328,11 @@ const PRUEBAS = {
     t('Enviados: solo ve lo suyo', texto().indexOf('Llevaré la merienda') >= 0 && texto().indexOf('Hoy viene Ana a las seis') < 0 && texto().indexOf('Daniel') < 0);
     ir('mandar'); await espera(100);
     t('Mandar: sin "Firmas como" (firma con su nombre) y con "Tu foto"', !document.getElementById('de') && texto().indexOf('Tu foto en los mensajes') >= 0);
-    escribe('#texto', 'Voy a las cinco.'); await clic('Enviar a la TV');
+    t('Ana ya tiene un mensaje en la tele: lo ve y no puede mandar otro', texto().indexOf('Tu mensaje ahora') >= 0 && document.getElementById('enviar-msg').disabled === true);
+    await clic('Quitar mi mensaje'); await espera(500);
+    t('al quitarlo ya puede mandar otro', document.getElementById('enviar-msg').disabled === false && document.getElementById('enviar-msg').textContent.indexOf('Mandar cuando') >= 0);
+    escribe('#texto', 'Voy a las cinco.'); await clic('Mandar cuando'); await espera(300);
+    document.querySelector('[data-id=ahora]').click(); await clic('Mandar', document.querySelector('.dialogo')); await espera(600);
     const propio = S.mensajes.find((m) => m.texto === 'Voy a las cinco.'); t('se envía firmado con su nombre', propio && propio.de === 'Ana');
     ir('enviados'); await espera(100);
     await clic('Quitar el mensaje: Voy a las cinco.'); t('puede quitar lo suyo (y deshacerlo)', !S.mensajes.find((m) => m.texto === 'Voy a las cinco.' && (!m.hasta || m.hasta * 1000 > Date.now())) && !!document.querySelector('#aviso .deshacer'));
@@ -352,7 +356,7 @@ const PRUEBAS = {
   'admin y familia: programar un mensaje con fecha y hora de 24 h': `
     ir('mandar'); await espera(100);
     t('hay "Ahora" y "A una hora concreta"', Array.from(document.querySelectorAll('#cuando option')).map((o) => o.textContent).join() === 'Ahora,A una hora concreta' && document.getElementById('fila-hora').hidden);
-    t('duraciones: una hora, tres horas, hoy, mañana, siempre', Array.from(document.querySelectorAll('#duracion option')).map((o) => o.value).join() === '1h,3h,hoy,manana,siempre');
+    t('duraciones: 30 minutos, una hora, tres horas, hoy, mañana, siempre', Array.from(document.querySelectorAll('#duracion option')).map((o) => o.value).join() === '30m,1h,3h,hoy,manana,siempre');
     escribe('#texto', 'Sin hora'); escribe('#cuando', 'hora'); await espera(100);
     t('al elegir hora aparecen la fecha y la hora', !document.getElementById('fila-hora').hidden && document.getElementById('fecha-prog').type === 'date' && document.getElementById('hora-prog').type === 'text');
     await clic('Programar para la TV'); t('sin hora avisa', toast().indexOf('24 horas') >= 0 && !S.datos.mensajes.find((m) => m.texto === 'Sin hora'));
@@ -482,6 +486,37 @@ const PRUEBAS = {
     t('y las agrupa con su título', document.getElementById('app').textContent.indexOf('Mensajes primero (seis colores)') >= 0 && document.getElementById('app').textContent.indexOf('Con diseño propio') >= 0);
     await clic('Clásica'); await espera(400);
     t('con la Clásica no hay aviso', document.getElementById('aviso-tableros').hidden === true);`,
+  'familiar: un mensaje cada vez, 30 minutos y elegir cuándo': {
+    url: '&rol=familia&quien=Javier', cuerpo: `
+    ir('mandar'); await espera(400);
+    t('avisa de las reglas antes de mandar', texto().indexOf('Un mensaje cada vez') >= 0 && texto().indexOf('Se ve 30 minutos') >= 0);
+    t('no hay selector de duración ni de cuándo: es fijo', !document.getElementById('duracion') && !document.getElementById('cuando'));
+    t('el botón dice "Mandar cuando…" y no "Enviar a la TV"', document.getElementById('enviar-msg').textContent.indexOf('Mandar cuando') >= 0 && texto().indexOf('Enviar a la TV') < 0);
+    await clic('Mandar cuando'); await espera(200);
+    t('con el texto vacío no abre nada', !document.querySelector('.dialogo'));
+    escribe('#texto', 'Hoy me paso a verte'); await clic('Mandar cuando'); await espera(300);
+    const ops = Array.from(document.querySelectorAll('.opcion-cuando')).map((b) => b.getAttribute('data-id'));
+    t('pregunta cuándo, con opciones', !!document.querySelector('.dialogo') && ops.indexOf('ahora') >= 0 && ops.indexOf('hora') >= 0 && ops.indexOf('manana') >= 0 && ops.indexOf('otra') >= 0);
+    t('y dice que se ve 30 minutos y que solo se puede tener uno', document.querySelector('.dialogo').textContent.indexOf('30 minutos') >= 0 && document.querySelector('.dialogo').textContent.indexOf('un mensaje a la vez') >= 0);
+    document.querySelector('[data-id=otra]').click(); await espera(100);
+    document.getElementById('cuando-hora').value = ''; await clic('Mandar', document.querySelector('.dialogo')); await espera(200);
+    t('si elige "Elegir día y hora" sin hora, se lo dice dentro', document.getElementById('err-cuando').hidden === false && document.getElementById('err-cuando').textContent.indexOf('24 horas') >= 0);
+    document.querySelector('[data-id=ahora]').click(); await clic('Mandar', document.querySelector('.dialogo')); await espera(700);
+    const m1 = S.mensajes.find((m) => m.texto === 'Hoy me paso a verte');
+    t('el mensaje sale firmado y dura 30 minutos', !!m1 && m1.de === 'Javier' && m1.hasta - m1.t >= 1790 && m1.hasta - m1.t <= 1810);
+    ir('mandar'); await espera(300);
+    t('ahora ve su mensaje, hasta cuándo, y no puede mandar otro', texto().indexOf('Tu mensaje ahora') >= 0 && texto().indexOf('En la tele hasta las') >= 0 && document.getElementById('enviar-msg').disabled === true && document.getElementById('enviar-msg').textContent.indexOf('Ya tienes un mensaje') >= 0);
+    let rechazo = ''; try { await llamar('admEnviar', 'Javier', 'Otro', '3h', null); } catch (e) { rechazo = String(e.message || e); }
+    t('el servidor también se lo niega, con explicación', rechazo.indexOf('Ya tienes un mensaje') >= 0);
+    await clic('Quitar mi mensaje'); await espera(600);
+    t('quitándolo, vuelve a poder', document.getElementById('enviar-msg').disabled === false);
+    escribe('#texto', 'Mejor mañana'); await clic('Mandar cuando'); await espera(300);
+    document.querySelector('[data-id=manana]').click(); await clic('Mandar', document.querySelector('.dialogo')); await espera(700);
+    const m2 = S.mensajes.find((m) => m.texto === 'Mejor mañana');
+    t('puede programarlo para mañana por la mañana (y también dura 30 minutos)', !!m2 && !!m2.desde && m2.hasta - m2.desde >= 1790 && m2.hasta - m2.desde <= 1810);
+    ir('enviados'); await espera(300);
+    t('en Enviados se ve cuándo sale', texto().indexOf('Programado') >= 0 || texto().indexOf('saldrá') >= 0 || texto().indexOf('mañana') >= 0);`
+  },
   'admin: errores junto a lo que falló': `
     ir('mandar'); await espera(100);
     procesarArchivo(new File([new Uint8Array(10)], 'v.mkv', { type: 'video/x-matroska' })); await espera(500);

@@ -757,6 +757,7 @@ function admEstado(k) {
       pendientes: pendientes_(d, ahora),
       mensajes: d.mensajes.filter(function (m) { return m.autor === q.id; }),
       ciudad: d.ciudad, noche: d.noche, idWeb: idWeb_(d),
+      reglas: { mensajes: FAMILIA_MAX_MENSAJES, minutos: FAMILIA_MINUTOS },
       medios: mediosParaPanel_(d, q, ahora)
     };
   }
@@ -856,14 +857,30 @@ function despuesDeLaNoche_(d, f) {
 }
 
 /**
- * duracion: '1h', '3h', 'hoy' (hasta las 23:59), 'manana' (también mañana) o 'siempre' (hasta que lo quites).
+ * duracion: '30m' (media hora; es la de los familiares), '1h', '3h', 'hoy' (hasta las 23:59), 'manana' (también mañana) o 'siempre' (hasta que lo quites).
  * cuando: null (ahora) o { dia: 'hoy'|'manana', hora: 'HH:MM' }. Si esa hora es de noche, se verá al empezar el día.
  * La duración cuenta desde que el mensaje se ve.
  */
+var FAMILIA_MAX_MENSAJES = 1, FAMILIA_MINUTOS = 30;      // un familiar tiene un solo mensaje a la vez, y se ve 30 minutos
+
+/** Lo que se le dice a un familiar que ya tiene un mensaje (en la tele o programado) y quiere mandar otro. */
+function textoYaTienes_(m) {
+  var tz = Session.getScriptTimeZone(), ahora = Date.now();
+  var hm = function (seg) { return Utilities.formatDate(new Date(seg * 1000), tz, 'dd/MM HH:mm').slice(6); };
+  if (!yaSeVe_(m, ahora)) {
+    var f = new Date(m.desde * 1000), hoy = claveDia_(new Date());
+    var cuando = claveDia_(f) === hoy ? 'las ' + hm(m.desde) : 'el ' + Utilities.formatDate(f, tz, 'dd/MM HH:mm').slice(0, 5) + ' a las ' + hm(m.desde);
+    return 'Ya tienes un mensaje programado para ' + cuando + '. Solo se puede tener uno: quítalo en Enviados si quieres cambiarlo.';
+  }
+  if (m.hasta) return 'Ya tienes un mensaje en la tele: se quitará solo a las ' + hm(m.hasta) + '. Hasta entonces no puedes mandar otro (puedes quitarlo en Enviados).';
+  return 'Ya tienes un mensaje en la tele. Quítalo en Enviados para poder mandar otro.';
+}
+
 function admEnviar(k, de, texto, duracion, cuando) {
   var q = alguien_(k);
   texto = String(texto || '').trim().slice(0, 200);
   if (!texto) throw new Error('El mensaje está vacío');
+  if (q.rol === 'familia') duracion = '30m';                     // a un familiar siempre se le ve media hora, pida lo que pida
   var ahora = new Date();
   var prog = null, visible = ahora;
   if (cuando && cuando.hora) {
@@ -883,10 +900,16 @@ function admEnviar(k, de, texto, duracion, cuando) {
   }
   var programado = !!prog && visible.getTime() > ahora.getTime() + 60000;
   var hasta = null;
-  if (duracion === '1h' || duracion === '3h') hasta = Math.floor(visible.getTime() / 1000) + (duracion === '1h' ? 3600 : 10800);
+  if (duracion === '30m') hasta = Math.floor(visible.getTime() / 1000) + FAMILIA_MINUTOS * 60;
+  else if (duracion === '1h' || duracion === '3h') hasta = Math.floor(visible.getTime() / 1000) + (duracion === '1h' ? 3600 : 10800);
   else if (duracion === 'hoy') hasta = finDeDiaDe_(visible, 0);
   else if (duracion === 'manana') hasta = finDeDiaDe_(visible, 1);
   modificar_(function (d) {
+    if (q.rol === 'familia') {                                   // un solo mensaje por persona, en la tele o programado
+      var propio = null;
+      d.mensajes.forEach(function (x) { if (!propio && x.autor === q.id && esVivo_(x)) propio = x; });
+      if (propio) throw new Error(textoYaTienes_(propio));
+    }
     var m = {
       id: Utilities.getUuid(),
       de: q.rol === 'familia' ? q.nombre : bonito_(String(de || '').trim().slice(0, 30)),   // un familiar no firma con otro nombre
@@ -1025,6 +1048,12 @@ function admBorrarCuentaAtras(k, id) {
 function admMensajeRestaurar(k, cambios) {
   var q = alguien_(k);
   modificar_(function (d) {
+    if (q.rol === 'familia') {                                   // deshacer un "Quitar" no puede dejar a un familiar con dos mensajes
+      var ids = (cambios || []).map(function (c) { return c.id; }), otro = null, suyo = false;
+      d.mensajes.forEach(function (x) { if (x.autor === q.id && ids.indexOf(x.id) >= 0) suyo = true; });
+      d.mensajes.forEach(function (x) { if (!otro && x.autor === q.id && esVivo_(x) && ids.indexOf(x.id) < 0) otro = x; });
+      if (suyo && otro) throw new Error(textoYaTienes_(otro));
+    }
     (cambios || []).forEach(function (c) {
       d.mensajes.forEach(function (m) {
         if (m.id === c.id && (q.rol === 'admin' || m.autor === q.id)) m.hasta = c.hasta === null || c.hasta === undefined ? null : Number(c.hasta);

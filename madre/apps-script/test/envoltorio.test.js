@@ -72,7 +72,9 @@ const espera = (ms) => new Promise((r) => setTimeout(r, ms));
   }));
   await p.click('#nav >> text=Mandar'); await espera(300);
   t('Mandar tiene las opciones de contenido y el micrófono', (await p.textContent('#app')).includes('Grabar un audio') && !!(await p.$('#mic')));
-  await p.fill('#texto', 'Desde la app'); await p.click('text=Enviar a la TV'); await espera(800);
+  await p.evaluate(async () => { for (const m of S.mensajes) await llamar('admBorrar', m.id); await cargar(false); pintar(); });      // el reloj del script de prueba es otro: se le quita lo de antes para que pueda mandar
+  await espera(300);
+  await p.fill('#texto', 'Desde la app'); await p.click('text=Mandar cuando'); await p.click('[data-id=ahora]'); await p.click('[role=dialog] >> text=Mandar'); await espera(1000);
   t('puede escribir un mensaje', await p.evaluate(() => S.mensajes.some((m) => m.texto === 'Desde la app')));
   // grabar un audio de verdad (micrófono simulado) y mandarlo
   await p.click('text=Grabar un audio'); await p.click('[role=dialog] >> text=Empezar a grabar'); await espera(2500);

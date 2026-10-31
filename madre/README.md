@@ -90,6 +90,18 @@ Con el script nuevo y la TV todavía en la 2.0, todo sigue funcionando (la 2.0 i
 - **Versión instalada**: el panel enseña "Conectada hace… · app 6.1". Desde PowerShell:
   `adb shell dumpsys package es.pizarra.tv | findstr versionName`.
 
+### Reglas para los familiares: un mensaje cada vez, 30 minutos y "Mandar cuando…"
+Para que no se llene la pantalla (las hermanas mandan muchos mensajes):
+- **Un solo mensaje por persona**, en la tele o programado. Si ya tiene uno, el panel lo dice ("Tu mensaje ahora", con hasta cuándo se ve y un botón
+  "Quitar mi mensaje") y el botón queda desactivado; el script lo comprueba también (`admEnviar`, con la persona bloqueada por su propio mensaje).
+  Deshacer un "Quitar" tampoco puede dejarle dos. **El administrador no tiene límite** y puede elegir la duración (ahora también 30 minutos).
+- **Se ve 30 minutos y desaparece** (cuenta desde que sale en la tele, también si estaba programado). A un familiar siempre se le pone `30m`, pida lo que pida
+  el cliente. Las constantes están arriba de `admEnviar`: `FAMILIA_MAX_MENSAJES` y `FAMILIA_MINUTOS`.
+- **"Mandar cuando…"** en vez de "Enviar a la TV": al pulsar, pregunta cuándo (Ahora, dentro de una hora, esta tarde a las 18:00, mañana a las 09:00 o
+  día y hora a mano) y recuerda las dos reglas. Arriba de Mandar hay un aviso "Antes de mandar".
+- Las fotos, vídeos y audios no cuentan para el límite (no salen solos: el administrador decide cuándo se ponen).
+- No cambia la app de la tele: solo el script y el panel.
+
 ### App 6.8: citas en cifras y turnándose
 - La hora de una cita sale **en cifras**, en 24 horas ("7:45", "18:30"), en todas las pantallas (antes "A las ocho menos cuarto", que ocupaba dos líneas y dejaba
   el nombre cortado). De noche: "Mañana · 7:45".
