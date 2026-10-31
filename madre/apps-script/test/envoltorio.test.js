@@ -81,6 +81,8 @@ const espera = (ms) => new Promise((r) => setTimeout(r, ms));
   await p.click('[role=dialog] >> text=Parar y revisar'); await p.waitForSelector('[role=dialog] audio', { timeout: 10000 });
   await p.click('[role=dialog] >> text=Mandar a la tele'); await espera(2500);
   t('graba con el micrófono y lo sube por POST', await p.evaluate(() => S.medios.lista.length === 1 && S.medios.lista[0].tipo === 'audio' && S.medios.lista[0].de === 'Ana'));
+  t('y le pregunta cuándo quiere que salga (una sola vez, 5 minutos)', (await p.textContent('[role=dialog]')).includes('¿Cuándo quieres que salga?') && (await p.textContent('[role=dialog]')).includes('como mucho 5 minutos'));
+  await p.click('[role=dialog] >> text=Cancelar'); await espera(300);
   // la nota de voz rápida: se mantiene pulsado y se suelta
   await p.click('#nav >> text=Mandar'); await espera(300);
   const caja = await (await p.$('#mic')).boundingBox(); const cx = caja.x + caja.width / 2, cy = caja.y + caja.height / 2;
@@ -88,6 +90,7 @@ const espera = (ms) => new Promise((r) => setTimeout(r, ms));
   t('mientras se mantiene pulsado sale el cartel de grabando', !!(await p.$('#nota')) && (await p.textContent('#nota')).includes('Suelta para guardar'));
   await p.mouse.up(); await espera(3500);
   t('al soltar se guarda la nota de voz (en A continuación)', await p.evaluate(() => S.medios.lista.length === 2 && S.medios.lista.every((m) => m.tipo === 'audio')));
+  await p.waitForSelector('[role=dialog] >> text=Cancelar', { timeout: 5000 }); await p.click('[role=dialog] >> text=Cancelar'); await espera(300);
   t('y el cartel desaparece', !(await p.$('#nota')));
   await p.mouse.move(cx, cy); await p.mouse.down(); await espera(1500); await p.mouse.move(cx + 200, cy, { steps: 4 }); await espera(300);
   t('deslizando a un lado el cartel avisa de que se cancela', (await p.textContent('#nota')).includes('cancelar'));
@@ -97,8 +100,9 @@ const espera = (ms) => new Promise((r) => setTimeout(r, ms));
   t('un toque corto no graba: dice que hay que mantener pulsado, junto al micrófono', await p.evaluate(() => S.medios.lista.length === 2 && !document.getElementById('err-mic').hidden && document.getElementById('err-mic').textContent.indexOf('Mantén pulsado') >= 0));
   await p.click('#nav >> text=Inicio'); await espera(600);
   t('en Inicio ve su envío en A continuación', (await p.textContent('#preparados')).includes('Audio de Ana'));
-  await p.click('text=Reproducir ahora en la TV >> nth=0'); await espera(1200);
-  t('lo puede poner y ve Esperando a la TV…', (await p.textContent('#repro')).includes('Esperando a la TV…'));
+  t('no tiene "Reproducir ahora": solo elegir cuándo sale', !(await p.textContent('#preparados')).includes('Reproducir ahora') && (await p.textContent('#preparados')).includes('Falta elegir cuándo sale'));
+  await p.click('#preparados button:has-text("Elegir cuándo sale") >> nth=0'); await p.click('[data-id=ahora]'); await p.click('[role=dialog] >> text=Mandar'); await espera(1200);
+  t('lo programa y queda "Saldrá…"', (await p.textContent('#preparados')).includes('Saldrá'));
   await p.context().close();
 
   console.log('sin enlace: pedirlo una vez');

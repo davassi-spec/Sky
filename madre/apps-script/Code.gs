@@ -30,6 +30,7 @@ var MEDIOS = {                    // lo que se puede mandar desde el móvil
 };
 var MAX_MEDIOS = 40;              // envíos preparados a la vez
 var MAX_PARTES = 40;
+var MEDIO_FAMILIA_MIN = 5;         // un envío de un familiar sale UNA vez y se queda como mucho 5 minutos
 var ESPERA_TV_MIN = 15;           // si la TV no contesta en este tiempo, el envío deja de esperar (así nunca salta de madrugada)
 var HIST_MEDIOS = 100;
 var AVISO_MIN = 30;               // si un recordatorio que hay que confirmar sigue sin confirmar tras estos minutos, llega un correo
@@ -290,7 +291,7 @@ var RPC_ = {
   admRecordatorioGuardar: admRecordatorioGuardar, admRecordatorioBorrar: admRecordatorioBorrar, admRecordatorioConfirmar: admRecordatorioConfirmar,
   admRecordatorioProbar: admRecordatorioProbar, admRecordatorioFoto: admRecordatorioFoto, admCorreoAviso: admCorreoAviso,
   admCorreoPrueba: admCorreoPrueba, admBuscarCiudad: admBuscarCiudad, admMedioNuevo: admMedioNuevo, admMedioParte: admMedioParte,
-  admMedioFin: admMedioFin, admMedioBorrar: admMedioBorrar, admMedioReproducir: admMedioReproducir, admMedioControl: admMedioControl,
+  admMedioFin: admMedioFin, admMedioBorrar: admMedioBorrar, admMedioReproducir: admMedioReproducir, admMedioProgramar: admMedioProgramar, admMedioControl: admMedioControl,
   admMediosEstado: admMediosEstado, admVisitaGuardar: admVisitaGuardar, admVisitaBorrar: admVisitaBorrar, admRutinaGuardar: admRutinaGuardar,
   admRutinaBorrar: admRutinaBorrar, admProbarICloud: admProbarICloud, admEspacio: admEspacio,
   admMensajeRestaurar: admMensajeRestaurar, admFijar: admFijar, admMedioRestaurar: admMedioRestaurar, admMedioMini: admMedioMini
@@ -463,8 +464,8 @@ function bloqueActivo_(d, id) {
 }
 
 function estado_() {
-  var d = leer_();
   var ahora = Date.now();
+  var d = promoverMedios_(leer_(), ahora);
   var vivos = d.mensajes.filter(function (m) { return esVivo_(m, ahora) && yaSeVe_(m, ahora); }).sort(function (a, b) { return (b.fijado ? 1 : 0) - (a.fijado ? 1 : 0) || (b.desde || b.t) - (a.desde || a.t); });   // el fijado se queda arriba
   var verMsg = bloqueActivo_(d, 'mensajes'), verEv = bloqueActivo_(d, 'proximo'), verT = bloqueActivo_(d, 'tiempo');
   var prueba = d.prueba && d.prueba.hasta > ahora ? { estilo: d.prueba.estilo, distribucion: d.prueba.distribucion || null, modo: d.prueba.modo, segundos: Math.round((d.prueba.hasta - ahora) / 1000) } : null;
@@ -758,7 +759,7 @@ function admEstado(k) {
       pendientes: pendientes_(d, ahora),
       mensajes: d.mensajes.filter(function (m) { return m.autor === q.id; }),
       ciudad: d.ciudad, noche: d.noche, idWeb: idWeb_(d),
-      reglas: { mensajes: FAMILIA_MAX_MENSAJES, minutos: FAMILIA_MINUTOS },
+      reglas: { mensajes: FAMILIA_MAX_MENSAJES, minutos: FAMILIA_MINUTOS, minutosMedio: MEDIO_FAMILIA_MIN },
       medios: mediosParaPanel_(d, q, ahora)
     };
   }
@@ -857,6 +858,27 @@ function despuesDeLaNoche_(d, f) {
   return new Date(t);
 }
 
+/** Convierte "cuando" ({ dia|fecha, hora } o null = ahora) en la hora elegida (prog, o null si es ahora) y la hora a la que se verá (visible: nunca de noche). */
+function resolverCuando_(cuando, ahora) {
+  var prog = null, visible = ahora;
+  if (cuando && cuando.hora) {
+    var hh = horaValida_(cuando.hora);
+    if (!hh) throw new Error('Esa hora no vale');
+    var dia = cuando.dia === 'manana' ? 1 : 0, y = ahora.getFullYear(), mo = ahora.getMonth(), da = ahora.getDate() + dia;
+    if (cuando.fecha) {                                          // una fecha concreta (hasta dentro de 60 días)
+      var mf = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(cuando.fecha));
+      if (!mf) throw new Error('Esa fecha no vale');
+      y = Number(mf[1]); mo = Number(mf[2]) - 1; da = Number(mf[3]);
+      var lejos = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate() + 61).getTime();
+      if (new Date(y, mo, da).getTime() > lejos) throw new Error('Solo se puede programar dentro de los próximos 60 días');
+    }
+    prog = new Date(y, mo, da, Number(hh.slice(0, 2)), Number(hh.slice(3)), 0);
+    if (prog.getTime() < ahora.getTime() - 60000) throw new Error('Esa fecha y hora ya han pasado. Elige una de más tarde.');
+    if (prog.getTime() > ahora.getTime() + 60000) visible = despuesDeLaNoche_(leer_(), prog); else prog = null;
+  }
+  return { prog: prog, visible: visible };
+}
+
 /**
  * duracion: '30m' (media hora; es la de los familiares), '1h', '3h', 'hoy' (hasta las 23:59), 'manana' (también mañana) o 'siempre' (hasta que lo quites).
  * cuando: null (ahora) o { dia: 'hoy'|'manana', hora: 'HH:MM' }. Si esa hora es de noche, se verá al empezar el día.
@@ -883,22 +905,7 @@ function admEnviar(k, de, texto, duracion, cuando) {
   if (!texto) throw new Error('El mensaje está vacío');
   if (q.rol === 'familia') duracion = '30m';                     // a un familiar siempre se le ve media hora, pida lo que pida
   var ahora = new Date();
-  var prog = null, visible = ahora;
-  if (cuando && cuando.hora) {
-    var hh = horaValida_(cuando.hora);
-    if (!hh) throw new Error('Esa hora no vale');
-    var dia = cuando.dia === 'manana' ? 1 : 0, y = ahora.getFullYear(), mo = ahora.getMonth(), da = ahora.getDate() + dia;
-    if (cuando.fecha) {                                          // una fecha concreta (hasta dentro de 60 días)
-      var mf = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(cuando.fecha));
-      if (!mf) throw new Error('Esa fecha no vale');
-      y = Number(mf[1]); mo = Number(mf[2]) - 1; da = Number(mf[3]);
-      var lejos = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate() + 61).getTime();
-      if (new Date(y, mo, da).getTime() > lejos) throw new Error('Solo se puede programar dentro de los próximos 60 días');
-    }
-    prog = new Date(y, mo, da, Number(hh.slice(0, 2)), Number(hh.slice(3)), 0);
-    if (prog.getTime() < ahora.getTime() - 60000) throw new Error('Esa fecha y hora ya han pasado. Elige una de más tarde.');
-    if (prog.getTime() > ahora.getTime() + 60000) visible = despuesDeLaNoche_(leer_(), prog); else prog = null;
-  }
+  var rc = resolverCuando_(cuando, ahora), prog = rc.prog, visible = rc.visible;
   var programado = !!prog && visible.getTime() > ahora.getTime() + 60000;
   var hasta = null;
   if (duracion === '30m') hasta = Math.floor(visible.getTime() / 1000) + FAMILIA_MINUTOS * 60;
@@ -1250,7 +1257,7 @@ function admBuscarCiudad(k, q) {
 /* ============================================================
  *  Audios, vídeos y fotos a distancia (versión 5)
  *  Los envíos se guardan en trozos dentro de la carpeta "Pizarra/Medios" de tu Drive. Son privados: no hay enlaces públicos.
- *  Nada se pone solo: alguien tiene que pulsar "Reproducir ahora" o "Mostrar ahora en la TV", y de noche no se pone nada.
+ *  Lo del administrador no se pone solo: tiene que pulsar "Reproducir ahora" o "Mostrar ahora en la TV". Lo de un familiar sale solo, una vez, a la hora que eligió (como mucho 5 minutos). De noche no se pone nada.
  * ============================================================ */
 
 function carpetaMedios_() {
@@ -1377,7 +1384,7 @@ function mediosParaPanel_(d, q, ahora) {
     var visto = null;
     for (var i = 0; i < d.histMedios.length; i++) if (d.histMedios[i].id === m.id) { visto = d.histMedios[i]; break; }       // la más reciente
     return { id: m.id, tipo: m.tipo, de: bonito_(m.de), autor: m.autor, texto: m.texto, t: m.t, bytes: m.bytes, mini: !!m.mini, seg: m.tipo === 'audio' && m.mime.indexOf('wav') >= 0 ? Math.round(Math.max(0, m.bytes - 44) / 32000) : (m.seg || 0),
-             vistoT: visto ? visto.t : null, puso: visto ? visto.quien : '' };
+             vistoT: visto ? visto.t : null, puso: visto ? visto.quien : '', prog: m.prog || 0, salio: m.salio || 0, unaVez: !!m.unaVez };
   });
   var rp = null, e = reproEstado_(d, ahora);
   if (d.repro && e) {
@@ -1396,7 +1403,7 @@ function reproEstado_(d, ahora) {
   if (r.estado === 'esperando') return ahora - r.t > ESPERA_TV_MIN * 60000 ? 'caducado' : 'esperando';
   if (r.estado === 'reproduciendo') {
     var m = medioPorId_(d, r.id);
-    var tope = m && m.tipo === 'foto' ? (r.minutos > 0 ? r.minutos * 60000 + 30000 : 12 * 3600000) : 10 * 60000;
+    var tope = r.unaVez ? MEDIO_FAMILIA_MIN * 60000 + 30000 : m && m.tipo === 'foto' ? (r.minutos > 0 ? r.minutos * 60000 + 30000 : 12 * 3600000) : 10 * 60000;
     return ahora - r.desde > tope ? 'terminado' : 'reproduciendo';
   }
   return r.estado;                                   // terminado | error
@@ -1424,6 +1431,7 @@ function admMedioReproducir(k, id, minutos) {
   var d0 = leer_();
   var m0 = medioPorId_(d0, id);
   if (!m0 || !m0.listo || !puedeMedio_(q, m0)) throw new Error('Ese envío no existe');
+  if (q.rol === 'familia') throw new Error('Elige cuándo quieres que salga.');
   if (esNocheHora_(d0, new Date().getHours())) throw new Error('Ahora es de noche: la tele no pone nada hasta que amanezca.');
   minutos = m0.tipo === 'foto' ? ([1, 5, 15].indexOf(Number(minutos)) >= 0 ? Number(minutos) : 0) : 0;
   modificar_(function (d) {
@@ -1433,6 +1441,48 @@ function admMedioReproducir(k, id, minutos) {
                 t: Date.now(), desde: 0, cmd: { n: 0, c: '' }, rep: 0, error: '' };
   });
   return admEstado(k);
+}
+
+/**
+ * Un familiar elige cuándo sale su foto, vídeo o audio: una sola vez y como mucho 5 minutos.
+ * cuando: null (ahora) o { fecha, hora }. Solo puede tener uno esperando su turno.
+ */
+function admMedioProgramar(k, id, cuando) {
+  var q = alguien_(k);
+  var m0 = medioPorId_(leer_(), id);
+  if (!m0 || !m0.listo || !puedeMedio_(q, m0)) throw new Error('Ese envío no existe');
+  if (m0.salio) throw new Error('Ese envío ya salió en la tele. Sale una sola vez.');
+  var ahora = new Date();
+  var rc = resolverCuando_(cuando, ahora);
+  var cuandoSale = rc.visible.getTime();
+  modificar_(function (d) {
+    var m = medioPorId_(d, id);
+    if (!m || m.salio) throw new Error('Ese envío ya salió en la tele. Sale una sola vez.');
+    if (q.rol === 'familia') {
+      d.medios.forEach(function (x) {
+        if (x.id !== id && x.autor === q.id && x.listo && !x.borrado && x.prog && !x.salio) throw new Error('Ya tienes algo esperando su turno para salir en la tele. Cuando salga podrás mandar otro.');
+      });
+    }
+    m.prog = cuandoSale; m.unaVez = true;
+  });
+  return admEstado(k);
+}
+
+/** Si ha llegado la hora de algún envío de un familiar y la tele está libre, lo pone: una sola vez. Devuelve los datos al día. */
+function promoverMedios_(d, ahora) {
+  if (reproPendiente_(d, ahora) || esNocheHora_(d, new Date(ahora).getHours())) return d;
+  var cand = null;
+  d.medios.forEach(function (m) { if (m.listo && !m.borrado && m.unaVez && m.prog && !m.salio && m.prog <= ahora && (!cand || m.prog < cand.prog)) cand = m; });
+  if (!cand) return d;
+  var id = cand.id;
+  modificar_(function (x) {
+    var m = medioPorId_(x, id);
+    if (!m || m.salio || reproPendiente_(x, Date.now())) return;
+    m.salio = Date.now();
+    x.repro = { orden: Date.now(), id: id, minutos: m.tipo === 'foto' ? MEDIO_FAMILIA_MIN : 0, unaVez: true, estado: 'esperando',
+                quien: { id: m.autor, nombre: m.de }, t: Date.now(), desde: 0, cmd: { n: 0, c: '' }, rep: 0, error: '' };
+  });
+  return leer_();
 }
 
 /** cmd: 'repetir' | 'parar' | 'subir' | 'bajar'. */
@@ -1445,6 +1495,7 @@ function admMedioControl(k, orden, cmd) {
     var m = medioPorId_(d, r.id);
     if (!m || !puedeMedio_(q, m)) throw new Error('Eso no es tuyo');
     if (!reproPendiente_(d, Date.now())) throw new Error('Eso ya terminó');
+    if (r.unaVez && q.rol !== 'admin' && cmd === 'repetir') throw new Error('Sale una sola vez.');
     if (cmd === 'parar') { r.estado = 'terminado'; return; }
     if (cmd === 'repetir') { r.rep = (r.rep || 0) + 1; r.estado = 'reproduciendo'; r.desde = Date.now(); return; }
     r.cmd = { n: ((r.cmd && r.cmd.n) || 0) + 1, c: cmd };

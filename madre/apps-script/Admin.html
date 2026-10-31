@@ -974,7 +974,12 @@
     var estado = suena ? textoEstadoRepro(r) : m.vistoT ? 'Visto en la tele a las ' + hora(Math.floor(m.vistoT / 1000)) : 'Preparado';
     var icn = el('span', { style: 'display:inline-flex;vertical-align:-4px;margin-right:4px;color:var(--primario)' }, icono(iconoMedio(m.tipo)));
     icn.firstChild.setAttribute('width', '18'); icn.firstChild.setAttribute('height', '18');
-    var boton = el('button', { class: 'enlace', type: 'button', style: 'padding-left:0', onclick: function (e) {
+    var boton;
+    if (ROL === 'familia') {
+      if (m.salio) { estado = suena ? textoEstadoRepro(r) : 'Ya salió en la tele' + (m.vistoT ? ' a las ' + hora(Math.floor(m.vistoT / 1000)) : ''); boton = null; }
+      else if (m.prog) { estado = 'Saldrá ' + cuando(Math.floor(m.prog / 1000)).toLowerCase().replace(/^hoy, /, 'hoy a las ').replace(/^ayer, /, 'ayer a las '); boton = null; }
+      else { estado = 'Falta elegir cuándo sale'; boton = el('button', { class: 'enlace', type: 'button', style: 'padding-left:0', onclick: function () { dialogoCuando('', m); } }, 'Elegir cuándo sale'); }
+    } else boton = el('button', { class: 'enlace', type: 'button', style: 'padding-left:0', onclick: function (e) {
       accion('admMedioReproducir', [m.id, m.tipo === 'foto' ? minFoto : 0], 'Mandado a la tele', e.currentTarget).then(sondearMedios);
     } }, m.tipo === 'foto' ? 'Mostrar ahora en la TV' : 'Reproducir ahora en la TV');
     return el('div', { class: 'item' }, m.tipo === 'audio' ? avatar(a.id, m.de, a.tieneFoto) : miniMedio(m),
@@ -985,13 +990,13 @@
     var lista = medios().lista, g = el('div', { class: 'grupo', id: 'preparados' });
     if (!lista.length) g.appendChild(el('p', { class: 'vacio' }, 'No hay nada preparado. Graba o añade algo en Mandar.'));
     lista.forEach(function (m) { g.appendChild(filaCola(m)); });
-    if (lista.some(function (m) { return m.tipo === 'foto'; })) {
+    if (ROL !== 'familia' && lista.some(function (m) { return m.tipo === 'foto'; })) {
       var sel = el('select', { id: 'tiempo-foto', 'aria-label': 'Cuánto tiempo se ve una foto', onchange: function (e) { minFoto = Number(e.target.value); } },
         el('option', { value: '1' }, '1 minuto'), el('option', { value: '5' }, '5 minutos'), el('option', { value: '15' }, '15 minutos'), el('option', { value: '0' }, 'Hasta que la quite'));
       sel.value = String(minFoto);
       g.appendChild(el('div', { class: 'fl' }, el('div', { class: 't' }, 'Una foto se queda'), sel));
     }
-    return seccion('A continuación', g, 'Nada se pone solo: tú decides cuándo.', lista.length);
+    return seccion('A continuación', g, ROL === 'familia' ? 'Fotos, vídeos y audios salen una sola vez, como mucho 5 minutos.' : 'Lo del administrador no se pone solo: tú decides cuándo. Lo de la familia sale a la hora que elijan.', lista.length);
   }
   function vistaInicio() {
     var d = S.datos, w = document.createDocumentFragment();
@@ -1093,7 +1098,7 @@
           aviso('Guardando la nota de voz…', 'ok');
           aWav(new Blob(actual.trozos, { type: (rec.mimeType || mime || 'audio/mp4').split(';')[0] })).then(function (w) {
             return subirMedio(w, 'audio', '', function () {}, segs);
-          }).then(function (r) { if (r && r.rol) { S = r; pintar(); } aviso('Nota de voz guardada en "A continuación". Pulsa Reproducir ahora en la TV cuando quieras.', 'ok'); },
+          }).then(function (r) { if (r && r.rol) { S = r; pintar(); } if (!preguntarCuandoSale()) aviso('Nota de voz guardada en "A continuación". Pulsa Reproducir ahora en la TV cuando quieras.', 'ok'); },
             function (e) { errorEn('err-mic', errorLegible(e)); });
         };
         rec.start(500);
@@ -1160,7 +1165,7 @@
       fila({ icono: 'video', titulo: 'Grabar un vídeo', sub: 'Hasta 30 segundos', flecha: true, onclick: function () { dialogoGrabar('video'); } }),
       fila({ icono: 'micro', titulo: 'Grabar un audio', sub: 'Hasta 1 minuto', flecha: true, onclick: function () { dialogoGrabar('audio'); } }),
       fila({ icono: 'galeria', titulo: 'Elegir un vídeo o audio del móvil', sub: 'Los vídeos del iPhone se preparan solos', flecha: true, onclick: function () { pedirArchivo('video/*,audio/*').then(procesarArchivo); } })]),
-      'Se guardan en privado y salen en "A continuación" de Inicio. Nada se pone solo.', null, el('div', { class: 'error-inline', id: 'err-contenido', role: 'alert', hidden: true })));
+      (ROL === 'familia' ? 'Sale una sola vez en la tele, como mucho 5 minutos, a la hora que elijas.' : 'Se guardan en privado y salen en "A continuación" de Inicio. Nada se pone solo.'), null, el('div', { class: 'error-inline', id: 'err-contenido', role: 'alert', hidden: true })));
     if (ROL === 'familia') {
       var miId = S.miId;
       w.appendChild(seccion('Tu foto en los mensajes', grupo([
@@ -1180,7 +1185,15 @@
   }
 
   /** Al mandar, un familiar elige CUÁNDO sale su mensaje (no se manda "ahora" sin pensar). */
-  function dialogoCuando(texto) {
+  /** Un familiar, nada más subir algo, elige cuándo sale. Devuelve true si abrió la pregunta. */
+  function preguntarCuandoSale() {
+    if (ROL !== 'familia') return false;
+    var mio = (medios().lista || []).filter(function (x) { return !x.salio && !x.prog; })[0];
+    if (!mio) return false;
+    dialogoCuando('', mio); return true;
+  }
+  function nombreTipo(t) { return t === 'foto' ? 'foto' : t === 'video' ? 'vídeo' : 'audio'; }
+  function dialogoCuando(texto, medio) {
     var min = (S.reglas && S.reglas.minutos) || 30, ahora = new Date();
     var iso = function (d) { return d.getFullYear() + '-' + dos(d.getMonth() + 1) + '-' + dos(d.getDate()); };
     var hm = function (d) { return dos(d.getHours()) + ':' + dos(d.getMinutes()); };
@@ -1214,12 +1227,13 @@
         ok = 'Programado: saldrá ' + (fecha === hoyISO() ? 'hoy' : 'el ' + Number(pf[2]) + ' de ' + MESES[Number(pf[1]) - 1]) + ' a las ' + horaTxt + '.';
       }
       mandar.disabled = cancelar.disabled = true;
-      accion('admEnviar', [S.nombre, texto, '30m', valor], ok).then(function () { cerrarDialogo(); borrador.texto = ''; filtroEnv = 'todos'; pintar(); },
+      (medio ? accion('admMedioProgramar', [medio.id, valor], ok.replace(/^Enviado\. /, '')) : accion('admEnviar', [S.nombre, texto, '30m', valor], ok)).then(function () { cerrarDialogo(); borrador.texto = ''; filtroEnv = 'todos'; pintar(); },
         function (e) { mandar.disabled = cancelar.disabled = false; errorEn('err-cuando', mensajeError(e)); });
     };
     marcar();
-    abrirDialogo([el('h2', {}, '¿Cuándo quieres que salga?'), el('p', { class: 'sub' }, '"' + (texto.length > 60 ? texto.slice(0, 57) + '…' : texto) + '"')].concat(botones, [extra,
-      el('p', { class: 'sub', style: 'margin-top:12px' }, 'Se verá ' + min + ' minutos en la tele y luego desaparece. Solo puedes tener un mensaje a la vez.'),
+    abrirDialogo([el('h2', {}, '¿Cuándo quieres que salga?'), el('p', { class: 'sub' }, medio ? 'Tu ' + nombreTipo(medio.tipo) : '"' + (texto.length > 60 ? texto.slice(0, 57) + '…' : texto) + '"')].concat(botones, [extra,
+      el('p', { class: 'sub', style: 'margin-top:12px' }, medio ? 'Sale una sola vez en la tele y se queda como mucho ' + ((S.reglas && S.reglas.minutosMedio) || 5) + ' minutos. No se puede repetir. Solo puedes tener uno esperando su turno.'
+        : 'Se verá ' + min + ' minutos en la tele y luego desaparece. Solo puedes tener un mensaje a la vez.'),
       err, el('div', { class: 'fila', style: 'margin-top:12px' }, cancelar, mandar)]));
   }
 
@@ -2106,7 +2120,7 @@
     if (tipo === 'video') vista.addEventListener('loadedmetadata', function () { if (isFinite(vista.duration) && vista.duration > 0) seg = vista.duration; });
     var texto = tipo === 'foto' ? el('input', { type: 'text', id: 'medio-texto', maxlength: '200', placeholder: 'Un mensaje con la foto (si quieres)', 'aria-label': 'Mensaje con la foto' }) : null;
     var barra = el('div', { class: 'barra-subida', hidden: true, 'aria-live': 'polite' });
-    var estado = el('p', { class: 'sub', id: 'medio-estado' }, 'Mírala' + (tipo === 'foto' ? '' : ' o escúchala') + ' antes de mandarla.');
+    var estado = el('p', { class: 'sub', id: 'medio-estado' }, 'Mírala' + (tipo === 'foto' ? '' : ' o escúchala') + ' antes de mandarla.' + (ROL === 'familia' ? ' Sale una sola vez en la tele, como mucho 5 minutos. Después te preguntaré cuándo quieres que salga.' : ''));
     var enviar = el('button', { class: 'btn', type: 'button' }, icono('enviar'), 'Mandar a la tele');
     var cancelar = el('button', { class: 'btn suave', type: 'button', onclick: function () { URL.revokeObjectURL(url); cerrarDialogo(); } }, 'Cancelar');
     enviar.onclick = function () {
@@ -2115,7 +2129,7 @@
       subirMedio(blob, tipo, texto ? texto.value : '', function (f) { barra.style.setProperty('--pct', Math.round(f * 100) + '%'); estado.textContent = 'Subiendo… ' + Math.round(f * 100) + ' %'; }, seg).then(function (r) {
         URL.revokeObjectURL(url); cerrarDialogo();
         if (r && r.rol) { S = r; pintar(); }
-        aviso('Listo. Está preparado: tú decides cuándo se ve en la tele.', 'ok');
+        if (!preguntarCuandoSale()) aviso('Listo. Está preparado: tú decides cuándo se ve en la tele.', 'ok');
       }, function (e) {
         enviar.disabled = cancelar.disabled = false; barra.hidden = true;
         estado.textContent = errorLegible(e);
