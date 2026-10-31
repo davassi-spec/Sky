@@ -21,6 +21,8 @@ CABECERA = '''<meta name="robots" content="noindex,nofollow">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <link rel="apple-touch-icon" href="iconos/apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="32x32" href="iconos/favicon-32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="iconos/icono-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="iconos/icono-512.png">
 <link rel="manifest" id="manifiesto">
 '''
 
@@ -54,15 +56,32 @@ ARRANQUE = r'''<script>
     } });
   }
   window.google = { script: { run: mk(null, null) } };
-  /* Manifiesto con el enlace completo como dirección de inicio: así el icono de Android (Chrome) abre ya con su clave. A pantalla completa. */
-  try {
-    var m = { name: 'La tele de mamá', short_name: 'La tele de mamá', start_url: location.href, scope: envoltorio, display: 'fullscreen',
-      display_override: ['fullscreen', 'standalone'], orientation: 'portrait', background_color: '#F4F1FA', theme_color: '#5B4A9E',
-      icons: [{ src: new URL('iconos/icono-192.png', location.href).href, sizes: '192x192', type: 'image/png' },
-        { src: new URL('iconos/icono-512.png', location.href).href, sizes: '512x512', type: 'image/png' },
-        { src: new URL('iconos/icono-maskable-512.png', location.href).href, sizes: '512x512', type: 'image/png', purpose: 'maskable' }] };
-    document.getElementById('manifiesto').href = URL.createObjectURL(new Blob([JSON.stringify(m)], { type: 'application/manifest+json' }));
-  } catch (e) {}
+  /* Iconos y manifiesto. Los familiares tienen su propio icono (iconos-familia/); el administrador, el suyo (iconos/).
+     Se ponen según quién entra, en cuanto el panel lo sabe: el iPhone y Android lo leen al añadir la app a la pantalla de inicio. */
+  function ponerIconos(carpeta) {
+    try {
+      var abs = function (f) { return new URL(carpeta + '/' + f, location.href).href; };
+      var enlace = function (sel, f) { var e = document.querySelector(sel); if (e) e.href = abs(f); };
+      enlace('link[rel=apple-touch-icon]', 'apple-touch-icon.png');
+      enlace('link[rel=icon][sizes="32x32"]', 'favicon-32.png');
+      enlace('link[rel=icon][sizes="192x192"]', 'icono-192.png');
+      enlace('link[rel=icon][sizes="512x512"]', 'icono-512.png');
+      /* Manifiesto con el enlace completo como dirección de inicio: así el icono de Android (Chrome) abre ya con su clave. A pantalla completa. */
+      var m = { name: 'La tele de mamá', short_name: 'La tele de mamá', start_url: location.href, scope: envoltorio, display: 'fullscreen',
+        display_override: ['fullscreen', 'standalone'], orientation: 'portrait', background_color: '#F2F2F7', theme_color: '#F2F2F7',
+        icons: [{ src: abs('icono-192.png'), sizes: '192x192', type: 'image/png' },
+          { src: abs('icono-512.png'), sizes: '512x512', type: 'image/png' },
+          { src: abs('icono-maskable-512.png'), sizes: '512x512', type: 'image/png', purpose: 'maskable' }] };
+      document.getElementById('manifiesto').href = URL.createObjectURL(new Blob([JSON.stringify(m)], { type: 'application/manifest+json' }));
+    } catch (e) {}
+  }
+  ponerIconos('iconos');
+  window.PIZARRA.iconosPara = function (rol) {
+    if (rol !== 'familia') { ponerIconos('iconos'); return; }
+    var prueba = new Image();                       // si falta la carpeta de familiares, se queda el icono de siempre
+    prueba.onload = function () { ponerIconos('iconos-familia'); };
+    prueba.src = new URL('iconos-familia/apple-touch-icon.png', location.href).href;
+  };
 })();
 </script>
 '''

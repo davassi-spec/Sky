@@ -104,6 +104,20 @@ final class Texto {
         return m < 30 ? base + " y " + NUM[m] : base + " menos " + NUM[60 - m];
     }
 
+    /** La hora de una cita en cifras: "7:45", "18:30" (24 horas, sin cero delante). Vacío si no es una hora. */
+    static String horaNumerica(String hhmm) {
+        if (hhmm == null) return "";
+        int i = hhmm.indexOf(':');
+        if (i < 0) return "";
+        try {
+            int h = Integer.parseInt(hhmm.substring(0, i).trim()), m = Integer.parseInt(hhmm.substring(i + 1).trim());
+            if (h < 0 || h > 23 || m < 0 || m > 59) return "";
+            return h + ":" + (m < 10 ? "0" : "") + m;
+        } catch (NumberFormatException e) {
+            return "";
+        }
+    }
+
     static String mayus(String t) {
         return t.isEmpty() ? t : Character.toUpperCase(t.charAt(0)) + t.substring(1);
     }
@@ -147,6 +161,18 @@ final class Texto {
         else if (h < 20) parte = "por la tarde";
         else parte = "por la noche";
         return "Lo escribió " + dia + ", " + parte;
+    }
+
+    /** Cuándo se mandó un mensaje, con la hora en cifras: "Enviado a las 11:31", "Enviado ayer a las 18:16". */
+    static String cuandoSeMando(long segundos, Calendar ahora) {
+        Calendar t = Calendar.getInstance(ahora.getTimeZone());        // en la hora de la pantalla (la misma que el reloj)
+        t.setTimeInMillis(segundos * 1000);
+        Calendar ayer = (Calendar) ahora.clone();
+        ayer.add(Calendar.DAY_OF_YEAR, -1);
+        String hm = horaNumerica(t.get(Calendar.HOUR_OF_DAY) + ":" + t.get(Calendar.MINUTE));
+        if (mismoDia(t, ahora)) return "Enviado a las " + hm;
+        if (mismoDia(t, ayer)) return "Enviado ayer a las " + hm;
+        return "Enviado el " + DIAS[t.get(Calendar.DAY_OF_WEEK) - 1] + " a las " + hm;
     }
 
     private static boolean mismoDia(Calendar a, Calendar b) {

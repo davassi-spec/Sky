@@ -8,9 +8,10 @@ python3 "$RAIZ/madre/web-app/construir.py" --comprobar
 TMP=$(mktemp -d)
 git fetch -q origin $RAMA
 git worktree add -q --detach "$TMP" origin/$RAMA
-mkdir -p "$TMP/tele/iconos"
+mkdir -p "$TMP/tele/iconos" "$TMP/tele/iconos-familia"
 cp "$RAIZ/madre/web-app/index.html" "$TMP/tele/index.html"
 cp "$RAIZ/madre/web-app/iconos/"* "$TMP/tele/iconos/"
+cp "$RAIZ/madre/web-app/iconos-familia/"* "$TMP/tele/iconos-familia/"
 cd "$TMP"
 git add tele
 if git diff --cached --quiet; then echo "tele/ ya estaba al día"; else

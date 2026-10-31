@@ -184,4 +184,29 @@ public class CompatibilidadTest {
         assertNull(Datos.parse("{\"medio\":{\"id\":\"x\",\"tipo\":\"exe\",\"partes\":1}}").medio);   // un tipo que no existe se ignora
         assertNull(Datos.parse("{\"medio\":{\"id\":\"x\",\"tipo\":\"audio\",\"partes\":0}}").medio);
     }
+
+    @Test
+    public void lasVisitasLlevanFotoYLaVozLeeSoloLoNuevoYNuncaDeNoche() throws Exception {
+        Datos d = Datos.parse("{\"leerVoz\":true,\"eventos\":[{\"dia\":0,\"titulo\":\"Viene Ana\",\"hora\":\"18:00\",\"autor\":\"p1\",\"foto\":3},{\"dia\":0,\"titulo\":\"Cena\",\"hora\":\"21:00\"}]}");
+        assertTrue(d.leerVoz);
+        assertEquals("p1", d.eventos.get(0).autor);
+        assertEquals(3, d.eventos.get(0).foto);
+        assertEquals("", d.eventos.get(1).autor);
+        assertEquals(false, Datos.parse("{}").leerVoz);                                   // un script viejo no manda leerVoz: no se lee nada
+        Datos.Mensaje a = new Datos.Mensaje(); a.de = "Ana"; a.texto = "Llevaré la merienda"; a.autor = "p2"; a.t = 100;
+        Datos.Mensaje b = new Datos.Mensaje(); b.de = ""; b.texto = "Hola"; b.autor = "admin"; b.t = 200;
+        java.util.List<Datos.Mensaje> ms = java.util.Arrays.asList(a, b);
+        assertEquals("Mensaje de Ana: Llevaré la merienda", Voz.frase(a));
+        assertEquals("Mensaje: Hola", Voz.frase(b));
+        java.util.Set<String> leidos = new java.util.HashSet<>();
+        assertEquals(0, Voz.porLeer(ms, leidos, true, true).size());                      // la primera vez (recién instalada) no lee lo viejo
+        java.util.Set<String> l2 = new java.util.HashSet<>();
+        assertEquals(2, Voz.porLeer(ms, l2, true, false).size());
+        assertEquals(0, Voz.porLeer(ms, l2, true, false).size());                         // ya leídos: no se repiten
+        java.util.Set<String> noche = new java.util.HashSet<>();
+        assertEquals(0, Voz.porLeer(ms, noche, false, false).size());                     // de noche (o con el interruptor apagado) no se lee...
+        assertEquals(0, Voz.porLeer(ms, noche, true, false).size());                      // ...ni se lee luego por la mañana
+        Datos.Mensaje c = new Datos.Mensaje(); c.de = "María"; c.texto = "Buenos días"; c.autor = "p3"; c.t = 300;
+        assertEquals(1, Voz.porLeer(java.util.Arrays.asList(a, b, c), noche, true, false).size());   // uno nuevo sí
+    }
 }
