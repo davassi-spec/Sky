@@ -96,20 +96,17 @@ Antes la tele enseñaba como mucho 2 mensajes a la vez, pequeños. Ahora:
   Cada uno se queda el tiempo de leerlo con calma: 12 s como mínimo, +0,15 s por letra, 40 s como máximo (`lecturaMs`). Con uno solo no se mueve.
 - **Cada mensaje dice cuándo se mandó, claro y en cifras**: "Enviado a las 11:31" ("Enviado ayer a las 18:16"), y "Mensaje 2 de 3". De uno programado, la hora es
   la de cuando salió.
-- Desaparecen solos: los de familia a los 30 minutos (regla de arriba).
+- Desaparecen solos: los de familia a las 13:00, 17:00 o 21:00 (regla de abajo).
 - Compatibilidad: una app anterior sigue enseñando los dos primeros (ignora los demás). Hace falta la 6.9 para verlos todos y la hora.
 - Vale en todas las distribuciones, incluidos los siete diseños y "Mensajes primero" (en esos, los colores de los mensajes se alternan).
 
-### Reglas para los familiares: un mensaje cada vez, 30 minutos y "Mandar cuando…"
+### Reglas para los familiares: un mensaje por persona, hasta las 13/17/21 h y "Mandar cuando…"
 Para que no se llene la pantalla (las hermanas mandan muchos mensajes):
-- **Un solo mensaje por persona**, en la tele o programado. Si ya tiene uno, el panel lo dice ("Tu mensaje ahora", con hasta cuándo se ve y un botón
-  "Quitar mi mensaje") y el botón queda desactivado; el script lo comprueba también (`admEnviar`, con la persona bloqueada por su propio mensaje).
-  Deshacer un "Quitar" tampoco puede dejarle dos. **El administrador no tiene límite** y puede elegir la duración (ahora también 30 minutos).
-- **Se ve 30 minutos y desaparece** (cuenta desde que sale en la tele, también si estaba programado). A un familiar siempre se le pone `30m`, pida lo que pida
-  el cliente. Las constantes están arriba de `admEnviar`: `FAMILIA_MAX_MENSAJES` y `FAMILIA_MINUTOS`.
-- **"Mandar cuando…"** en vez de "Enviar a la TV": al pulsar, pregunta cuándo (Ahora, dentro de una hora, esta tarde a las 18:00, mañana a las 09:00 o
-  día y hora a mano) y recuerda las dos reglas. Arriba de Mandar hay un aviso "Antes de mandar".
-- Las fotos, vídeos y audios no cuentan para el límite (no salen solos: el administrador decide cuándo se ponen).
+- **Un solo mensaje por persona.** Si escribe otro, **el anterior desaparece solo** y el panel se lo avisa antes de mandar («Atención: el mensaje que has escrito antes … desaparecerá»). Vale también para el programado. Deshacer un «Quitar» no puede dejarle dos. El administrador no tiene límite.
+- **Hasta cuándo se ve** (según la hora a la que sale en la tele, también si estaba programado): antes de las 13:00 → hasta las 13:00; de 13:00 a 17:00 → hasta las 17:00; de 17:00 a 21:00 → hasta las 21:00; si sale al amanecer (la noche), hasta las 13:00. El servidor lo impone (`finDeFranja_`, constante `FRANJAS`).
+- **Máximo 120 letras por mensaje** (`MAX_TEXTO`), para todos, también el texto de una foto; el servidor rechaza lo más largo.
+- **«Mandar cuando…»** en vez de «Enviar a la TV»: pregunta cuándo (Ahora, dentro de una hora, esta tarde a las 18:00, mañana a las 09:00 o día y hora a mano) y dice a qué hora se quita. Arriba de Mandar hay un aviso «Antes de mandar».
+- Las fotos, vídeos y audios siguen su propia regla (una sola vez, 5 minutos; ver más abajo).
 - No cambia la app de la tele: solo el script y el panel.
 
 ### App 6.8: citas en cifras y turnándose

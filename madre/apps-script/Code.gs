@@ -759,7 +759,7 @@ function admEstado(k) {
       pendientes: pendientes_(d, ahora),
       mensajes: d.mensajes.filter(function (m) { return m.autor === q.id; }),
       ciudad: d.ciudad, noche: d.noche, idWeb: idWeb_(d),
-      reglas: { mensajes: FAMILIA_MAX_MENSAJES, minutos: FAMILIA_MINUTOS, minutosMedio: MEDIO_FAMILIA_MIN },
+      reglas: { mensajes: FAMILIA_MAX_MENSAJES, franjas: FRANJAS, maxTexto: MAX_TEXTO, minutosMedio: MEDIO_FAMILIA_MIN },
       medios: mediosParaPanel_(d, q, ahora)
     };
   }
@@ -880,11 +880,22 @@ function resolverCuando_(cuando, ahora) {
 }
 
 /**
- * duracion: '30m' (media hora; es la de los familiares), '1h', '3h', 'hoy' (hasta las 23:59), 'manana' (también mañana) o 'siempre' (hasta que lo quites).
+ * duracion: 'franja' (hasta las 13, 17 o 21 h; es la de los familiares), '30m', '1h', '3h', 'hoy' (hasta las 23:59), 'manana' (también mañana) o 'siempre' (hasta que lo quites).
  * cuando: null (ahora) o { dia: 'hoy'|'manana', hora: 'HH:MM' }. Si esa hora es de noche, se verá al empezar el día.
  * La duración cuenta desde que el mensaje se ve.
  */
-var FAMILIA_MAX_MENSAJES = 1, FAMILIA_MINUTOS = 30;      // un familiar tiene un solo mensaje a la vez, y se ve 30 minutos
+var FAMILIA_MAX_MENSAJES = 1;                             // un familiar tiene un solo mensaje: si manda otro, el anterior desaparece
+var MAX_TEXTO = 120;                                      // letras por mensaje (para que mamá pueda leerlo)
+var FRANJAS = [13, 17, 21];                               // un mensaje se quita solo a las 13:00, 17:00 o 21:00, según cuándo sale
+
+/** Cuándo se quita un mensaje de un familiar que sale a la hora `f`: antes de las 13 h, a las 13; de 13 a 17, a las 17; de 17 a 21, a las 21. En segundos. */
+function finDeFranja_(f) {
+  var h = f.getHours(), fin = null;
+  for (var i = 0; i < FRANJAS.length; i++) if (h < FRANJAS[i]) { fin = FRANJAS[i]; break; }
+  var dia = 0;
+  if (fin === null) { fin = FRANJAS[0]; dia = 1; }              // a partir de las 21 h (la noche), hasta las 13 h del día siguiente
+  return Math.floor(new Date(f.getFullYear(), f.getMonth(), f.getDate() + dia, fin, 0, 0).getTime() / 1000);
+}
 
 /** Lo que se le dice a un familiar que ya tiene un mensaje (en la tele o programado) y quiere mandar otro. */
 function textoYaTienes_(m) {
@@ -893,30 +904,31 @@ function textoYaTienes_(m) {
   if (!yaSeVe_(m, ahora)) {
     var f = new Date(m.desde * 1000), hoy = claveDia_(new Date());
     var cuando = claveDia_(f) === hoy ? 'las ' + hm(m.desde) : 'el ' + Utilities.formatDate(f, tz, 'dd/MM HH:mm').slice(0, 5) + ' a las ' + hm(m.desde);
-    return 'Ya tienes un mensaje programado para ' + cuando + '. Solo se puede tener uno: quítalo en Enviados si quieres cambiarlo.';
+    return 'Ya tienes un mensaje programado para ' + cuando + '. No se puede deshacer porque has escrito otro después: solo se tiene un mensaje.';
   }
-  if (m.hasta) return 'Ya tienes un mensaje en la tele: se quitará solo a las ' + hm(m.hasta) + '. Hasta entonces no puedes mandar otro (puedes quitarlo en Enviados).';
-  return 'Ya tienes un mensaje en la tele. Quítalo en Enviados para poder mandar otro.';
+  if (m.hasta) return 'Ya tienes un mensaje en la tele (se quitaba a las ' + hm(m.hasta) + '). No se puede deshacer porque has escrito otro después: solo se tiene un mensaje.';
+  return 'Ya tienes un mensaje en la tele. No se puede deshacer porque has escrito otro después.';
 }
 
 function admEnviar(k, de, texto, duracion, cuando) {
   var q = alguien_(k);
-  texto = String(texto || '').trim().slice(0, 200);
+  texto = String(texto || '').trim();
   if (!texto) throw new Error('El mensaje está vacío');
-  if (q.rol === 'familia') duracion = '30m';                     // a un familiar siempre se le ve media hora, pida lo que pida
+  if (texto.length > MAX_TEXTO) throw new Error('El mensaje es demasiado largo: máximo ' + MAX_TEXTO + ' letras (ahora tiene ' + texto.length + ').');
+  if (q.rol === 'familia') duracion = 'franja';                  // a un familiar se le quita a las 13, 17 o 21 h, pida lo que pida
   var ahora = new Date();
   var rc = resolverCuando_(cuando, ahora), prog = rc.prog, visible = rc.visible;
   var programado = !!prog && visible.getTime() > ahora.getTime() + 60000;
   var hasta = null;
-  if (duracion === '30m') hasta = Math.floor(visible.getTime() / 1000) + FAMILIA_MINUTOS * 60;
+  if (duracion === 'franja') hasta = finDeFranja_(visible);
+  else if (duracion === '30m') hasta = Math.floor(visible.getTime() / 1000) + 30 * 60;
   else if (duracion === '1h' || duracion === '3h') hasta = Math.floor(visible.getTime() / 1000) + (duracion === '1h' ? 3600 : 10800);
   else if (duracion === 'hoy') hasta = finDeDiaDe_(visible, 0);
   else if (duracion === 'manana') hasta = finDeDiaDe_(visible, 1);
   modificar_(function (d) {
     if (q.rol === 'familia') {                                   // un solo mensaje por persona, en la tele o programado
-      var propio = null;
-      d.mensajes.forEach(function (x) { if (!propio && x.autor === q.id && esVivo_(x)) propio = x; });
-      if (propio) throw new Error(textoYaTienes_(propio));
+      var ya = Math.floor(Date.now() / 1000) - 1;               // el mensaje anterior (en la tele o programado) desaparece
+      d.mensajes.forEach(function (x) { if (x.autor === q.id && esVivo_(x)) x.hasta = ya; });
     }
     var m = {
       id: Utilities.getUuid(),
@@ -1303,7 +1315,7 @@ function admMedioNuevo(k, meta) {
     var hace10 = Date.now() - 600000;                          // los borrados hace más de 10 minutos ya no se pueden deshacer: se tiran
     d.medios = d.medios.filter(function (m) { if ((!m.listo && m.t < limite) || (m.borrado && m.borrado < hace10)) { desechar.push(m.id); return false; } return true; });
     if (d.medios.filter(function (m) { return !m.borrado; }).length >= MAX_MEDIOS) throw new Error('Hay demasiados envíos preparados. Borra alguno antes de mandar otro.');
-    d.medios.unshift({ id: id, tipo: tipo, de: q.rol === 'familia' ? q.nombre : bonito_(String(meta.de || '').trim().slice(0, 30)), autor: q.id, texto: String(meta.texto || '').trim().slice(0, 200),
+    d.medios.unshift({ id: id, tipo: tipo, de: q.rol === 'familia' ? q.nombre : bonito_(String(meta.de || '').trim().slice(0, 30)), autor: q.id, texto: String(meta.texto || '').trim().slice(0, MAX_TEXTO),
       t: Date.now(), mime: mime, bytes: bytes, partes: partes, mini: !!mini, seg: Math.max(0, Math.min(3600, Math.round(Number(meta.seg) || 0))), listo: false });
   });
   desechar.forEach(borrarTrozos_);
