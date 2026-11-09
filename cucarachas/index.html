@@ -1,0 +1,748 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>¡Salva el Trono!</title>
+<style>
+  :root { --oro:#ffd23f; --panel:rgba(20,16,32,.72); --txt:#fff; }
+  * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body { margin:0; height:100%; overflow:hidden; background:#8fd3ff; touch-action:none; user-select:none; -webkit-user-select:none;
+    font-family:"Trebuchet MS","Arial Rounded MT Bold",system-ui,sans-serif; color:var(--txt); }
+  #c { position:fixed; inset:0; width:100vw; height:100vh; display:block; image-rendering:pixelated; image-rendering:crisp-edges; }
+  #hud { position:fixed; inset:0; pointer-events:none; }
+  #hud button, #ov button, #ov { pointer-events:auto; }
+  .pill { background:var(--panel); border-radius:12px; padding:6px 12px; font-weight:800; font-size:18px; text-shadow:0 2px 0 rgba(0,0,0,.4); white-space:nowrap; }
+  #top { position:absolute; top:max(8px,env(safe-area-inset-top)); left:8px; right:184px; display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+  #hpwrap { flex:1 1 180px; min-width:150px; max-width:340px; background:var(--panel); border-radius:12px; padding:5px 10px 7px; }
+  #hplabel { font-size:13px; font-weight:800; margin-bottom:3px; }
+  #hpbar { height:14px; background:#3b1020; border-radius:7px; overflow:hidden; border:2px solid #000; }
+  #hpfill { display:block; height:100%; width:100%; background:linear-gradient(#7ee05a,#2fa83a); transition:width .15s; }
+  #hpwrap.hit #hpfill { background:linear-gradient(#ff7a7a,#d32020); }
+  #hpwrap.hit { animation:shake .25s infinite; }
+  @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-3px)} 75%{transform:translateX(3px)} }
+  #mini { position:absolute; top:max(8px,env(safe-area-inset-top)); right:8px; width:168px; height:108px; border-radius:8px; border:3px solid #000; background:#000; image-rendering:pixelated; opacity:.92; }
+  #side { position:absolute; top:calc(max(8px,env(safe-area-inset-top)) + 118px); right:8px; display:flex; gap:6px; }
+  #side button, #shop button, #bAtk { font:inherit; color:#fff; background:var(--panel); border:2px solid rgba(255,255,255,.35); border-radius:10px; cursor:pointer; }
+  #side button { padding:6px 9px; font-size:13px; font-weight:800; }
+  #banner { position:absolute; top:22%; left:0; right:0; text-align:center; font-size:clamp(22px,5vw,40px); font-weight:900; color:var(--oro);
+    text-shadow:0 3px 0 #000,0 0 14px #000; opacity:0; transition:opacity .25s; padding:0 12px; }
+  #banner.on { opacity:1; }
+  #cross { position:absolute; left:50%; top:50%; width:10px; height:10px; margin:-5px 0 0 -5px; border:2px solid rgba(255,255,255,.85); border-radius:50%; box-shadow:0 0 0 1px #000; display:none; }
+  body.pov #cross { display:block; }
+  #hurt { position:absolute; inset:0; box-shadow:inset 0 0 90px 20px rgba(255,0,0,.75); opacity:0; transition:opacity .2s; }
+  #shop { position:absolute; bottom:max(10px,env(safe-area-inset-bottom)); left:50%; transform:translateX(-50%); display:flex; gap:6px; }
+  #shop button { padding:6px 8px; min-width:86px; font-size:12px; font-weight:800; line-height:1.25; pointer-events:auto; }
+  #shop button b { display:block; font-size:19px; font-weight:400; }
+  #shop button small { color:var(--oro); font-size:13px; }
+  #shop button:disabled { opacity:.45; cursor:default; }
+  #shop button.ok { border-color:var(--oro); box-shadow:0 0 10px rgba(255,210,63,.7); }
+  .pop { position:absolute; font-weight:900; font-size:20px; text-shadow:0 2px 0 #000,0 0 6px #000; transform:translate(-50%,-50%); white-space:nowrap; }
+  /* táctil */
+  #joy, #bAtk { display:none; }
+  body.touch #joy { display:block; position:absolute; width:120px; height:120px; border-radius:50%; background:rgba(255,255,255,.18); border:3px solid rgba(255,255,255,.4); opacity:0; }
+  body.touch #joy i { position:absolute; left:35px; top:35px; width:50px; height:50px; border-radius:50%; background:rgba(255,255,255,.55); }
+  body.touch #bAtk { display:block; position:absolute; right:22px; bottom:90px; width:84px; height:84px; border-radius:50%; font-size:38px; pointer-events:auto; }
+  body.touch #shop { left:8px; bottom:auto; top:calc(max(8px,env(safe-area-inset-top)) + 54px); transform:none; flex-direction:column; }
+  body.touch #shop button { min-width:0; display:flex; gap:6px; align-items:center; text-align:left; padding:4px 8px; }
+  body.touch #shop button b { font-size:16px; display:inline; }
+  body.touch #top { right:8px; top:calc(max(8px,env(safe-area-inset-top)) + 0px); }
+  body.touch #mini { width:112px; height:72px; top:auto; bottom:12px; right:auto; left:12px; }
+  body.touch #side { top:auto; bottom:90px; left:12px; right:auto; }
+  body.touch #side button.k { display:none; }
+  /* pantallas */
+  #ov { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; background:rgba(10,6,20,.78); padding:16px; }
+  #ov.off { display:none; }
+  #card { max-width:520px; width:100%; background:#241a3a; border:4px solid var(--oro); border-radius:18px; padding:22px 22px 18px; text-align:center; box-shadow:0 10px 0 #000; }
+  #card h1 { margin:0 0 6px; font-size:clamp(26px,6vw,38px); color:var(--oro); text-shadow:0 3px 0 #000; }
+  #card p { margin:8px 0; font-size:16px; line-height:1.4; }
+  #card .keys { text-align:left; font-size:14px; background:rgba(0,0,0,.3); border-radius:10px; padding:10px 14px; margin:12px 0; }
+  #card .keys div { margin:3px 0; }
+  kbd { background:#fff; color:#000; border-radius:4px; padding:1px 6px; font-weight:800; font-size:12px; }
+  #go { font:inherit; font-size:22px; font-weight:900; color:#2a1a00; background:linear-gradient(#ffe27a,#ffb300); border:3px solid #000; border-radius:14px; padding:10px 28px; cursor:pointer; box-shadow:0 5px 0 #000; }
+  #go:active { transform:translateY(3px); box-shadow:0 2px 0 #000; }
+</style>
+</head>
+<body class="pov">
+<canvas id="c"></canvas>
+
+<div id="hud">
+  <div id="top">
+    <div class="pill" id="money">💰 <span>0</span></div>
+    <div class="pill" id="kills">🪳 <span>0</span></div>
+    <div id="hpwrap"><div id="hplabel">👑 Rey · reinado <b id="lvl">1</b></div><div id="hpbar"><i id="hpfill"></i></div></div>
+    <div class="pill" id="time">0:00</div>
+  </div>
+  <canvas id="mini" width="168" height="108"></canvas>
+  <div id="side">
+    <button id="bView" title="V">👁 Vista</button>
+    <button id="bPix" class="k" title="P">▦ Píxel</button>
+    <button id="bMute" title="M">🔊</button>
+  </div>
+  <div id="banner"></div>
+  <div id="cross"></div>
+  <div id="hurt"></div>
+  <div id="shop"></div>
+  <div id="joy"><i></i></div>
+  <button id="bAtk">🩴</button>
+</div>
+
+<div id="ov">
+  <div id="card">
+    <h1 id="ovT">¡Salva el Trono!</h1>
+    <p id="ovP">Las cucarachas quieren <b>comerse al rey</b> de tu casa. Mátalas con la chancla: cuantas más caigan, más rico se pone el rey y más dinero te tira. Si se lo comen… <b>se acabó</b>.</p>
+    <div class="keys" id="ovK">
+      <div><kbd>W A S D</kbd> moverse · <kbd>Ratón</kbd> mirar · <kbd>Click</kbd> / <kbd>Espacio</kbd> chancla 🩴</div>
+      <div><kbd>V</kbd> cambiar vista (primera persona ↔ ver al personaje)</div>
+      <div><kbd>1</kbd>–<kbd>5</kbd> comprar mejoras · <kbd>P</kbd> modo píxel · <kbd>M</kbd> sonido</div>
+      <div>Recoge las monedas 🪙 que tira el rey.</div>
+    </div>
+    <button id="go">▶ Jugar</button>
+  </div>
+</div>
+
+<script src="three.min.js"></script>
+<script>
+(() => {
+'use strict';
+const $ = id => document.getElementById(id);
+const rnd = (a, b) => a + Math.random() * (b - a);
+const lerp = (a, b, t) => a + (b - a) * t;
+const TOUCH = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
+if (TOUCH) document.body.classList.add('touch');
+
+/* ════════════════════════════════════════════════════════════
+   TU CASA  —  edita esto para que sea igual que la tuya.
+   Cada celda = 1 metro. x,z = esquina; w,h = ancho y fondo.
+   puertas = huecos en las paredes. nidos = por donde entran.
+   ════════════════════════════════════════════════════════════ */
+const W = 28, H = 18, WALL_H = 2.2;
+const CASA = {
+  salas: [
+    { n:'el Salón',      x:1,  z:1,  w:12, h:9, t:'madera',  c:'#b8814f' },
+    { n:'la Cocina',     x:14, z:1,  w:8,  h:6, t:'baldosa', c:'#e9e4d6' },
+    { n:'el Baño',       x:23, z:1,  w:4,  h:6, t:'baldosa', c:'#bfe3ee' },
+    { n:'el Pasillo',    x:14, z:8,  w:13, h:2, t:'madera',  c:'#9a6b43' },
+    { n:'el Dormitorio', x:1,  z:11, w:10, h:6, t:'moqueta', c:'#8f7fc4' },
+    { n:'el Cuarto 2',   x:12, z:11, w:8,  h:6, t:'moqueta', c:'#d98fa0' },
+    { n:'la Terraza',    x:21, z:11, w:6,  h:6, t:'piedra',  c:'#a7a39a' },
+  ],
+  puertas: [[13,3],[13,8],[17,7],[24,7],[5,10],[16,10],[23,10],[20,13]],
+  trono: [6, 2],
+  inicio: [6, 6],
+  nidos: [[20,2],[25,2],[25,15],[2,15],[13,15],[26,8]],
+  muebles: [ // [x, z, ancho, fondo, alto, color, {y, b:false -> no bloquea}]
+    // Salón
+    [4,1,5,4,0.03,'#9b2335',{b:false}],[5,1,3,3,0.12,'#d4af37',{b:false}],          // alfombra + tarima del trono
+    [2,7,4,1,0.45,'#c0392b'],[2,7,4,0.3,0.95,'#a93226',{b:false}],                  // sofá
+    [3,8,2,1,0.35,'#7b5a3a'],                                                       // mesa baja
+    [7,9,3,1,0.55,'#4a3b2a'],[7.5,9.15,2,0.1,0.9,'#101018',{y:0.55,b:false}],        // tele
+    [1,1,1,3,1.8,'#6b4423'],                                                        // estantería
+    [11,1,1,1,0.4,'#b5651d'],[11.1,1.1,0.8,0.8,0.8,'#2e8b2e',{y:0.4,b:false}],       // planta
+    [11,5,1,1,0.5,'#2e86c1'],
+    // Cocina
+    [14,1,5,1,0.9,'#f0f0f0'],[14,1,5,1,0.08,'#444',{y:0.9,b:false}],
+    [19,1,1,1,0.9,'#333'],[20,1,1,1,1.9,'#dfe6ea'],[20.1,1.95,0.1,0.04,0.5,'#888',{y:1.2,b:false}],
+    [16,4,2,2,0.75,'#a0743c'],[15,4,0.6,0.6,0.45,'#6e4a2a',{b:false}],[18.4,5,0.6,0.6,0.45,'#6e4a2a',{b:false}],
+    // Baño
+    [26,1,1,1,0.5,'#ffffff'],[26,1,1,0.3,1.0,'#ffffff',{b:false}],
+    [23,1,1,1,0.9,'#d6eaf8'],[23,1,1,0.1,0.7,'#7ec8e3',{y:1.1,b:false}],
+    [25,3,2,3,0.55,'#ffffff'],[25.15,3.15,1.7,2.7,0.05,'#5dade2',{y:0.55,b:false}],
+    // Pasillo
+    [26,9,1,1,0.4,'#6e4a2a'],[14,8,1,1,0.5,'#b5651d'],[14.1,8.1,0.8,0.8,0.8,'#2e8b2e',{y:0.5,b:false}],
+    // Dormitorio
+    [1,12,3,3,0.5,'#ecf0f1'],[2,12,2,3,0.58,'#3498db',{b:false}],[1,12,0.7,3,0.62,'#fff',{y:0.5,b:false}],
+    [10,12,1,3,2.0,'#8b5a2b'],[5,15,3,1,0.75,'#a0743c'],
+    // Cuarto 2
+    [12,12,2,3,0.5,'#f5b7b1'],[13,12,1,3,0.58,'#e74c3c',{b:false}],
+    [18,12,1,3,0.75,'#a0743c'],[18.1,13,0.6,1,0.5,'#222',{y:0.75,b:false}],
+    // Terraza
+    [22,12,2,1,0.75,'#c9c9c9'],[26,11,1,1,0.5,'#b5651d'],[26.1,11.1,0.8,0.8,0.8,'#2e8b2e',{y:0.5,b:false}],
+  ],
+};
+
+/* ───────── mundo en rejilla ───────── */
+const kind = new Uint8Array(W * H);     // 0 vacío · 1 suelo · 2 pared
+const blocked = new Uint8Array(W * H);  // mueble
+const I = (x, z) => z * W + x;
+for (const s of CASA.salas) for (let z = s.z; z < s.z + s.h; z++) for (let x = s.x; x < s.x + s.w; x++) kind[I(x, z)] = 1;
+for (const [x, z] of CASA.puertas) kind[I(x, z)] = 1;
+for (let z = 0; z < H; z++) for (let x = 0; x < W; x++) if (!kind[I(x, z)]) {
+  outer: for (let dz = -1; dz <= 1; dz++) for (let dx = -1; dx <= 1; dx++) {
+    const nx = x + dx, nz = z + dz;
+    if (nx >= 0 && nz >= 0 && nx < W && nz < H && kind[I(nx, nz)] === 1) { kind[I(x, z)] = 2; break outer; }
+  }
+}
+const walk = (x, z) => x >= 0 && z >= 0 && x < W && z < H && kind[I(x, z)] === 1 && !blocked[I(x, z)];
+const [TX, TZ] = CASA.trono;
+const KING = { x: TX + 0.5, z: TZ + 0.5 };
+blocked[I(TX, TZ)] = 1;
+const salaDe = (x, z) => (CASA.salas.find(s => x >= s.x && x < s.x + s.w && z >= s.z && z < s.z + s.h) || { n: 'algún sitio' }).n;
+
+/* ───────── three.js ───────── */
+const canvas = $('c');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: 'low-power' });
+renderer.setPixelRatio(1);
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x8fd3ff);
+const camera = new THREE.PerspectiveCamera(72, 1, 0.05, 80);
+camera.rotation.order = 'YXZ';
+scene.add(camera);
+scene.add(new THREE.HemisphereLight(0xffffff, 0x9a8a78, 1.0));
+const sun = new THREE.DirectionalLight(0xffffff, 0.55); sun.position.set(-6, 12, 5); scene.add(sun);
+
+let pixelMode = true;
+function resize() {
+  const w = innerWidth, h = innerHeight;
+  const s = pixelMode ? Math.max(1, Math.round(h / 340)) : 1;
+  renderer.setSize(Math.max(2, Math.floor(w / s)), Math.max(2, Math.floor(h / s)), false);
+  camera.aspect = w / h; camera.updateProjectionMatrix();
+}
+addEventListener('resize', resize); resize();
+
+/* texturas procedurales (estilo píxel) */
+function tex(type, col, rep) {
+  const c = document.createElement('canvas'); c.width = c.height = 32;
+  const g = c.getContext('2d'); g.fillStyle = col; g.fillRect(0, 0, 32, 32);
+  let s = 11; const r = () => (s = (s * 16807) % 2147483647) / 2147483647;
+  const dot = (a, n, sz) => { for (let i = 0; i < n; i++) { g.fillStyle = a; g.fillRect((r() * 32) | 0, (r() * 32) | 0, sz, 1); } };
+  if (type === 'madera') { g.fillStyle = 'rgba(0,0,0,.28)'; for (let y = 0; y < 32; y += 8) { g.fillRect(0, y, 32, 1); g.fillRect(y % 16 ? 8 : 22, y, 1, 8); } dot('rgba(255,255,255,.1)', 30, 3); dot('rgba(0,0,0,.1)', 30, 3); }
+  else if (type === 'baldosa') { g.fillStyle = 'rgba(255,255,255,.4)'; g.fillRect(0, 0, 16, 16); g.fillRect(16, 16, 16, 16); g.fillStyle = 'rgba(0,0,0,.2)'; g.fillRect(0, 0, 32, 1); g.fillRect(0, 0, 1, 32); g.fillRect(0, 16, 32, 1); g.fillRect(16, 0, 1, 32); }
+  else if (type === 'moqueta') { dot('rgba(0,0,0,.12)', 90, 1); dot('rgba(255,255,255,.12)', 90, 1); }
+  else if (type === 'piedra') { for (let y = 0; y < 32; y += 16) for (let x = 0; x < 32; x += 16) { g.fillStyle = r() > .5 ? 'rgba(255,255,255,.12)' : 'rgba(0,0,0,.1)'; g.fillRect(x, y, 16, 16); } g.fillStyle = 'rgba(0,0,0,.25)'; g.fillRect(0, 0, 32, 1); g.fillRect(0, 0, 1, 32); g.fillRect(0, 16, 32, 1); g.fillRect(16, 0, 1, 32); }
+  else if (type === 'ladrillo') { g.fillStyle = 'rgba(120,100,70,.35)'; for (let y = 0; y < 32; y += 8) { g.fillRect(0, y, 32, 1); g.fillRect(y % 16 ? 6 : 22, y, 1, 8); } dot('rgba(0,0,0,.06)', 40, 3); }
+  else if (type === 'cesped') { dot('rgba(0,80,0,.25)', 120, 2); dot('rgba(255,255,255,.1)', 60, 2); }
+  const t = new THREE.CanvasTexture(c);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping; t.magFilter = THREE.NearestFilter; t.minFilter = THREE.NearestFilter;
+  if (rep) t.repeat.set(rep[0], rep[1]);
+  return t;
+}
+const lam = (o) => new THREE.MeshLambertMaterial(o);
+
+/* suelos */
+for (const s of CASA.salas) {
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(s.w, s.h), lam({ map: tex(s.t, s.c, [s.w, s.h]) }));
+  m.rotation.x = -Math.PI / 2; m.position.set(s.x + s.w / 2, 0, s.z + s.h / 2); scene.add(m);
+}
+const doorTex = tex('madera', '#c9a56a');
+for (const [x, z] of CASA.puertas) {
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), lam({ map: doorTex }));
+  m.rotation.x = -Math.PI / 2; m.position.set(x + .5, 0.005, z + .5); scene.add(m);
+  const lint = new THREE.Mesh(new THREE.BoxGeometry(1, .22, 1), lam({ color: 0xe9dcc0 })); lint.position.set(x + .5, WALL_H - .11, z + .5); scene.add(lint);
+}
+const ground = new THREE.Mesh(new THREE.PlaneGeometry(140, 140), lam({ map: tex('cesped', '#6cc04a', [70, 70]) }));
+ground.rotation.x = -Math.PI / 2; ground.position.set(W / 2, -0.03, H / 2); scene.add(ground);
+
+/* paredes (1 sola malla instanciada) */
+{
+  let n = 0; for (let i = 0; i < W * H; i++) if (kind[i] === 2) n++;
+  const walls = new THREE.InstancedMesh(new THREE.BoxGeometry(1, WALL_H, 1), lam({ map: tex('ladrillo', '#f1e2c2') }), n);
+  const mt = new THREE.Matrix4(); let k = 0;
+  for (let z = 0; z < H; z++) for (let x = 0; x < W; x++) if (kind[I(x, z)] === 2) { mt.setPosition(x + .5, WALL_H / 2, z + .5); walls.setMatrixAt(k++, mt); }
+  scene.add(walls);
+}
+
+/* muebles */
+const matCache = {};
+const mat = c => matCache[c] || (matCache[c] = lam({ color: new THREE.Color(c) }));
+const boxCache = {};
+function box(w, h, d, c) { const k = w + '_' + h + '_' + d; return new THREE.Mesh(boxCache[k] || (boxCache[k] = new THREE.BoxGeometry(w, h, d)), mat(c)); }
+for (const [x, z, w, d, h, c, o = {}] of CASA.muebles) {
+  const m = box(w, h, d, c); m.position.set(x + w / 2, (o.y || 0) + h / 2, z + d / 2); scene.add(m);
+  if (o.b !== false) for (let cz = Math.floor(z + .001); cz < Math.ceil(z + d - .001); cz++) for (let cx = Math.floor(x + .001); cx < Math.ceil(x + w - .001); cx++) blocked[I(cx, cz)] = 1;
+}
+
+/* ───────── personajes de cubos ───────── */
+function pivot(parent, x, y, z) { const g = new THREE.Group(); g.position.set(x, y, z); parent.add(g); return g; }
+function part(parent, w, h, d, c, x, y, z) { const m = box(w, h, d, c); m.position.set(x, y, z); parent.add(m); return m; }
+function slipper(parent, y) { // se extiende hacia -y (a lo largo del brazo)
+  const g = new THREE.Group(); g.position.y = y; parent.add(g);
+  part(g, .2, .38, .05, '#ff9d1a', 0, -.22, 0); part(g, .2, .12, .09, '#e53935', 0, -.1, .02); part(g, .2, .38, .03, '#6b3a10', 0, -.22, -.04);
+  return g;
+}
+function person({ skin = '#f6cf3f', shirt = '#2d7be0', pants = '#3a8a3a', hair = '#4a2c12' } = {}) {
+  const g = new THREE.Group(), P = { g };
+  P.legL = pivot(g, -.13, .7, 0); part(P.legL, .24, .7, .27, pants, 0, -.35, 0);
+  P.legR = pivot(g, .13, .7, 0);  part(P.legR, .24, .7, .27, pants, 0, -.35, 0);
+  P.torso = part(g, .54, .7, .3, shirt, 0, 1.05, 0);
+  P.armL = pivot(g, -.38, 1.37, 0); part(P.armL, .2, .66, .22, skin, 0, -.31, 0);
+  P.armR = pivot(g, .38, 1.37, 0);  part(P.armR, .2, .66, .22, skin, 0, -.31, 0);
+  P.head = pivot(g, 0, 1.4, 0);
+  part(P.head, .42, .42, .42, skin, 0, .21, 0); part(P.head, .45, .12, .45, hair, 0, .45, 0);
+  part(P.head, .06, .08, .02, '#111', -.1, .26, .215); part(P.head, .06, .08, .02, '#111', .1, .26, .215); part(P.head, .16, .04, .02, '#7a2a1a', 0, .12, .215);
+  return P;
+}
+
+/* jugador */
+const me = person();
+scene.add(me.g);
+const slipHand = slipper(me.armR, -.6);
+const povArm = new THREE.Group(); camera.add(povArm); povArm.position.set(.36, -.38, -.55);
+const slipPov = slipper(povArm, 0); slipPov.scale.setScalar(1.5);
+const povHand = box(.14, .14, .14, '#f6cf3f'); povHand.position.set(0, -.02, 0); povArm.add(povHand);
+
+/* rey en el trono */
+const king = person({ skin: '#f1c27d', shirt: '#b3122b', pants: '#3b2a6b', hair: '#d9d9d9' });
+{
+  const T = new THREE.Group(); T.position.set(KING.x, 0, KING.z); scene.add(T);
+  part(T, 1.0, .5, .9, '#7b1fa2', 0, .25, 0);                    // asiento
+  part(T, 1.1, .12, 1.0, '#d4af37', 0, .06, 0);                  // base
+  part(T, 1.0, 1.9, .18, '#d4af37', 0, .95, -.4);                // respaldo
+  part(T, .76, 1.2, .06, '#7b1fa2', 0, .95, -.3);
+  part(T, .14, .4, .8, '#d4af37', -.52, .5, .05); part(T, .14, .4, .8, '#d4af37', .52, .5, .05);
+  for (const x of [-.4, 0, .4]) part(T, .16, .3, .16, '#ffd23f', x, 2.05, -.4);
+  T.add(king.g); king.g.position.set(0, -.06, -.05);
+  king.legL.rotation.x = king.legR.rotation.x = -Math.PI / 2;
+  part(king.g, .6, .85, .05, '#d81b3a', 0, 1.0, -.2);            // capa
+  part(king.head, .46, .12, .46, '#ffd23f', 0, .56, 0);          // corona
+  for (const x of [-.16, 0, .16]) part(king.head, .08, .12, .08, '#ffd23f', x, .68, 0);
+  king.g.rotation.y = 0;
+  king.root = T;
+}
+
+/* ───────── cucarachas ───────── */
+const gBody = new THREE.BoxGeometry(.26, .1, .38), gWing = new THREE.BoxGeometry(.22, .04, .3), gHead = new THREE.BoxGeometry(.14, .08, .1),
+      gAnt = new THREE.BoxGeometry(.02, .02, .22), gLeg = new THREE.BoxGeometry(.42, .02, .035);
+const mR = lam({ color: 0x5a2d0c }), mRb = lam({ color: 0x8a1c0a }), mW = lam({ color: 0x7b4116 }), mH = lam({ color: 0x2a1204 });
+function makeRoach(big) {
+  const g = new THREE.Group(), legs = [];
+  const add = (geo, m, x, y, z, ry = 0) => { const o = new THREE.Mesh(geo, m); o.position.set(x, y, z); o.rotation.y = ry; g.add(o); return o; };
+  add(gBody, big ? mRb : mR, 0, .09, 0); add(gWing, mW, 0, .145, -.02); add(gHead, mH, 0, .09, .23);
+  add(gAnt, mH, -.05, .12, .34, .35); add(gAnt, mH, .05, .12, .34, -.35);
+  for (const z of [-.1, .02, .14]) legs.push(add(gLeg, mH, 0, .04, z, z < 0 ? .5 : z > .1 ? -.5 : 0));
+  g.scale.setScalar(big ? 1.9 : 1);
+  return { g, legs };
+}
+
+/* ───────── flujo hacia el trono (BFS) ───────── */
+const dist = new Int16Array(W * H).fill(-1);
+(function flow() {
+  const q = [];
+  for (let dz = -1; dz <= 1; dz++) for (let dx = -1; dx <= 1; dx++) { const x = TX + dx, z = TZ + dz; if (walk(x, z)) { dist[I(x, z)] = 0; q.push([x, z]); } }
+  for (let h = 0; h < q.length; h++) {
+    const [x, z] = q[h], d = dist[I(x, z)];
+    for (const [dx, dz] of [[1,0],[-1,0],[0,1],[0,-1]]) { const nx = x + dx, nz = z + dz; if (walk(nx, nz) && dist[I(nx, nz)] < 0) { dist[I(nx, nz)] = d + 1; q.push([nx, nz]); } }
+  }
+})();
+const DIRS = [[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]];
+function nextCell(cx, cz) {
+  let best = null, bd = dist[I(cx, cz)];
+  for (const [dx, dz] of DIRS) {
+    const nx = cx + dx, nz = cz + dz;
+    if (!walk(nx, nz) || dist[I(nx, nz)] < 0) continue;
+    if (dx && dz && (!walk(cx + dx, cz) || !walk(cx, cz + dz))) continue;
+    if (dist[I(nx, nz)] < bd) { bd = dist[I(nx, nz)]; best = [nx, nz]; }
+  }
+  return best;
+}
+
+/* ───────── estado del juego ───────── */
+const G = {
+  state: 'menu', t: 0, kills: 0, money: 0, hp: 100, lv: { rango: 0, rapido: 0, bota: 0 },
+  roaches: [], coins: [], parts: [], pops: [],
+  x: CASA.inicio[0] + .5, z: CASA.inicio[1] + .5, yaw: 0, pitch: 0, view: 'pov',
+  cd: 0, swingT: 9, hitPending: false, atkHeld: false, walkPh: 0,
+  coinT: 2, spawnT: 3, burstT: 40, bite: 0, dyingT: 0, locked: false, wasLocked: false,
+};
+const keys = {};
+let best = 0; try { best = +localStorage.getItem('trono_best') || 0; } catch (e) {}
+const reign = () => Math.min(25, 1 + Math.floor(G.kills / 8));
+const range = () => 1.5 + .3 * G.lv.rango;
+const cooldown = () => Math.max(.16, .5 * Math.pow(.85, G.lv.rapido));
+const speed = () => 4.2 * (1 + .1 * G.lv.bota);
+
+/* sonido */
+let AC = null, muted = false;
+function snd(f1, f2, d, type = 'square', v = .05) {
+  if (muted) return;
+  try {
+    AC = AC || new (window.AudioContext || window.webkitAudioContext)();
+    const o = AC.createOscillator(), g = AC.createGain(), t = AC.currentTime;
+    o.type = type; o.frequency.setValueAtTime(f1, t); o.frequency.exponentialRampToValueAtTime(Math.max(30, f2), t + d);
+    g.gain.setValueAtTime(v, t); g.gain.exponentialRampToValueAtTime(.0001, t + d);
+    o.connect(g); g.connect(AC.destination); o.start(); o.stop(t + d);
+  } catch (e) {}
+}
+
+/* avisos y textos flotantes */
+let bannerTO = 0;
+function say(txt, ms = 2200) { const b = $('banner'); b.textContent = txt; b.classList.add('on'); clearTimeout(bannerTO); bannerTO = setTimeout(() => b.classList.remove('on'), ms); }
+const _v = new THREE.Vector3();
+function pop(txt, x, y, z, col = '#ffd23f') {
+  const el = document.createElement('div'); el.className = 'pop'; el.textContent = txt; el.style.color = col; $('hud').appendChild(el);
+  G.pops.push({ el, x, y, z, t: 0 });
+}
+
+/* partículas */
+const gPart = new THREE.BoxGeometry(.07, .07, .07);
+function burst(x, y, z, col, n) {
+  for (let i = 0; i < n; i++) {
+    const m = new THREE.Mesh(gPart, mat(col)); m.position.set(x, y, z); scene.add(m);
+    G.parts.push({ m, vx: rnd(-2, 2), vy: rnd(1.5, 3.5), vz: rnd(-2, 2), life: .8 });
+  }
+}
+
+/* ───────── lógica ───────── */
+function spawnRoach(nest, forceBig) {
+  const big = forceBig ?? (Math.random() < Math.min(.22, G.t / 700));
+  const r = makeRoach(big), [cx, cz] = nest || CASA.nidos[(Math.random() * CASA.nidos.length) | 0];
+  const o = {
+    ...r, x: cx + rnd(.25, .75), z: cz + rnd(.25, .75), ox: rnd(-.28, .28), oz: rnd(-.28, .28), big,
+    sp: (1.4 + Math.min(1.4, G.t * .005)) * rnd(.85, 1.15) * (big ? .75 : 1), hp: big ? 3 : 1, r: big ? .38 : .2,
+    ph: Math.random() * 6, tx: 0, tz: 0, has: false, dead: false, deadT: 0, biting: false, bt: Math.random() * .6, yaw: 0,
+  };
+  o.g.position.set(o.x, 0, o.z); scene.add(o.g); G.roaches.push(o);
+}
+function killRoach(r) {
+  r.dead = true; r.deadT = 0; G.kills++;
+  burst(r.x, .15, r.z, r.big ? '#8a1c0a' : '#6b3410', r.big ? 10 : 6); burst(r.x, .15, r.z, '#e8e0a0', 2);
+  r.g.rotation.z = Math.PI; r.g.position.y = .12 * r.g.scale.x;
+  snd(rnd(260, 340), 70, .12, 'square', .06);
+  const lv = reign(); if (lv > (G.lastLv || 1)) { say('¡El rey sube a reinado ' + lv + '! 👑 +dinero'); snd(400, 900, .3, 'triangle', .08); }
+  G.lastLv = lv;
+}
+function hurtRoach(r, dmg) { if (r.dead) return; r.hp -= dmg; if (r.hp <= 0) killRoach(r); else { burst(r.x, .2, r.z, '#e8e0a0', 3); snd(180, 120, .08, 'square', .05); } }
+
+function doHit() {
+  const fx = -Math.sin(G.yaw), fz = -Math.cos(G.yaw), R = range(); let hit = 0;
+  for (const r of G.roaches) {
+    if (r.dead) continue;
+    const dx = r.x - G.x, dz = r.z - G.z, d = Math.hypot(dx, dz);
+    if (d > R + r.r) continue;
+    if (d > .5 && (dx * fx + dz * fz) / d < .35) continue; // cono ~140°
+    hurtRoach(r, 1); hit++;
+  }
+  if (!hit) snd(120, 60, .08, 'sawtooth', .03);
+}
+function attack() { if (G.cd > 0) return; G.cd = cooldown(); G.swingT = 0; G.hitPending = true; snd(300, 160, .07, 'triangle', .04); }
+
+function spray() {
+  for (const r of G.roaches) if (!r.dead && Math.hypot(r.x - G.x, r.z - G.z) < 5) hurtRoach(r, 3);
+  burst(G.x, 1, G.z, '#bff7ff', 18); snd(900, 200, .35, 'sawtooth', .05); pop('¡PSSSST!', G.x, 1.9, G.z, '#7fe9ff');
+}
+
+function dropCoin() {
+  let tx = KING.x, tz = KING.z;
+  for (let i = 0; i < 12; i++) {
+    const a = rnd(0, 6.283), d = rnd(1.8, 4.6), x = KING.x + Math.cos(a) * d, z = KING.z + Math.sin(a) * d;
+    if (walk(Math.floor(x), Math.floor(z))) { tx = x; tz = z; break; }
+  }
+  if (G.coins.length >= 28) { const c = G.coins.shift(); scene.remove(c.m); }
+  const val = reign() * 2, m = box(.3, .3, .07, val >= 10 ? '#ffe9a0' : '#ffd23f');
+  m.scale.setScalar(val >= 10 ? 1.5 : 1); scene.add(m);
+  G.coins.push({ m, x0: KING.x, z0: KING.z, x1: tx, z1: tz, t: 0, val, age: 0, x: KING.x, z: KING.z });
+  G.throwT = .35; snd(700, 1100, .1, 'triangle', .04);
+}
+
+function addMoney(v) { G.money += v; }
+
+/* mejoras */
+const UPG = [
+  { id: 'rango',  ico: '🩴', nom: 'Chancla XL',   max: 6, cost: () => 12 + 12 * G.lv.rango,  ok: () => G.lv.rango < 6,  buy: () => G.lv.rango++ },
+  { id: 'rapido', ico: '💪', nom: 'Brazo rápido', max: 6, cost: () => 15 + 15 * G.lv.rapido, ok: () => G.lv.rapido < 6, buy: () => G.lv.rapido++ },
+  { id: 'bota',   ico: '👟', nom: 'Zapatillas',   max: 5, cost: () => 10 + 12 * G.lv.bota,   ok: () => G.lv.bota < 5,   buy: () => G.lv.bota++ },
+  { id: 'curar',  ico: '💊', nom: 'Curar al rey', cost: () => 20, ok: () => G.hp < 100, buy: () => { G.hp = Math.min(100, G.hp + 30); } },
+  { id: 'spray',  ico: '🧴', nom: 'Insecticida',  cost: () => 30, ok: () => true, buy: () => spray() },
+];
+const shopEl = $('shop');
+UPG.forEach((u, i) => {
+  const b = document.createElement('button'); b.innerHTML = `<b>${u.ico}</b>${u.nom}<br><small></small>`;
+  b.onclick = () => buy(i); u.el = b; u.sm = b.querySelector('small'); shopEl.appendChild(b);
+});
+function buy(i) {
+  const u = UPG[i]; if (G.state !== 'play' || !u.ok() || G.money < u.cost()) { snd(110, 80, .12, 'square', .05); return; }
+  G.money -= u.cost(); u.buy(); snd(500, 1000, .15, 'triangle', .07);
+}
+function refreshShop() {
+  UPG.forEach((u, i) => {
+    const can = u.ok() && G.money >= u.cost(), lvl = u.max ? ` ${G.lv[u.id]}/${u.max}` : '';
+    const txt = u.ok() ? `$${u.cost()} [${i + 1}]${lvl}` : 'MAX';
+    if (u.sm.textContent !== txt) u.sm.textContent = txt;
+    u.el.disabled = !can; u.el.classList.toggle('ok', can);
+  });
+}
+
+/* ───────── actualización ───────── */
+function canStand(x, z) { const r = .28; return walk(Math.floor(x - r), Math.floor(z - r)) && walk(Math.floor(x + r), Math.floor(z - r)) && walk(Math.floor(x - r), Math.floor(z + r)) && walk(Math.floor(x + r), Math.floor(z + r)); }
+
+const joy = { id: null, x0: 0, y0: 0, dx: 0, dy: 0 };
+function updatePlayer(dt) {
+  let mx = (keys.KeyD || keys.ArrowRight ? 1 : 0) - (keys.KeyA || keys.ArrowLeft ? 1 : 0);
+  let mz = (keys.KeyW || keys.ArrowUp ? 1 : 0) - (keys.KeyS || keys.ArrowDown ? 1 : 0);
+  mx += joy.dx; mz += -joy.dy;
+  const l = Math.hypot(mx, mz); if (l > 1) { mx /= l; mz /= l; }
+  const s = Math.sin(G.yaw), c = Math.cos(G.yaw);
+  const vx = (c * mx - s * mz) * speed() * dt, vz = (-s * mx - c * mz) * speed() * dt;
+  if (canStand(G.x + vx, G.z)) G.x += vx;
+  if (canStand(G.x, G.z + vz)) G.z += vz;
+  G.walkPh += Math.hypot(vx, vz) * 2.2;
+  const moving = Math.hypot(vx, vz) > 1e-4, sw = moving ? Math.sin(G.walkPh) * .8 : 0;
+  me.legL.rotation.x = sw; me.legR.rotation.x = -sw; me.armL.rotation.x = -sw * .7;
+  me.g.position.set(G.x, 0, G.z); me.g.rotation.y = G.yaw + Math.PI;
+  if (G.atkHeld) attack();
+  G.cd -= dt; G.swingT += dt;
+  if (G.hitPending && G.swingT >= .12) { G.hitPending = false; doHit(); }
+  // animación de la chancla (a = ángulo del brazo)
+  const t = G.swingT, idle3 = -.5, up3 = -2.8, hit3 = -1.15, idleP = .75, upP = -2.3, hitP = 1.2;
+  let k;  // 0 = reposo, 1 = arriba, 2 = golpe
+  let a3, aP;
+  if (t < .1)      { const p = t / .1;        a3 = lerp(idle3, up3, p);  aP = lerp(idleP, upP, p); }
+  else if (t < .2) { const p = (t - .1) / .1; a3 = lerp(up3, hit3, p);   aP = lerp(upP, hitP, p); }
+  else if (t < .45){ const p = (t - .2) / .25;a3 = lerp(hit3, idle3, p); aP = lerp(hitP, idleP, p); }
+  else             { a3 = idle3; aP = idleP; }
+  me.armR.rotation.x = a3; povArm.rotation.x = aP;
+}
+
+function updateRoaches(dt, canBite) {
+  let biting = 0;
+  for (let i = G.roaches.length - 1; i >= 0; i--) {
+    const r = G.roaches[i];
+    if (r.dead) { r.deadT += dt; const k = Math.max(0, 1 - Math.max(0, r.deadT - .5) / .5); r.g.scale.setScalar((r.big ? 1.9 : 1) * k); if (r.deadT > 1) { scene.remove(r.g); G.roaches.splice(i, 1); } continue; }
+    const cx = Math.floor(r.x), cz = Math.floor(r.z), d0 = dist[I(cx, cz)];
+    r.ph += dt * 22;
+    for (let j = 0; j < 3; j++) r.legs[j].rotation.y = (j < 1 ? .5 : j > 1 ? -.5 : 0) + Math.sin(r.ph + j * 2) * .35;
+    if (d0 === 0) { // pegada al rey: mordisco
+      r.biting = true; biting++;
+      const dx = KING.x - r.x, dz = KING.z - r.z; r.yaw = Math.atan2(dx, dz);
+      r.bt += dt;
+      if (r.bt > .7) { r.bt = 0; if (canBite) { G.hp -= r.big ? 3 : 1; G.bite = .35; snd(140, 90, .08, 'sawtooth', .04); } }
+      r.g.position.y = Math.abs(Math.sin(r.ph * .5)) * .05;
+    } else {
+      if (!r.has || Math.hypot(r.tx - r.x, r.tz - r.z) < .06) {
+        const n = d0 >= 0 ? nextCell(cx, cz) : null;
+        if (n) { r.tx = n[0] + .5 + r.ox; r.tz = n[1] + .5 + r.oz; r.has = true; }
+        else { r.tx = KING.x; r.tz = KING.z; r.has = true; }
+      }
+      const dx = r.tx - r.x, dz = r.tz - r.z, d = Math.hypot(dx, dz) || 1, st = Math.min(d, r.sp * dt);
+      const nx = r.x + dx / d * st, nz = r.z + dz / d * st;
+      if (walk(Math.floor(nx), Math.floor(nz)) || d0 < 0) { r.x = nx; r.z = nz; }
+      r.yaw = Math.atan2(dx, dz) + Math.sin(r.ph * .3) * .15;
+    }
+    r.g.position.x = r.x; r.g.position.z = r.z; r.g.rotation.y = r.yaw;
+  }
+  return biting;
+}
+
+function updateWorld(dt, live) {
+  // spawn
+  if (live) {
+    G.t += dt; G.spawnT -= dt; G.burstT -= dt;
+    const iv = Math.max(.5, 2.4 - G.t * .012);
+    if (G.spawnT <= 0 && G.roaches.length < 70) { G.spawnT = iv * rnd(.7, 1.3); spawnRoach(); }
+    if (G.burstT <= 0) {
+      G.burstT = Math.max(25, 45 - G.t * .05); const n = CASA.nidos[(Math.random() * CASA.nidos.length) | 0];
+      say('¡Invasión desde ' + salaDe(n[0], n[1]) + '! 🪳🪳🪳'); snd(200, 100, .5, 'sawtooth', .06);
+      for (let i = 0; i < 5 + Math.floor(G.t / 40); i++) spawnRoach(n);
+    }
+    G.coinT -= dt; if (G.coinT <= 0) { G.coinT = Math.max(.7, 2.6 - .15 * reign()); dropCoin(); }
+  }
+  // rey
+  G.throwT = Math.max(0, (G.throwT || 0) - dt);
+  king.armR.rotation.x = G.throwT > 0 ? -2.4 + Math.sin(G.throwT * 12) * .4 : -.15;
+  king.armL.rotation.x = Math.sin(performance.now() / 600) * .08;
+  king.head.rotation.y = Math.sin(performance.now() / 1300) * .4;
+  const shake = G.bite > 0 ? (Math.random() - .5) * .08 : 0; king.root.position.x = KING.x + shake;
+  // monedas
+  for (let i = G.coins.length - 1; i >= 0; i--) {
+    const c = G.coins[i]; c.age += dt;
+    if (c.t < 1) { c.t = Math.min(1, c.t + dt / .7); c.x = lerp(c.x0, c.x1, c.t); c.z = lerp(c.z0, c.z1, c.t); c.m.position.set(c.x, lerp(1.5, .3, c.t * c.t) + Math.sin(c.t * Math.PI) * 1.2, c.z); }
+    else {
+      c.m.position.y = .35 + Math.sin(c.age * 4) * .06; c.m.rotation.y += dt * 3.5;
+      if (live && Math.hypot(c.x - G.x, c.z - G.z) < .85) { addMoney(c.val); pop('+$' + c.val, c.x, 1, c.z); snd(900, 1500, .12, 'triangle', .06); scene.remove(c.m); G.coins.splice(i, 1); continue; }
+    }
+    c.m.visible = c.age < 18 || Math.floor(c.age * 6) % 2 === 0;
+    if (c.age > 25) { scene.remove(c.m); G.coins.splice(i, 1); }
+  }
+  // partículas
+  for (let i = G.parts.length - 1; i >= 0; i--) {
+    const p = G.parts[i]; p.life -= dt; p.vy -= 9 * dt;
+    p.m.position.x += p.vx * dt; p.m.position.z += p.vz * dt; p.m.position.y = Math.max(.04, p.m.position.y + p.vy * dt);
+    if (p.m.position.y <= .04) { p.vx = p.vz = 0; p.vy = 0; }
+    if (p.life <= 0) { scene.remove(p.m); G.parts.splice(i, 1); }
+  }
+}
+
+function update(dt) {
+  if (G.state === 'play') {
+    updatePlayer(dt);
+    updateWorld(dt, true);
+    const n = updateRoaches(dt, true);
+    if (G.bite > 0) G.bite -= dt;
+    if (n > 0 && !G.warned) { G.warned = true; say('¡Se están comiendo al rey! 😱', 1800); setTimeout(() => G.warned = false, 6000); }
+    if (G.hp <= 0) { G.hp = 0; G.state = 'dying'; G.dyingT = 1.8; say('¡Se lo están comiendo!!! 🪳🪳🪳', 3000); snd(300, 40, 1.2, 'sawtooth', .09); document.exitPointerLock && document.exitPointerLock(); }
+  } else if (G.state === 'dying') {
+    G.dyingT -= dt; updateWorld(dt, false); updateRoaches(dt, false);
+    king.g.scale.y = Math.max(.05, G.dyingT / 1.8); king.g.rotation.z = (1 - G.dyingT / 1.8) * .3;
+    if (G.dyingT <= 0) endGame();
+  }
+}
+
+/* ───────── cámara ───────── */
+function camBlocked(x, y, z) { if (y > WALL_H + .15) return false; const cx = Math.floor(x), cz = Math.floor(z); return cx < 0 || cz < 0 || cx >= W || cz >= H || kind[I(cx, cz)] !== 1; }
+function placeCamera() {
+  const pov = G.view === 'pov';
+  me.g.visible = !pov; povArm.visible = pov;
+  const cp = Math.cos(G.pitch), fx = -Math.sin(G.yaw) * cp, fy = Math.sin(G.pitch), fz = -Math.cos(G.yaw) * cp;
+  if (pov) { camera.position.set(G.x, 1.62, G.z); camera.rotation.set(G.pitch, G.yaw, 0); }
+  else {
+    const tx = G.x, ty = 1.55, tz = G.z; let s = 1, dMax = 3.6;
+    for (let k = 1; k <= 24; k++) { const f = k / 24, px = tx - fx * dMax * f, py = ty - fy * dMax * f, pz = tz - fz * dMax * f; if (camBlocked(px, py, pz) || py < .25) { s = (k - 1) / 24; break; } }
+    const d = Math.max(.7, dMax * s - .15);
+    camera.position.set(tx - fx * d, Math.max(.3, ty - fy * d), tz - fz * d); camera.lookAt(tx, ty, tz);
+  }
+}
+function setView(v) {
+  G.view = v; document.body.classList.toggle('pov', v === 'pov');
+  if (v === 'pov') G.pitch = Math.max(-1.3, Math.min(1.3, G.pitch)); else G.pitch = Math.max(-1.1, Math.min(.3, G.pitch < -1.1 || G.pitch > .3 ? -.4 : G.pitch === 0 ? -.4 : G.pitch));
+}
+
+/* ───────── HUD ───────── */
+const mini = $('mini'), mg = mini.getContext('2d'), SC = 6, miniBG = document.createElement('canvas');
+miniBG.width = W * SC; miniBG.height = H * SC;
+{
+  const g = miniBG.getContext('2d'); g.fillStyle = '#243a24'; g.fillRect(0, 0, miniBG.width, miniBG.height);
+  for (const s of CASA.salas) { g.fillStyle = s.c; g.fillRect(s.x * SC, s.z * SC, s.w * SC, s.h * SC); }
+  g.fillStyle = '#c9a56a'; for (const [x, z] of CASA.puertas) g.fillRect(x * SC, z * SC, SC, SC);
+  g.fillStyle = '#3d2f22'; for (let z = 0; z < H; z++) for (let x = 0; x < W; x++) if (kind[I(x, z)] === 2) g.fillRect(x * SC, z * SC, SC, SC);
+  g.fillStyle = 'rgba(0,0,0,.45)'; for (let z = 0; z < H; z++) for (let x = 0; x < W; x++) if (blocked[I(x, z)]) g.fillRect(x * SC + 1, z * SC + 1, SC - 2, SC - 2);
+}
+function drawMini() {
+  mg.drawImage(miniBG, 0, 0);
+  mg.fillStyle = '#ffd23f'; mg.fillRect(KING.x * SC - 5, KING.z * SC - 5, 10, 10); mg.strokeStyle = '#000'; mg.strokeRect(KING.x * SC - 5, KING.z * SC - 5, 10, 10);
+  for (const c of G.coins) if (c.t >= 1) { mg.fillStyle = '#ffe94a'; mg.fillRect(c.x * SC - 1, c.z * SC - 1, 3, 3); }
+  for (const r of G.roaches) if (!r.dead) { mg.fillStyle = r.big ? '#ff1a1a' : '#ff5a3a'; const s = r.big ? 5 : 3; mg.fillRect(r.x * SC - s / 2, r.z * SC - s / 2, s, s); }
+  mg.save(); mg.translate(G.x * SC, G.z * SC); mg.rotate(-G.yaw); mg.fillStyle = '#fff'; mg.strokeStyle = '#000';
+  mg.beginPath(); mg.moveTo(0, -6); mg.lineTo(4, 4); mg.lineTo(-4, 4); mg.closePath(); mg.fill(); mg.stroke(); mg.restore();
+}
+const el = { money: $('money').lastElementChild, kills: $('kills').lastElementChild, time: $('time'), lvl: $('lvl'), fill: $('hpfill'), wrap: $('hpwrap'), hurt: $('hurt') };
+let lastShown = {};
+function setTxt(k, v) { if (lastShown[k] !== v) { lastShown[k] = v; el[k].textContent = v; } }
+function updateHUD() {
+  setTxt('money', G.money); setTxt('kills', G.kills); setTxt('lvl', reign());
+  const m = Math.floor(G.t / 60), s = Math.floor(G.t % 60); setTxt('time', m + ':' + (s < 10 ? '0' : '') + s);
+  el.fill.style.width = Math.max(0, G.hp) + '%'; el.wrap.classList.toggle('hit', G.bite > 0);
+  el.hurt.style.opacity = G.bite > 0 ? .9 : (G.hp < 30 && G.state === 'play' ? .35 : 0);
+  refreshShop(); drawMini();
+  for (let i = G.pops.length - 1; i >= 0; i--) {
+    const p = G.pops[i]; p.t += 1 / 60;
+    _v.set(p.x, p.y + p.t * .9, p.z).project(camera);
+    if (_v.z > 1 || p.t > .9) { p.el.remove(); G.pops.splice(i, 1); continue; }
+    p.el.style.left = (_v.x * .5 + .5) * innerWidth + 'px'; p.el.style.top = (-_v.y * .5 + .5) * innerHeight + 'px'; p.el.style.opacity = 1 - p.t / .9;
+  }
+}
+
+/* ───────── estados: inicio / pausa / fin ───────── */
+const ov = $('ov');
+function overlay(title, html, btn, keysHTML) {
+  $('ovT').textContent = title; $('ovP').innerHTML = html; $('go').textContent = btn;
+  $('ovK').style.display = keysHTML === false ? 'none' : ''; ov.classList.remove('off');
+}
+function lock() { if (TOUCH) return; try { const p = canvas.requestPointerLock(); if (p && p.catch) p.catch(() => {}); } catch (e) {} }
+function resetGame() {
+  for (const r of G.roaches) scene.remove(r.g); for (const c of G.coins) scene.remove(c.m); for (const p of G.parts) scene.remove(p.m); for (const p of G.pops) p.el.remove();
+  Object.assign(G, { t: 0, kills: 0, money: 0, hp: 100, lv: { rango: 0, rapido: 0, bota: 0 }, roaches: [], coins: [], parts: [], pops: [],
+    x: CASA.inicio[0] + .5, z: CASA.inicio[1] + .5, yaw: 0, pitch: G.view === 'pov' ? 0 : -.4, cd: 0, swingT: 9, hitPending: false, atkHeld: false,
+    coinT: 2, spawnT: 2, burstT: 40, bite: 0, dyingT: 0, lastLv: 1, throwT: 0 });
+  king.g.scale.y = 1; king.g.rotation.z = 0;
+}
+function startGame() {
+  if (G.state !== 'play') { if (G.state !== 'pause') resetGame(); G.state = 'play'; }
+  ov.classList.add('off'); lock();
+  if (!G.intro) { G.intro = true; say('¡Defiende al rey! Mata cucarachas 🩴 y recoge sus monedas 🪙', 3500); }
+  snd(500, 800, .15, 'triangle', .05);
+}
+function endGame() {
+  G.state = 'over';
+  const score = G.kills; let msg = '';
+  if (score > best) { best = score; msg = ' 🏆 ¡Nuevo récord!'; try { localStorage.setItem('trono_best', best); } catch (e) {} }
+  overlay('¡Se comieron al rey! 💀', `Aguantaste <b>${Math.floor(G.t / 60)}:${('0' + Math.floor(G.t % 60)).slice(-2)}</b> y mataste <b>${G.kills}</b> cucarachas 🪳.${msg}<br>Récord: <b>${best}</b>`, '↻ Otra vez', false);
+}
+function pauseGame() { if (G.state === 'play') { G.state = 'pause'; G.atkHeld = false; overlay('Pausa', 'El rey espera (las cucarachas, no).', '▶ Seguir', true); } }
+$('go').onclick = startGame;
+document.addEventListener('pointerlockchange', () => {
+  G.locked = document.pointerLockElement === canvas;
+  if (!G.locked && G.wasLocked && G.state === 'play') pauseGame();
+  G.wasLocked = G.locked;
+});
+
+/* ───────── entrada ───────── */
+addEventListener('keydown', e => {
+  if (e.repeat && e.code !== 'Space') return;
+  keys[e.code] = true;
+  if (e.code === 'Space') { e.preventDefault(); G.atkHeld = true; }
+  if (G.state !== 'play') { if ((e.code === 'Enter') && G.state !== 'dying') startGame(); return; }
+  if (e.code === 'KeyV') setView(G.view === 'pov' ? 'tp' : 'pov');
+  if (e.code === 'KeyP') togglePix();
+  if (e.code === 'KeyM') toggleMute();
+  if (e.code >= 'Digit1' && e.code <= 'Digit5') buy(+e.code.slice(5) - 1);
+  if (e.code === 'KeyV' || e.code === 'KeyP') e.preventDefault();
+});
+addEventListener('keyup', e => { keys[e.code] = false; if (e.code === 'Space') G.atkHeld = false; });
+addEventListener('blur', () => { for (const k in keys) keys[k] = false; G.atkHeld = false; });
+addEventListener('contextmenu', e => e.preventDefault());
+
+addEventListener('mousedown', e => {
+  if (G.state !== 'play' || e.target.closest('button')) return;
+  if (e.button === 0) { if (!G.locked) lock(); G.atkHeld = true; attack(); }
+});
+addEventListener('mouseup', e => { if (e.button === 0) G.atkHeld = false; });
+addEventListener('mousemove', e => {
+  if (G.state !== 'play') return;
+  if (G.locked || (e.buttons & 2)) look(e.movementX * .0025, e.movementY * .0025);
+});
+function look(dx, dy) {
+  G.yaw -= dx; G.pitch -= dy;
+  const lo = G.view === 'pov' ? -1.3 : -1.1, hi = G.view === 'pov' ? 1.3 : .3; G.pitch = Math.max(lo, Math.min(hi, G.pitch));
+}
+function togglePix() { pixelMode = !pixelMode; resize(); }
+function toggleMute() { muted = !muted; $('bMute').textContent = muted ? '🔇' : '🔊'; }
+$('bView').onclick = () => setView(G.view === 'pov' ? 'tp' : 'pov');
+$('bPix').onclick = togglePix; $('bMute').onclick = toggleMute;
+
+/* táctil: joystick a la izquierda, mirar a la derecha */
+if (TOUCH) {
+  const joyEl = $('joy'), knob = joyEl.firstElementChild; let lookId = null, lx = 0, ly = 0;
+  addEventListener('touchstart', e => {
+    if (G.state !== 'play') return;
+    for (const t of e.changedTouches) {
+      if (t.target.closest && t.target.closest('button')) continue;
+      if (t.clientX < innerWidth * .45 && joy.id === null) {
+        joy.id = t.identifier; joy.x0 = t.clientX; joy.y0 = t.clientY; joy.dx = joy.dy = 0;
+        joyEl.style.left = t.clientX - 60 + 'px'; joyEl.style.top = t.clientY - 60 + 'px'; joyEl.style.opacity = 1; knob.style.transform = '';
+      } else if (lookId === null) { lookId = t.identifier; lx = t.clientX; ly = t.clientY; }
+    }
+  }, { passive: false });
+  addEventListener('touchmove', e => {
+    e.preventDefault();
+    for (const t of e.changedTouches) {
+      if (t.identifier === joy.id) {
+        let dx = t.clientX - joy.x0, dy = t.clientY - joy.y0; const l = Math.hypot(dx, dy), m = 50;
+        if (l > m) { dx = dx / l * m; dy = dy / l * m; }
+        joy.dx = dx / m; joy.dy = dy / m; knob.style.transform = `translate(${dx}px,${dy}px)`;
+      } else if (t.identifier === lookId) { look((t.clientX - lx) * .006, (t.clientY - ly) * .006); lx = t.clientX; ly = t.clientY; }
+    }
+  }, { passive: false });
+  const end = e => { for (const t of e.changedTouches) { if (t.identifier === joy.id) { joy.id = null; joy.dx = joy.dy = 0; joyEl.style.opacity = 0; } if (t.identifier === lookId) lookId = null; } };
+  addEventListener('touchend', end); addEventListener('touchcancel', end);
+  $('bAtk').addEventListener('touchstart', e => { e.preventDefault(); G.atkHeld = true; attack(); }, { passive: false });
+  $('bAtk').addEventListener('touchend', e => { e.preventDefault(); G.atkHeld = false; });
+  $('ovK').innerHTML = '<div>🕹 Izquierda de la pantalla: moverte</div><div>👆 Derecha: mirar · 🩴 botón: chancla</div><div>👁 Vista: primera persona ↔ ver al personaje</div><div>Toca las mejoras de la izquierda para comprarlas. Recoge las monedas 🪙.</div>';
+}
+
+/* ───────── bucle ───────── */
+let last = performance.now();
+function frame(now) {
+  requestAnimationFrame(frame);
+  const dt = Math.min(.05, (now - last) / 1000); last = now;
+  update(dt); placeCamera(); updateHUD();
+  renderer.render(scene, camera);
+}
+placeCamera(); requestAnimationFrame(frame);
+
+/* utilidades de prueba */
+window.JUEGO = { G, start: startGame, dist, nidos: CASA.nidos, inicio: CASA.inicio, I, kind, blocked, walk, spawnRoach, attack, setView, buy };
+})();
+</script>
+</body>
+</html>
