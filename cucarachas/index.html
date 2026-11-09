@@ -71,7 +71,7 @@
   <div id="top">
     <div class="pill" id="money">💰 <span>0</span></div>
     <div class="pill" id="kills">🪳 <span>0</span></div>
-    <div id="hpwrap"><div id="hplabel">👑 Rey · reinado <b id="lvl">1</b></div><div id="hpbar"><i id="hpfill"></i></div></div>
+    <div id="hpwrap"><div id="hplabel">👑 Reina · reinado <b id="lvl">1</b></div><div id="hpbar"><i id="hpfill"></i></div></div>
     <div class="pill" id="time">0:00</div>
   </div>
   <canvas id="mini" width="168" height="108"></canvas>
@@ -91,12 +91,12 @@
 <div id="ov">
   <div id="card">
     <h1 id="ovT">¡Salva el Trono!</h1>
-    <p id="ovP">Las cucarachas quieren <b>comerse al rey</b> de tu casa. Mátalas con la chancla: cuantas más caigan, más rico se pone el rey y más dinero te tira. Si se lo comen… <b>se acabó</b>.</p>
+    <p id="ovP">Las cucarachas quieren <b>comerse a la reina</b> de tu casa. Mátalas con la chancla: cuantas más caigan, más rica se pone la reina y más dinero te tira. Si se la comen… <b>se acabó</b>.</p>
     <div class="keys" id="ovK">
       <div><kbd>W A S D</kbd> moverse · <kbd>Ratón</kbd> mirar · <kbd>Click</kbd> / <kbd>Espacio</kbd> chancla 🩴</div>
       <div><kbd>V</kbd> cambiar vista (primera persona ↔ ver al personaje)</div>
       <div><kbd>1</kbd>–<kbd>5</kbd> comprar mejoras · <kbd>P</kbd> modo píxel · <kbd>M</kbd> sonido</div>
-      <div>Recoge las monedas 🪙 que tira el rey.</div>
+      <div>Recoge las monedas 🪙 que tira la reina.</div>
     </div>
     <button id="go">▶ Jugar</button>
   </div>
@@ -121,7 +121,7 @@ const W = 28, H = 18, WALL_H = 2.2;
 const CASA = {
   salas: [
     { n:'el Salón',      x:1,  z:1,  w:12, h:9, t:'madera',  c:'#b8814f' },
-    { n:'la Cocina',     x:14, z:1,  w:8,  h:6, t:'baldosa', c:'#e9e4d6' },
+    { n:'la Cocina',     x:14, z:1,  w:8,  h:6, t:'baldosa', c:'#cfcfcf' },
     { n:'el Baño',       x:23, z:1,  w:4,  h:6, t:'baldosa', c:'#bfe3ee' },
     { n:'el Pasillo',    x:14, z:8,  w:13, h:2, t:'madera',  c:'#9a6b43' },
     { n:'el Dormitorio', x:1,  z:11, w:10, h:6, t:'moqueta', c:'#8f7fc4' },
@@ -142,8 +142,8 @@ const CASA = {
     [11,1,1,1,0.4,'#b5651d'],[11.1,1.1,0.8,0.8,0.8,'#2e8b2e',{y:0.4,b:false}],       // planta
     [11,5,1,1,0.5,'#2e86c1'],
     // Cocina
-    [14,1,5,1,0.9,'#f0f0f0'],[14,1,5,1,0.08,'#444',{y:0.9,b:false}],
-    [19,1,1,1,0.9,'#333'],[20,1,1,1,1.9,'#dfe6ea'],[20.1,1.95,0.1,0.04,0.5,'#888',{y:1.2,b:false}],
+    [14,1,5,1,0.9,'#f7f7f7'],[14,1,5,1,0.08,'#6d6a68',{y:0.9,b:false}],[15,1.2,.5,.4,.3,'#111',{y:.98,b:false}],
+    [19,1,1,1,0.9,'#b8bec2'],[20,1,1,1,1.9,'#dfe6ea'],[20.1,1.95,0.1,0.04,0.5,'#888',{y:1.2,b:false}],
     [16,4,2,2,0.75,'#a0743c'],[15,4,0.6,0.6,0.45,'#6e4a2a',{b:false}],[18.4,5,0.6,0.6,0.45,'#6e4a2a',{b:false}],
     // Baño
     [26,1,1,1,0.5,'#ffffff'],[26,1,1,0.3,1.0,'#ffffff',{b:false}],
@@ -261,7 +261,7 @@ function slipper(parent, y) { // se extiende hacia -y (a lo largo del brazo)
   part(g, .2, .38, .05, '#ff9d1a', 0, -.22, 0); part(g, .2, .12, .09, '#e53935', 0, -.1, .02); part(g, .2, .38, .03, '#6b3a10', 0, -.22, -.04);
   return g;
 }
-function person({ skin = '#f6cf3f', shirt = '#2d7be0', pants = '#3a8a3a', hair = '#4a2c12' } = {}) {
+function person({ skin = '#f6cf3f', shirt = '#2d7be0', pants = '#3a8a3a', hair = '#4a2c12', shoes = null, style = 'short' } = {}) {
   const g = new THREE.Group(), P = { g };
   P.legL = pivot(g, -.13, .7, 0); part(P.legL, .24, .7, .27, pants, 0, -.35, 0);
   P.legR = pivot(g, .13, .7, 0);  part(P.legR, .24, .7, .27, pants, 0, -.35, 0);
@@ -270,20 +270,24 @@ function person({ skin = '#f6cf3f', shirt = '#2d7be0', pants = '#3a8a3a', hair =
   P.armR = pivot(g, .38, 1.37, 0);  part(P.armR, .2, .66, .22, skin, 0, -.31, 0);
   P.head = pivot(g, 0, 1.4, 0);
   part(P.head, .42, .42, .42, skin, 0, .21, 0); part(P.head, .45, .12, .45, hair, 0, .45, 0);
+  if (shoes) { part(P.legL, .27, .13, .4, shoes, 0, -.64, .05); part(P.legR, .27, .13, .4, shoes, 0, -.64, .05); }
+  if (style === 'short') part(P.head, .46, .13, .1, hair, 0, .38, .2);                     // flequillo
+  if (style === 'long') { part(P.head, .46, .62, .1, hair, 0, .02, -.22); part(P.head, .07, .55, .42, hair, -.245, .08, 0); part(P.head, .07, .55, .42, hair, .245, .08, 0); part(P.head, .46, .1, .1, hair, 0, .4, .2); }
   part(P.head, .06, .08, .02, '#111', -.1, .26, .215); part(P.head, .06, .08, .02, '#111', .1, .26, .215); part(P.head, .16, .04, .02, '#7a2a1a', 0, .12, .215);
   return P;
 }
 
 /* jugador */
-const me = person();
+const me = person({ skin: '#e9bb8d', shirt: '#1f3a7a', pants: '#141414', hair: '#3a2414', shoes: '#b6e23a', style: 'short' });
+part(me.g, .05, .7, .02, '#0b1630', 0, 1.05, .16);                                    // cremallera de la chaqueta
 scene.add(me.g);
 const slipHand = slipper(me.armR, -.6);
 const povArm = new THREE.Group(); camera.add(povArm); povArm.position.set(.36, -.38, -.55);
 const slipPov = slipper(povArm, 0); slipPov.scale.setScalar(1.5);
 const povHand = box(.14, .14, .14, '#f6cf3f'); povHand.position.set(0, -.02, 0); povArm.add(povHand);
 
-/* rey en el trono */
-const king = person({ skin: '#f1c27d', shirt: '#b3122b', pants: '#3b2a6b', hair: '#d9d9d9' });
+/* reina en el trono */
+const king = person({ skin: '#dcab84', shirt: '#9b2fa6', pants: '#3b5a8a', hair: '#3b2214', shoes: '#f2f2f2', style: 'long' });
 {
   const T = new THREE.Group(); T.position.set(KING.x, 0, KING.z); scene.add(T);
   part(T, 1.0, .5, .9, '#7b1fa2', 0, .25, 0);                    // asiento
@@ -297,6 +301,7 @@ const king = person({ skin: '#f1c27d', shirt: '#b3122b', pants: '#3b2a6b', hair:
   part(king.g, .6, .85, .05, '#d81b3a', 0, 1.0, -.2);            // capa
   part(king.head, .46, .12, .46, '#ffd23f', 0, .56, 0);          // corona
   for (const x of [-.16, 0, .16]) part(king.head, .08, .12, .08, '#ffd23f', x, .68, 0);
+  part(king.g, .2, .05, .02, '#ffd23f', 0, 1.3, .16);              // colgante
   king.g.rotation.y = 0;
   king.root = T;
 }
@@ -441,7 +446,7 @@ function killRoach(r) {
   burst(r.x, .15, r.z, r.big ? '#8a1c0a' : '#6b3410', r.big ? 10 : 6); burst(r.x, .15, r.z, '#e8e0a0', 2);
   r.g.rotation.z = Math.PI; r.g.position.y = .12 * r.g.scale.x;
   snd(rnd(260, 340), 70, .12, 'square', .06);
-  const lv = reign(); if (lv > (G.lastLv || 1)) { say('¡El rey sube a reinado ' + lv + '! 👑 +dinero'); snd(400, 900, .3, 'triangle', .08); }
+  const lv = reign(); if (lv > (G.lastLv || 1)) { say('¡La reina sube a reinado ' + lv + '! 👑 +dinero'); snd(400, 900, .3, 'triangle', .08); }
   G.lastLv = lv;
 }
 function hurtRoach(r, dmg) { if (r.dead) return; r.hp -= dmg; if (r.hp <= 0) killRoach(r); else { burst(r.x, .2, r.z, '#e8e0a0', 3); snd(180, 120, .08, 'square', .05); } }
@@ -484,7 +489,7 @@ const UPG = [
   { id: 'rango',  ico: '🩴', nom: 'Chancla XL',   max: 6, cost: () => 12 + 12 * G.lv.rango,  ok: () => G.lv.rango < 6,  buy: () => G.lv.rango++ },
   { id: 'rapido', ico: '💪', nom: 'Brazo rápido', max: 6, cost: () => 15 + 15 * G.lv.rapido, ok: () => G.lv.rapido < 6, buy: () => G.lv.rapido++ },
   { id: 'bota',   ico: '👟', nom: 'Zapatillas',   max: 5, cost: () => 10 + 12 * G.lv.bota,   ok: () => G.lv.bota < 5,   buy: () => G.lv.bota++ },
-  { id: 'curar',  ico: '💊', nom: 'Curar al rey', cost: () => 20, ok: () => G.hp < 100, buy: () => { G.hp = Math.min(100, G.hp + 30); } },
+  { id: 'curar',  ico: '💊', nom: 'Curar a la reina', cost: () => 20, ok: () => G.hp < 100, buy: () => { G.hp = Math.min(100, G.hp + 30); } },
   { id: 'spray',  ico: '🧴', nom: 'Insecticida',  cost: () => 30, ok: () => true, buy: () => spray() },
 ];
 const shopEl = $('shop');
@@ -544,7 +549,7 @@ function updateRoaches(dt, canBite) {
     const cx = Math.floor(r.x), cz = Math.floor(r.z), d0 = dist[I(cx, cz)];
     r.ph += dt * 22;
     for (let j = 0; j < 3; j++) r.legs[j].rotation.y = (j < 1 ? .5 : j > 1 ? -.5 : 0) + Math.sin(r.ph + j * 2) * .35;
-    if (d0 === 0) { // pegada al rey: mordisco
+    if (d0 === 0) { // pegada a la reina: mordisco
       r.biting = true; biting++;
       const dx = KING.x - r.x, dz = KING.z - r.z; r.yaw = Math.atan2(dx, dz);
       r.bt += dt;
@@ -611,8 +616,8 @@ function update(dt) {
     updateWorld(dt, true);
     const n = updateRoaches(dt, true);
     if (G.bite > 0) G.bite -= dt;
-    if (n > 0 && !G.warned) { G.warned = true; say('¡Se están comiendo al rey! 😱', 1800); setTimeout(() => G.warned = false, 6000); }
-    if (G.hp <= 0) { G.hp = 0; G.state = 'dying'; G.dyingT = 1.8; MUS.stop(); say('¡Se lo están comiendo!!! 🪳🪳🪳', 3000); snd(300, 40, 1.2, 'sawtooth', .09); document.exitPointerLock && document.exitPointerLock(); }
+    if (n > 0 && !G.warned) { G.warned = true; say('¡Se están comiendo a la reina! 😱', 1800); setTimeout(() => G.warned = false, 6000); }
+    if (G.hp <= 0) { G.hp = 0; G.state = 'dying'; G.dyingT = 1.8; MUS.stop(); say('¡Se la están comiendo!!! 🪳🪳🪳', 3000); snd(300, 40, 1.2, 'sawtooth', .09); document.exitPointerLock && document.exitPointerLock(); }
   } else if (G.state === 'dying') {
     G.dyingT -= dt; updateWorld(dt, false); updateRoaches(dt, false);
     king.g.scale.y = Math.max(.05, G.dyingT / 1.8); king.g.rotation.z = (1 - G.dyingT / 1.8) * .3;
@@ -691,16 +696,16 @@ function resetGame() {
 function startGame() {
   if (G.state !== 'play') { if (G.state !== 'pause') resetGame(); G.state = 'play'; }
   ov.classList.add('off'); lock(); MUS.start();
-  if (!G.intro) { G.intro = true; say('¡Defiende al rey! Mata cucarachas 🩴 y recoge sus monedas 🪙', 3500); }
+  if (!G.intro) { G.intro = true; say('¡Defiende a la reina! Mata cucarachas 🩴 y recoge sus monedas 🪙', 3500); }
   snd(500, 800, .15, 'triangle', .05);
 }
 function endGame() {
   G.state = 'over'; MUS.stop();
   const score = G.kills; let msg = '';
   if (score > best) { best = score; msg = ' 🏆 ¡Nuevo récord!'; try { localStorage.setItem('trono_best', best); } catch (e) {} }
-  overlay('¡Se comieron al rey! 💀', `Aguantaste <b>${Math.floor(G.t / 60)}:${('0' + Math.floor(G.t % 60)).slice(-2)}</b> y mataste <b>${G.kills}</b> cucarachas 🪳.${msg}<br>Récord: <b>${best}</b>`, '↻ Otra vez', false);
+  overlay('¡Se comieron a la reina! 💀', `Aguantaste <b>${Math.floor(G.t / 60)}:${('0' + Math.floor(G.t % 60)).slice(-2)}</b> y mataste <b>${G.kills}</b> cucarachas 🪳.${msg}<br>Récord: <b>${best}</b>`, '↻ Otra vez', false);
 }
-function pauseGame() { if (G.state === 'play') { G.state = 'pause'; G.atkHeld = false; MUS.stop(); overlay('Pausa', 'El rey espera (las cucarachas, no).', '▶ Seguir', true); } }
+function pauseGame() { if (G.state === 'play') { G.state = 'pause'; G.atkHeld = false; MUS.stop(); overlay('Pausa', 'La reina espera (las cucarachas, no).', '▶ Seguir', true); } }
 $('go').onclick = startGame;
 document.addEventListener('pointerlockchange', () => {
   G.locked = document.pointerLockElement === canvas;
