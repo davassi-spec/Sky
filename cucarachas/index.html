@@ -365,6 +365,48 @@ function snd(f1, f2, d, type = 'square', v = .05) {
   } catch (e) {}
 }
 
+/* música chiptune (melodía original, estilo arcade) que se acelera con el peligro */
+const MUS = {
+  lead: [16,19,24,19,16,19,24,28,  21,24,28,24,21,24,28,24,  17,21,24,21,17,21,24,29,  19,23,26,23,19,23,26,23],
+  bass: [-12,-12,-12,-12, -15,-15,-15,-15, -7,-7,-7,-7, -5,-5,-5,-5],
+  step: 0, next: 0, timer: 0, noise: null,
+  start() {
+    if (this.timer) return;
+    try { AC = AC || new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return; }
+    if (AC.state === 'suspended') AC.resume();
+    if (!this.noise) { const n = AC.createBuffer(1, 4410, 44100), d = n.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1; this.noise = n; }
+    this.next = AC.currentTime + .1;
+    this.timer = setInterval(() => this.tick(), 40);
+  },
+  stop() { clearInterval(this.timer); this.timer = 0; },
+  note(f, t, d, type, v) {
+    const o = AC.createOscillator(), g = AC.createGain();
+    o.type = type; o.frequency.value = f; g.gain.setValueAtTime(v, t); g.gain.exponentialRampToValueAtTime(.0001, t + d);
+    o.connect(g); g.connect(AC.destination); o.start(t); o.stop(t + d + .02);
+  },
+  hat(t, v) {
+    const s = AC.createBufferSource(), g = AC.createGain(), f = AC.createBiquadFilter();
+    s.buffer = this.noise; f.type = 'highpass'; f.frequency.value = 6000; g.gain.setValueAtTime(v, t); g.gain.exponentialRampToValueAtTime(.0001, t + .05);
+    s.connect(f); f.connect(g); g.connect(AC.destination); s.start(t);
+  },
+  tick() {
+    if (!AC) return;
+    const danger = G.state === 'play' ? Math.max(G.bite > 0 ? .8 : 0, (1 - G.hp / 100) * .9) : 0;
+    const dur = 60 / (130 + danger * 50) / 2;           // corchea
+    while (this.next < AC.currentTime + .2) {
+      if (!muted) {
+        const s = this.step, t = this.next, fr = n => 261.63 * Math.pow(2, n / 12);
+        const l = this.lead[s % 32] + (danger > .6 ? 0 : 0);
+        this.note(fr(l), t, dur * .85, 'square', .028);
+        this.note(fr(this.bass[(s >> 1) % 16] + (s % 2 ? 12 : 0)), t, dur * .9, 'triangle', .07);
+        if (s % 2) this.hat(t, .03 + danger * .03);
+        if (danger > .5 && s % 4 === 0) this.note(fr(l - 12), t, dur * .5, 'sawtooth', .015); // más tensión
+      }
+      this.step = (this.step + 1) % 32; this.next += dur;
+    }
+  },
+};
+
 /* avisos y textos flotantes */
 let bannerTO = 0;
 function say(txt, ms = 2200) { const b = $('banner'); b.textContent = txt; b.classList.add('on'); clearTimeout(bannerTO); bannerTO = setTimeout(() => b.classList.remove('on'), ms); }
@@ -570,7 +612,7 @@ function update(dt) {
     const n = updateRoaches(dt, true);
     if (G.bite > 0) G.bite -= dt;
     if (n > 0 && !G.warned) { G.warned = true; say('¡Se están comiendo al rey! 😱', 1800); setTimeout(() => G.warned = false, 6000); }
-    if (G.hp <= 0) { G.hp = 0; G.state = 'dying'; G.dyingT = 1.8; say('¡Se lo están comiendo!!! 🪳🪳🪳', 3000); snd(300, 40, 1.2, 'sawtooth', .09); document.exitPointerLock && document.exitPointerLock(); }
+    if (G.hp <= 0) { G.hp = 0; G.state = 'dying'; G.dyingT = 1.8; MUS.stop(); say('¡Se lo están comiendo!!! 🪳🪳🪳', 3000); snd(300, 40, 1.2, 'sawtooth', .09); document.exitPointerLock && document.exitPointerLock(); }
   } else if (G.state === 'dying') {
     G.dyingT -= dt; updateWorld(dt, false); updateRoaches(dt, false);
     king.g.scale.y = Math.max(.05, G.dyingT / 1.8); king.g.rotation.z = (1 - G.dyingT / 1.8) * .3;
@@ -648,17 +690,17 @@ function resetGame() {
 }
 function startGame() {
   if (G.state !== 'play') { if (G.state !== 'pause') resetGame(); G.state = 'play'; }
-  ov.classList.add('off'); lock();
+  ov.classList.add('off'); lock(); MUS.start();
   if (!G.intro) { G.intro = true; say('¡Defiende al rey! Mata cucarachas 🩴 y recoge sus monedas 🪙', 3500); }
   snd(500, 800, .15, 'triangle', .05);
 }
 function endGame() {
-  G.state = 'over';
+  G.state = 'over'; MUS.stop();
   const score = G.kills; let msg = '';
   if (score > best) { best = score; msg = ' 🏆 ¡Nuevo récord!'; try { localStorage.setItem('trono_best', best); } catch (e) {} }
   overlay('¡Se comieron al rey! 💀', `Aguantaste <b>${Math.floor(G.t / 60)}:${('0' + Math.floor(G.t % 60)).slice(-2)}</b> y mataste <b>${G.kills}</b> cucarachas 🪳.${msg}<br>Récord: <b>${best}</b>`, '↻ Otra vez', false);
 }
-function pauseGame() { if (G.state === 'play') { G.state = 'pause'; G.atkHeld = false; overlay('Pausa', 'El rey espera (las cucarachas, no).', '▶ Seguir', true); } }
+function pauseGame() { if (G.state === 'play') { G.state = 'pause'; G.atkHeld = false; MUS.stop(); overlay('Pausa', 'El rey espera (las cucarachas, no).', '▶ Seguir', true); } }
 $('go').onclick = startGame;
 document.addEventListener('pointerlockchange', () => {
   G.locked = document.pointerLockElement === canvas;
