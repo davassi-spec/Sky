@@ -14,7 +14,7 @@
   #hud { position:fixed; inset:0; pointer-events:none; }
   #hud button, #ov button, #ov { pointer-events:auto; }
   .pill { background:var(--panel); border-radius:12px; padding:6px 12px; font-weight:800; font-size:18px; text-shadow:0 2px 0 rgba(0,0,0,.4); white-space:nowrap; }
-  #top { position:absolute; top:max(8px,env(safe-area-inset-top)); left:8px; right:184px; display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+  #top { position:absolute; top:max(8px,env(safe-area-inset-top)); left:8px; right:210px; display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
   #hpwrap { flex:1 1 180px; min-width:150px; max-width:340px; background:var(--panel); border-radius:12px; padding:5px 10px 7px; }
   #hplabel { font-size:13px; font-weight:800; margin-bottom:3px; }
   #hpbar { height:14px; background:#3b1020; border-radius:7px; overflow:hidden; border:2px solid #000; }
@@ -22,8 +22,8 @@
   #hpwrap.hit #hpfill { background:linear-gradient(#ff7a7a,#d32020); }
   #hpwrap.hit { animation:shake .25s infinite; }
   @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-3px)} 75%{transform:translateX(3px)} }
-  #mini { position:absolute; top:max(8px,env(safe-area-inset-top)); right:8px; width:168px; height:108px; border-radius:8px; border:3px solid #000; background:#000; image-rendering:pixelated; opacity:.92; }
-  #side { position:absolute; top:calc(max(8px,env(safe-area-inset-top)) + 118px); right:8px; display:flex; gap:6px; }
+  #mini { position:absolute; top:max(8px,env(safe-area-inset-top)); right:8px; width:90px; height:auto; border-radius:8px; border:3px solid #000; background:#000; image-rendering:pixelated; opacity:.92; }
+  #side { position:absolute; top:max(8px,env(safe-area-inset-top)); right:110px; display:flex; flex-direction:column; gap:6px; }
   #side button, #shop button, #bAtk { font:inherit; color:#fff; background:var(--panel); border:2px solid rgba(255,255,255,.35); border-radius:10px; cursor:pointer; }
   #side button { padding:6px 9px; font-size:13px; font-weight:800; }
   #banner { position:absolute; top:22%; left:0; right:0; text-align:center; font-size:clamp(22px,5vw,40px); font-weight:900; color:var(--oro);
@@ -48,8 +48,8 @@
   body.touch #shop button { min-width:0; display:flex; gap:6px; align-items:center; text-align:left; padding:4px 8px; }
   body.touch #shop button b { font-size:16px; display:inline; }
   body.touch #top { right:8px; top:calc(max(8px,env(safe-area-inset-top)) + 0px); }
-  body.touch #mini { width:112px; height:72px; top:auto; bottom:12px; right:auto; left:12px; }
-  body.touch #side { top:auto; bottom:90px; left:12px; right:auto; }
+  body.touch #mini { width:60px; height:auto; top:auto; bottom:12px; right:auto; left:12px; }
+  body.touch #side { top:auto; bottom:12px; left:84px; right:auto; }
   body.touch #side button.k { display:none; }
   /* pantallas */
   #ov { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; background:rgba(10,6,20,.78); padding:16px; }
@@ -74,7 +74,7 @@
     <div id="hpwrap"><div id="hplabel">👑 Reina · reinado <b id="lvl">1</b></div><div id="hpbar"><i id="hpfill"></i></div></div>
     <div class="pill" id="time">0:00</div>
   </div>
-  <canvas id="mini" width="168" height="108"></canvas>
+  <canvas id="mini"></canvas>
   <div id="side">
     <button id="bView" title="V">👁 Vista</button>
     <button id="bPix" class="k" title="P">▦ Píxel</button>
@@ -91,7 +91,7 @@
 <div id="ov">
   <div id="card">
     <h1 id="ovT">¡Salva el Trono!</h1>
-    <p id="ovP">Las cucarachas quieren <b>comerse a la reina</b> de tu casa. Mátalas con la chancla: cuantas más caigan, más rica se pone la reina y más dinero te tira. Si se la comen… <b>se acabó</b>.</p>
+    <p id="ovP">Las cucarachas quieren <b>comerse a la reina</b>, que está sentada en su trono: <b>el váter del baño</b> 🚽. Mátalas con la chancla: cuantas más caigan, más rica se pone la reina y más dinero te tira. Si se la comen… <b>se acabó</b>.</p>
     <div class="keys" id="ovK">
       <div><kbd>W A S D</kbd> moverse · <kbd>Ratón</kbd> mirar · <kbd>Click</kbd> / <kbd>Espacio</kbd> chancla 🩴</div>
       <div><kbd>V</kbd> cambiar vista (primera persona ↔ ver al personaje)</div>
@@ -117,48 +117,72 @@ if (TOUCH) document.body.classList.add('touch');
    Cada celda = 1 metro. x,z = esquina; w,h = ancho y fondo.
    puertas = huecos en las paredes. nidos = por donde entran.
    ════════════════════════════════════════════════════════════ */
-const W = 28, H = 18, WALL_H = 2.2;
+const W = 15, H = 25, WALL_H = 2.2;
 const CASA = {
+  // t = suelo (gres gris como en las fotos), mc = color en el minimapa
   salas: [
-    { n:'el Salón',      x:1,  z:1,  w:12, h:9, t:'madera',  c:'#b8814f' },
-    { n:'la Cocina',     x:14, z:1,  w:8,  h:6, t:'baldosa', c:'#cfcfcf' },
-    { n:'el Baño',       x:23, z:1,  w:4,  h:6, t:'baldosa', c:'#bfe3ee' },
-    { n:'el Pasillo',    x:14, z:8,  w:13, h:2, t:'madera',  c:'#9a6b43' },
-    { n:'el Dormitorio', x:1,  z:11, w:10, h:6, t:'moqueta', c:'#8f7fc4' },
-    { n:'el Cuarto 2',   x:12, z:11, w:8,  h:6, t:'moqueta', c:'#d98fa0' },
-    { n:'la Terraza',    x:21, z:11, w:6,  h:6, t:'piedra',  c:'#a7a39a' },
+    { n:'el Salón',           x:1,  z:1,  w:8, h:8, t:'gres',    c:'#b3b2ae', mc:'#c9a77a' },
+    { n:'el Pasillo',         x:8,  z:10, w:1, h:9, t:'gres',    c:'#a9a8a4', mc:'#a08a6a' },
+    { n:'el Patio',           x:4,  z:10, w:3, h:4, t:'baldosa', c:'#d9c49c', mc:'#7cb36a' },
+    { n:'el Baño',            x:10, z:10, w:4, h:4, t:'gres',    c:'#adadab', mc:'#9fd3e6' },
+    { n:'el Cuarto pequeño',  x:4,  z:15, w:3, h:4, t:'gres',    c:'#b3b2ae', mc:'#d98fa0' },
+    { n:'el Dormitorio',      x:10, z:15, w:4, h:4, t:'gres',    c:'#a3a29e', mc:'#c9a050' },
+    { n:'el Cuarto del fondo',x:6,  z:20, w:5, h:4, t:'gres',    c:'#b3b2ae', mc:'#8f7fc4' },
   ],
-  puertas: [[13,3],[13,8],[17,7],[24,7],[5,10],[16,10],[23,10],[20,13]],
-  trono: [6, 2],
-  inicio: [6, 6],
-  nidos: [[20,2],[25,2],[25,15],[2,15],[13,15],[26,8]],
+  puertas: [[8,9],[7,11],[7,12],[9,12],[7,16],[9,16],[8,19]],
+  trono: [12, 10],               // 🚽 el váter del baño
+  inicio: [10, 12],
+  nidos: [[8,4,'la puerta de la calle'],[5,12,'el sumidero del patio'],[3,7,'debajo del fregadero'],
+          [5,17,'el cuarto pequeño'],[12,18,'el dormitorio'],[9,21,'el cuarto del fondo']],
   muebles: [ // [x, z, ancho, fondo, alto, color, {y, b:false -> no bloquea}]
-    // Salón
-    [4,1,5,4,0.03,'#9b2335',{b:false}],[5,1,3,3,0.12,'#d4af37',{b:false}],          // alfombra + tarima del trono
-    [2,7,4,1,0.45,'#c0392b'],[2,7,4,0.3,0.95,'#a93226',{b:false}],                  // sofá
-    [3,8,2,1,0.35,'#7b5a3a'],                                                       // mesa baja
-    [7,9,3,1,0.55,'#4a3b2a'],[7.5,9.15,2,0.1,0.9,'#101018',{y:0.55,b:false}],        // tele
-    [1,1,1,3,1.8,'#6b4423'],                                                        // estantería
-    [11,1,1,1,0.4,'#b5651d'],[11.1,1.1,0.8,0.8,0.8,'#2e8b2e',{y:0.4,b:false}],       // planta
-    [11,5,1,1,0.5,'#2e86c1'],
-    // Cocina
-    [14,1,5,1,0.9,'#f7f7f7'],[14,1,5,1,0.08,'#6d6a68',{y:0.9,b:false}],[15,1.2,.5,.4,.3,'#111',{y:.98,b:false}],
-    [19,1,1,1,0.9,'#b8bec2'],[20,1,1,1,1.9,'#dfe6ea'],[20.1,1.95,0.1,0.04,0.5,'#888',{y:1.2,b:false}],
-    [16,4,2,2,0.75,'#a0743c'],[15,4,0.6,0.6,0.45,'#6e4a2a',{b:false}],[18.4,5,0.6,0.6,0.45,'#6e4a2a',{b:false}],
-    // Baño
-    [26,1,1,1,0.5,'#ffffff'],[26,1,1,0.3,1.0,'#ffffff',{b:false}],
-    [23,1,1,1,0.9,'#d6eaf8'],[23,1,1,0.1,0.7,'#7ec8e3',{y:1.1,b:false}],
-    [25,3,2,3,0.55,'#ffffff'],[25.15,3.15,1.7,2.7,0.05,'#5dade2',{y:0.55,b:false}],
-    // Pasillo
-    [26,9,1,1,0.4,'#6e4a2a'],[14,8,1,1,0.5,'#b5651d'],[14.1,8.1,0.8,0.8,0.8,'#2e8b2e',{y:0.5,b:false}],
-    // Dormitorio
-    [1,12,3,3,0.5,'#ecf0f1'],[2,12,2,3,0.58,'#3498db',{b:false}],[1,12,0.7,3,0.62,'#fff',{y:0.5,b:false}],
-    [10,12,1,3,2.0,'#8b5a2b'],[5,15,3,1,0.75,'#a0743c'],
-    // Cuarto 2
-    [12,12,2,3,0.5,'#f5b7b1'],[13,12,1,3,0.58,'#e74c3c',{b:false}],
-    [18,12,1,3,0.75,'#a0743c'],[18.1,13,0.6,1,0.5,'#222',{y:0.75,b:false}],
-    // Terraza
-    [22,12,2,1,0.75,'#c9c9c9'],[26,11,1,1,0.5,'#b5651d'],[26.1,11.1,0.8,0.8,0.8,'#2e8b2e',{y:0.5,b:false}],
+    // ── Salón: ventana y cortinas, sofá beige, mesa baja, estantería, puerta de la calle, aire acondicionado, armario
+    [3,0.97,3,0.06,1.3,'#bfe6ff',{y:0.8,b:false}],[2.6,0.95,0.45,0.1,2.0,'#efe6d0',{y:0.1,b:false}],[5.95,0.95,0.45,0.1,2.0,'#efe6d0',{y:0.1,b:false}],
+    [3,1,3,1,0.45,'#d8ccb0'],[3,1,3,0.3,0.95,'#cfc2a4',{b:false}],[2.8,1,0.25,1,0.65,'#cfc2a4',{b:false}],[5.95,1,0.25,1,0.65,'#cfc2a4',{b:false}],
+    [3.4,1.35,2.2,0.55,0.07,'#c0392b',{y:0.45,b:false}],[4.6,1.35,0.4,0.25,0.3,'#e8e8e8',{y:0.45,b:false}],
+    [3.2,2.2,2.4,0.8,0.45,'#7a4f2a'],[4.2,2.4,0.3,0.3,0.35,'#d9c9a0',{y:0.45,b:false}],[4.1,2.3,0.5,0.5,0.4,'#9aa98a',{y:0.8,b:false}],
+    [7.3,1.2,0.5,0.5,0.45,'#4a4a4a'],[7.1,1.0,0.9,0.9,0.7,'#2e7d32',{y:0.45,b:false}],
+    [8,2,1,1,1.8,'#5a3618'],[8.15,2.1,0.1,0.8,0.25,'#2b6cb0',{y:0.9,b:false}],[8.15,2.1,0.1,0.8,0.25,'#c53030',{y:0.4,b:false}],[8.3,2.3,0.4,0.4,0.35,'#6b4a2a',{y:1.8,b:false}],
+    [8.94,4.05,0.06,0.9,2.05,'#f4f1ea',{b:false}],[8.88,4.2,0.06,0.12,0.04,'#888',{y:1.0,b:false}],
+    [8.72,4.9,0.28,1.0,0.32,'#eee7d4',{y:1.85,b:false}],
+    [8,6,1,2,2.0,'#7a4a24'],[7.97,6.95,0.04,0.06,0.1,'#d4af37',{y:1.0,b:false}],
+    // comedor: mesa de madera, sillas, planta, reloj de pared
+    [2,3.2,1.6,1.2,0.75,'#6b4423'],[2.3,3.35,1.0,0.9,0.02,'#8a8a8a',{y:0.75,b:false}],[2.6,3.4,0.4,0.4,0.7,'#2e7d32',{y:0.75,b:false}],
+    [1.4,3.55,0.5,0.5,0.95,'#4a2c16',{b:false}],[3.7,3.55,0.5,0.5,0.95,'#4a2c16',{b:false}],[2.55,2.6,0.5,0.5,0.95,'#4a2c16',{b:false}],[2.55,4.5,0.5,0.5,0.95,'#4a2c16',{b:false}],
+    [1.0,3.3,0.1,0.45,0.75,'#3b2314',{y:1.4,b:false}],[1.05,3.4,0.06,0.25,0.25,'#e8e2c8',{y:1.75,b:false}],
+    // cocina en L: nevera, encimeras blancas con granito, horno, lavavajillas, fregadero, ventana, microondas
+    [1,5,1,1,1.85,'#9aa1a8'],[1,5,1,1,0.55,'#f7f7f7',{y:1.85,b:false}],
+    [1,6,1,2,0.9,'#f7f7f7'],[1,8,4,1,0.9,'#f7f7f7'],[1,6,1,2,0.06,'#6d6a68',{y:0.9,b:false}],[1,8,4,1,0.06,'#6d6a68',{y:0.9,b:false}],
+    [1.98,6.2,0.05,0.65,0.6,'#222',{y:0.15,b:false}],[1.3,7.98,0.65,0.05,0.8,'#b8bec2',{y:0.05,b:false}],
+    [2.3,8.2,0.9,0.5,0.03,'#c0c6cc',{y:0.95,b:false}],[2.1,8.97,1.3,0.05,1.0,'#bfe6ff',{y:1.15,b:false}],
+    [3.6,8.35,0.5,0.4,0.3,'#111',{y:0.96,b:false}],[1.2,6.4,0.3,0.3,0.12,'#ff8c1a',{y:0.96,b:false}],[3.5,8.6,1.4,0.4,0.7,'#f7f7f7',{y:1.45,b:false}],
+    // ── Patio: macetas de barro, ficus, palmera, sumidero, ventana con persiana verde
+    [4.15,10.15,0.7,0.7,0.5,'#b5651d'],[4.45,10.45,0.1,0.1,1.0,'#6b4a2a',{y:0.5,b:false}],[4.0,10.0,1,1,0.8,'#2e6b2e',{y:1.3,b:false}],
+    [6.15,10.15,0.7,0.7,0.5,'#b5651d'],[6.45,10.45,0.08,0.08,1.2,'#8a6a3a',{y:0.5,b:false}],[6.0,10.0,1,1,0.5,'#3f8a3f',{y:1.6,b:false}],
+    [4.15,13.15,0.6,0.6,0.45,'#b5651d'],[4.1,13.1,0.7,0.7,0.5,'#3a7a3a',{y:0.45,b:false}],
+    [5.3,12.3,0.4,0.4,0.02,'#666',{b:false}],[3.97,11.2,0.05,0.8,1.2,'#1f3b2a',{y:0.9,b:false}],
+    [7.45,11,0.08,1,2.0,'#a8d8ea',{a:0.35}],[7.42,11,0.14,0.06,2.0,'#f4f4f4'],[7.42,11.94,0.14,0.06,2.0,'#f4f4f4',{b:false}],
+    // ── Baño: mueble de lavabo blanco, espejo, ducha de mamparas grises, alfombrilla dorada para la reina
+    [10,10,1,1,0.85,'#f7f7f7'],[10,10,1,1,0.06,'#8a8580',{y:0.85,b:false}],[10.15,10.2,0.7,0.55,0.08,'#ffffff',{y:0.91,b:false}],
+    [10.05,10.0,0.9,0.05,0.8,'#d8dee2',{y:1.25,b:false}],
+    [13,10,1,3,2.0,'#55606a'],[13,10,1,3,0.05,'#c0c6cc',{y:2.0,b:false}],
+    [11.2,11.1,1.6,0.8,0.02,'#d4af37',{b:false}],
+    // ── Cuarto pequeño: cama individual, mesita con maletín, silla, cajas, cómoda crema con impresora
+    [4,15,1,2,0.5,'#e8e8e8'],[4,15.3,1,1.7,0.08,'#8d8d8d',{y:0.5,b:false}],[4.2,15.4,0.6,0.4,0.06,'#6fa8dc',{y:0.58,b:false}],
+    [5.1,15,0.6,0.5,0.65,'#8b5a2b'],[5.15,15.05,0.5,0.35,0.1,'#c0c6cc',{y:0.65,b:false}],
+    [5.85,15.05,0.5,0.5,0.95,'#4a2c16',{b:false}],[6.4,15,0.55,0.35,1.0,'#b98a55',{b:false}],
+    [6.1,17,0.9,1.6,0.9,'#efe6c8'],[6.2,17.3,0.6,0.8,0.18,'#e8efe8',{y:0.9,b:false}],
+    // ── Dormitorio: cama de matrimonio de madera con colcha dorada, mesitas, estantería en hornacina
+    [11,15,2,2,0.55,'#a0612b'],[11.05,15.2,1.9,1.8,0.08,'#c9a050',{y:0.55,b:false}],[11.6,15.2,0.8,0.35,0.15,'#d9bf7a',{y:0.63,b:false}],
+    [11,15,2,0.1,1.1,'#a0612b',{b:false}],[10.2,15,0.6,0.5,0.6,'#8b5a2b'],[13.2,15,0.6,0.5,0.75,'#5a3618'],
+    [11.95,15.02,0.1,0.05,0.8,'#5a3a1a',{y:1.4,b:false}],[11.75,15.02,0.5,0.05,0.08,'#5a3a1a',{y:1.9,b:false}],
+    [13.8,16.6,0.2,1,0.04,'#8b5a2b',{y:1.0,b:false}],[13.8,16.6,0.2,1,0.04,'#8b5a2b',{y:1.35,b:false}],[13.8,16.6,0.2,1,0.04,'#8b5a2b',{y:1.7,b:false}],
+    [13.9,17.7,0.08,0.9,2.0,'#f2f0ea',{y:0.1,b:false}],
+    // ── Cuarto del fondo: cama blanca, mesita crema, cómoda oscura, ventana con cortina, zapatillas
+    [7,22,2,2,0.45,'#efe6c8'],[7.1,22.1,1.8,1.8,0.18,'#e9dfcf',{y:0.45,b:false}],[7,23.9,2,0.1,1.1,'#efe6c8',{b:false}],
+    [7.4,23.3,0.7,0.4,0.15,'#9aa98a',{y:0.63,b:false}],[7.5,22.5,0.8,0.6,0.08,'#8fb8de',{y:0.63,b:false}],
+    [9.2,23.3,0.6,0.6,0.6,'#efe6c8'],[6,20.5,0.6,1.5,1.0,'#3b2314'],
+    [5.97,21.6,0.05,1,1.2,'#bfe6ff',{y:1.0,b:false}],[5.95,20.6,0.08,0.9,2.0,'#c9a978',{y:0.1,b:false}],
+    [8.1,21.3,0.15,0.3,0.06,'#222',{b:false}],[8.4,21.6,0.15,0.3,0.06,'#222',{b:false}],
   ],
 };
 
@@ -177,6 +201,8 @@ for (let z = 0; z < H; z++) for (let x = 0; x < W; x++) if (!kind[I(x, z)]) {
 const walk = (x, z) => x >= 0 && z >= 0 && x < W && z < H && kind[I(x, z)] === 1 && !blocked[I(x, z)];
 const [TX, TZ] = CASA.trono;
 const KING = { x: TX + 0.5, z: TZ + 0.5 };
+const START = { x: CASA.inicio[0] + .5, z: CASA.inicio[1] + .5 };
+START.yaw = Math.atan2(-(KING.x - START.x), -(KING.z - START.z));
 blocked[I(TX, TZ)] = 1;
 const salaDe = (x, z) => (CASA.salas.find(s => x >= s.x && x < s.x + s.w && z >= s.z && z < s.z + s.h) || { n: 'algún sitio' }).n;
 
@@ -189,8 +215,8 @@ scene.background = new THREE.Color(0x8fd3ff);
 const camera = new THREE.PerspectiveCamera(72, 1, 0.05, 80);
 camera.rotation.order = 'YXZ';
 scene.add(camera);
-scene.add(new THREE.HemisphereLight(0xffffff, 0x9a8a78, 1.0));
-const sun = new THREE.DirectionalLight(0xffffff, 0.55); sun.position.set(-6, 12, 5); scene.add(sun);
+scene.add(new THREE.HemisphereLight(0xffffff, 0x8a8478, 0.72));
+const sun = new THREE.DirectionalLight(0xffffff, 0.42); sun.position.set(-6, 12, 5); scene.add(sun);
 
 let pixelMode = true;
 function resize() {
@@ -211,6 +237,8 @@ function tex(type, col, rep) {
   else if (type === 'baldosa') { g.fillStyle = 'rgba(255,255,255,.4)'; g.fillRect(0, 0, 16, 16); g.fillRect(16, 16, 16, 16); g.fillStyle = 'rgba(0,0,0,.2)'; g.fillRect(0, 0, 32, 1); g.fillRect(0, 0, 1, 32); g.fillRect(0, 16, 32, 1); g.fillRect(16, 0, 1, 32); }
   else if (type === 'moqueta') { dot('rgba(0,0,0,.12)', 90, 1); dot('rgba(255,255,255,.12)', 90, 1); }
   else if (type === 'piedra') { for (let y = 0; y < 32; y += 16) for (let x = 0; x < 32; x += 16) { g.fillStyle = r() > .5 ? 'rgba(255,255,255,.12)' : 'rgba(0,0,0,.1)'; g.fillRect(x, y, 16, 16); } g.fillStyle = 'rgba(0,0,0,.25)'; g.fillRect(0, 0, 32, 1); g.fillRect(0, 0, 1, 32); g.fillRect(0, 16, 32, 1); g.fillRect(16, 0, 1, 32); }
+  else if (type === 'yeso') { dot('rgba(0,0,0,.04)', 60, 2); g.fillStyle = '#9a9a96'; g.fillRect(0, 29, 32, 3); }
+  else if (type === 'gres') { g.fillStyle = 'rgba(0,0,0,.16)'; g.fillRect(0, 0, 32, 1); g.fillRect(0, 16, 32, 1); g.fillRect(0, 0, 1, 16); g.fillRect(16, 16, 1, 16); dot('rgba(255,255,255,.07)', 40, 3); }
   else if (type === 'ladrillo') { g.fillStyle = 'rgba(120,100,70,.35)'; for (let y = 0; y < 32; y += 8) { g.fillRect(0, y, 32, 1); g.fillRect(y % 16 ? 6 : 22, y, 1, 8); } dot('rgba(0,0,0,.06)', 40, 3); }
   else if (type === 'cesped') { dot('rgba(0,80,0,.25)', 120, 2); dot('rgba(255,255,255,.1)', 60, 2); }
   const t = new THREE.CanvasTexture(c);
@@ -225,11 +253,10 @@ for (const s of CASA.salas) {
   const m = new THREE.Mesh(new THREE.PlaneGeometry(s.w, s.h), lam({ map: tex(s.t, s.c, [s.w, s.h]) }));
   m.rotation.x = -Math.PI / 2; m.position.set(s.x + s.w / 2, 0, s.z + s.h / 2); scene.add(m);
 }
-const doorTex = tex('madera', '#c9a56a');
+const doorTex = tex('gres', '#aeada9');
 for (const [x, z] of CASA.puertas) {
   const m = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), lam({ map: doorTex }));
   m.rotation.x = -Math.PI / 2; m.position.set(x + .5, 0.005, z + .5); scene.add(m);
-  const lint = new THREE.Mesh(new THREE.BoxGeometry(1, .22, 1), lam({ color: 0xe9dcc0 })); lint.position.set(x + .5, WALL_H - .11, z + .5); scene.add(lint);
 }
 const ground = new THREE.Mesh(new THREE.PlaneGeometry(140, 140), lam({ map: tex('cesped', '#6cc04a', [70, 70]) }));
 ground.rotation.x = -Math.PI / 2; ground.position.set(W / 2, -0.03, H / 2); scene.add(ground);
@@ -237,7 +264,7 @@ ground.rotation.x = -Math.PI / 2; ground.position.set(W / 2, -0.03, H / 2); scen
 /* paredes (1 sola malla instanciada) */
 {
   let n = 0; for (let i = 0; i < W * H; i++) if (kind[i] === 2) n++;
-  const walls = new THREE.InstancedMesh(new THREE.BoxGeometry(1, WALL_H, 1), lam({ map: tex('ladrillo', '#f1e2c2') }), n);
+  const walls = new THREE.InstancedMesh(new THREE.BoxGeometry(1, WALL_H, 1), lam({ map: tex('yeso', '#f3f2ee') }), n);
   const mt = new THREE.Matrix4(); let k = 0;
   for (let z = 0; z < H; z++) for (let x = 0; x < W; x++) if (kind[I(x, z)] === 2) { mt.setPosition(x + .5, WALL_H / 2, z + .5); walls.setMatrixAt(k++, mt); }
   scene.add(walls);
@@ -250,6 +277,7 @@ const boxCache = {};
 function box(w, h, d, c) { const k = w + '_' + h + '_' + d; return new THREE.Mesh(boxCache[k] || (boxCache[k] = new THREE.BoxGeometry(w, h, d)), mat(c)); }
 for (const [x, z, w, d, h, c, o = {}] of CASA.muebles) {
   const m = box(w, h, d, c); m.position.set(x + w / 2, (o.y || 0) + h / 2, z + d / 2); scene.add(m);
+  if (o.a) m.material = lam({ color: new THREE.Color(c), transparent: true, opacity: o.a, depthWrite: false });
   if (o.b !== false) for (let cz = Math.floor(z + .001); cz < Math.ceil(z + d - .001); cz++) for (let cx = Math.floor(x + .001); cx < Math.ceil(x + w - .001); cx++) blocked[I(cx, cz)] = 1;
 }
 
@@ -290,12 +318,13 @@ const povHand = box(.14, .14, .14, '#f6cf3f'); povHand.position.set(0, -.02, 0);
 const king = person({ skin: '#dcab84', shirt: '#9b2fa6', pants: '#3b5a8a', hair: '#3b2214', shoes: '#f2f2f2', style: 'long' });
 {
   const T = new THREE.Group(); T.position.set(KING.x, 0, KING.z); scene.add(T);
-  part(T, 1.0, .5, .9, '#7b1fa2', 0, .25, 0);                    // asiento
-  part(T, 1.1, .12, 1.0, '#d4af37', 0, .06, 0);                  // base
-  part(T, 1.0, 1.9, .18, '#d4af37', 0, .95, -.4);                // respaldo
-  part(T, .76, 1.2, .06, '#7b1fa2', 0, .95, -.3);
-  part(T, .14, .4, .8, '#d4af37', -.52, .5, .05); part(T, .14, .4, .8, '#d4af37', .52, .5, .05);
-  for (const x of [-.4, 0, .4]) part(T, .16, .3, .16, '#ffd23f', x, 2.05, -.4);
+  part(T, .38, .42, .46, '#ffffff', 0, .21, .04);                // pie del váter
+  part(T, .5, .1, .6, '#f4f4f4', 0, .46, .05);                   // taza
+  part(T, .46, .03, .54, '#e2e2e2', 0, .525, .06);               // asiento
+  part(T, .52, .5, .2, '#ffffff', 0, .72, -.37);                 // cisterna
+  part(T, .14, .03, .09, '#c0c6cc', 0, .985, -.37);              // pulsador
+  part(T, .46, .5, .03, '#eeeeee', 0, .8, -.255);                // tapa levantada
+  part(T, .1, .45, .1, '#ffffff', .45, .23, .1); part(T, .14, .14, .14, '#ffffff', .45, .5, .1); // portarrollos
   T.add(king.g); king.g.position.set(0, -.06, -.05);
   king.legL.rotation.x = king.legR.rotation.x = -Math.PI / 2;
   part(king.g, .6, .85, .05, '#d81b3a', 0, 1.0, -.2);            // capa
@@ -346,7 +375,7 @@ function nextCell(cx, cz) {
 const G = {
   state: 'menu', t: 0, kills: 0, money: 0, hp: 100, lv: { rango: 0, rapido: 0, bota: 0 },
   roaches: [], coins: [], parts: [], pops: [],
-  x: CASA.inicio[0] + .5, z: CASA.inicio[1] + .5, yaw: 0, pitch: 0, view: 'pov',
+  x: START.x, z: START.z, yaw: START.yaw, pitch: 0, view: 'pov',
   cd: 0, swingT: 9, hitPending: false, atkHeld: false, walkPh: 0,
   coinT: 2, spawnT: 3, burstT: 40, bite: 0, dyingT: 0, locked: false, wasLocked: false,
 };
@@ -436,7 +465,7 @@ function spawnRoach(nest, forceBig) {
   const r = makeRoach(big), [cx, cz] = nest || CASA.nidos[(Math.random() * CASA.nidos.length) | 0];
   const o = {
     ...r, x: cx + rnd(.25, .75), z: cz + rnd(.25, .75), ox: rnd(-.28, .28), oz: rnd(-.28, .28), big,
-    sp: (1.4 + Math.min(1.4, G.t * .005)) * rnd(.85, 1.15) * (big ? .75 : 1), hp: big ? 3 : 1, r: big ? .38 : .2,
+    sp: (1.0 + Math.min(1.5, G.t * .005)) * rnd(.85, 1.15) * (big ? .75 : 1), hp: big ? 3 : 1, r: big ? .38 : .2,
     ph: Math.random() * 6, tx: 0, tz: 0, has: false, dead: false, deadT: 0, biting: false, bt: Math.random() * .6, yaw: 0,
   };
   o.g.position.set(o.x, 0, o.z); scene.add(o.g); G.roaches.push(o);
@@ -471,9 +500,9 @@ function spray() {
 
 function dropCoin() {
   let tx = KING.x, tz = KING.z;
-  for (let i = 0; i < 12; i++) {
-    const a = rnd(0, 6.283), d = rnd(1.8, 4.6), x = KING.x + Math.cos(a) * d, z = KING.z + Math.sin(a) * d;
-    if (walk(Math.floor(x), Math.floor(z))) { tx = x; tz = z; break; }
+  for (let i = 0; i < 30; i++) {
+    const a = rnd(0, 6.283), d = rnd(1.2, 4.2), x = KING.x + Math.cos(a) * d, z = KING.z + Math.sin(a) * d, cx = Math.floor(x), cz = Math.floor(z);
+    if (walk(cx, cz) && dist[I(cx, cz)] >= 0 && dist[I(cx, cz)] <= 7) { tx = x; tz = z; break; }
   }
   if (G.coins.length >= 28) { const c = G.coins.shift(); scene.remove(c.m); }
   const val = reign() * 2, m = box(.3, .3, .07, val >= 10 ? '#ffe9a0' : '#ffd23f');
@@ -575,11 +604,11 @@ function updateWorld(dt, live) {
   // spawn
   if (live) {
     G.t += dt; G.spawnT -= dt; G.burstT -= dt;
-    const iv = Math.max(.5, 2.4 - G.t * .012);
+    const iv = Math.max(.55, 2.8 - G.t * .012);
     if (G.spawnT <= 0 && G.roaches.length < 70) { G.spawnT = iv * rnd(.7, 1.3); spawnRoach(); }
     if (G.burstT <= 0) {
       G.burstT = Math.max(25, 45 - G.t * .05); const n = CASA.nidos[(Math.random() * CASA.nidos.length) | 0];
-      say('¡Invasión desde ' + salaDe(n[0], n[1]) + '! 🪳🪳🪳'); snd(200, 100, .5, 'sawtooth', .06);
+      say('¡Invasión desde ' + (n[2] || salaDe(n[0], n[1])) + '! 🪳🪳🪳'); snd(200, 100, .5, 'sawtooth', .06);
       for (let i = 0; i < 5 + Math.floor(G.t / 40); i++) spawnRoach(n);
     }
     G.coinT -= dt; if (G.coinT <= 0) { G.coinT = Math.max(.7, 2.6 - .15 * reign()); dropCoin(); }
@@ -635,8 +664,10 @@ function placeCamera() {
   else {
     const tx = G.x, ty = 1.55, tz = G.z; let s = 1, dMax = 3.6;
     for (let k = 1; k <= 24; k++) { const f = k / 24, px = tx - fx * dMax * f, py = ty - fy * dMax * f, pz = tz - fz * dMax * f; if (camBlocked(px, py, pz) || py < .25) { s = (k - 1) / 24; break; } }
-    const d = Math.max(.7, dMax * s - .15);
-    camera.position.set(tx - fx * d, Math.max(.3, ty - fy * d), tz - fz * d); camera.lookAt(tx, ty, tz);
+    const d = dMax * s - .15;
+    if (d < 1.9) { const h = Math.hypot(fx, fz) || 1; camera.position.set(tx - fx / h * .8, WALL_H + 2.2, tz - fz / h * .8); }  // vista desde arriba
+    else camera.position.set(tx - fx * d, Math.max(.3, ty - fy * d), tz - fz * d);
+    camera.lookAt(tx, ty - .3, tz);
   }
 }
 function setView(v) {
@@ -646,10 +677,10 @@ function setView(v) {
 
 /* ───────── HUD ───────── */
 const mini = $('mini'), mg = mini.getContext('2d'), SC = 6, miniBG = document.createElement('canvas');
-miniBG.width = W * SC; miniBG.height = H * SC;
+miniBG.width = mini.width = W * SC; miniBG.height = mini.height = H * SC;
 {
   const g = miniBG.getContext('2d'); g.fillStyle = '#243a24'; g.fillRect(0, 0, miniBG.width, miniBG.height);
-  for (const s of CASA.salas) { g.fillStyle = s.c; g.fillRect(s.x * SC, s.z * SC, s.w * SC, s.h * SC); }
+  for (const s of CASA.salas) { g.fillStyle = s.mc || s.c; g.fillRect(s.x * SC, s.z * SC, s.w * SC, s.h * SC); }
   g.fillStyle = '#c9a56a'; for (const [x, z] of CASA.puertas) g.fillRect(x * SC, z * SC, SC, SC);
   g.fillStyle = '#3d2f22'; for (let z = 0; z < H; z++) for (let x = 0; x < W; x++) if (kind[I(x, z)] === 2) g.fillRect(x * SC, z * SC, SC, SC);
   g.fillStyle = 'rgba(0,0,0,.45)'; for (let z = 0; z < H; z++) for (let x = 0; x < W; x++) if (blocked[I(x, z)]) g.fillRect(x * SC + 1, z * SC + 1, SC - 2, SC - 2);
@@ -689,14 +720,14 @@ function lock() { if (TOUCH) return; try { const p = canvas.requestPointerLock()
 function resetGame() {
   for (const r of G.roaches) scene.remove(r.g); for (const c of G.coins) scene.remove(c.m); for (const p of G.parts) scene.remove(p.m); for (const p of G.pops) p.el.remove();
   Object.assign(G, { t: 0, kills: 0, money: 0, hp: 100, lv: { rango: 0, rapido: 0, bota: 0 }, roaches: [], coins: [], parts: [], pops: [],
-    x: CASA.inicio[0] + .5, z: CASA.inicio[1] + .5, yaw: 0, pitch: G.view === 'pov' ? 0 : -.4, cd: 0, swingT: 9, hitPending: false, atkHeld: false,
+    x: START.x, z: START.z, yaw: START.yaw, pitch: G.view === 'pov' ? 0 : -.4, cd: 0, swingT: 9, hitPending: false, atkHeld: false,
     coinT: 2, spawnT: 2, burstT: 40, bite: 0, dyingT: 0, lastLv: 1, throwT: 0 });
   king.g.scale.y = 1; king.g.rotation.z = 0;
 }
 function startGame() {
   if (G.state !== 'play') { if (G.state !== 'pause') resetGame(); G.state = 'play'; }
   ov.classList.add('off'); lock(); MUS.start();
-  if (!G.intro) { G.intro = true; say('¡Defiende a la reina! Mata cucarachas 🩴 y recoge sus monedas 🪙', 3500); }
+  if (!G.intro) { G.intro = true; say('¡Defiende a la reina del váter 🚽! Mata cucarachas 🩴 y recoge sus monedas 🪙', 3500); }
   snd(500, 800, .15, 'triangle', .05);
 }
 function endGame() {
