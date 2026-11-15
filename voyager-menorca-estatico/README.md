@@ -1,45 +1,36 @@
-# Voyager Menorca — copia estática (sin WordPress)
+# Voyager Menorca — web nueva (Astro, sin WordPress)
 
-Copia fiel de **voyagermenorca.com** (WordPress + Elementor + WPML) convertida en un sitio
-estático: HTML/CSS/JS/imágenes listos para alojar en cualquier hosting, sin PHP ni base de datos.
-Generada el 2026-11-14 a partir de la web pública.
+Sustituye a voyagermenorca.com (WordPress + Elementor + WPML + Contact Form 7 + Jetpack). 4 idiomas (es · ca · en · fr), **mismas URLs** que el sitio original, 383 páginas estáticas, 0 dependencias de WordPress.
 
-- **~400 páginas** en 4 idiomas (es, ca, en, fr): inicio, excursiones, tours, blog, categorías, legales…
-- Medido contra el original en móvil y escritorio: **0,4–0,7 % de píxeles distintos** en inicio y tour
-  (el resto es animación de sliders/banner de cookies). Ver `shots/` (`*-local.jpg` vs `*-orig.jpg`).
-
-## Ejecutar
 ```bash
-npm start          # http://localhost:8080  (Node 18+, sin dependencias)
-npm test           # e2e con Playwright (con el servidor en marcha: URL=http://localhost:8080)
+npm install
+npm run dev        # http://localhost:4321  (optimiza imágenes y arranca Astro)
+npm run build      # imágenes → astro build → dist/ + redirecciones 301
+npm test           # 29 pruebas: HTML estático, hreflang, URLs, función de contacto, navegador, WCAG
 ```
-Para alojarlo: sube `public/` a cualquier hosting estático (Netlify, Cloudflare Pages, S3, Nginx…).
-Sirve las rutas con barra final (`/excursiones/` → `excursiones/index.html`).
-`server.js` es opcional; solo es imprescindible para recibir formularios (ver abajo).
+Requiere Node 22. Despliegue en Netlify: ver **[DEPLOY.md](DEPLOY.md)**.
 
 ## Estructura
-- `public/` — el sitio. Las rutas coinciden con las del original (mismos slugs → conserva SEO).
-  `public/wp-content`, `public/wp-includes`: CSS/JS de Elementor y plugins **tal cual** (siguen haciendo
-  funcionar el diseño). `public/img/`: imágenes que servía el CDN de Jetpack (`i0.wp.com`), ahora locales.
-- `public/forms.js` — sustituye a Contact Form 7 y a los formularios de Elementor.
-- `server.js` — servidor estático + `POST /api/forms`.
-- `tools/crawl.py`, `tools/pages.txt` — rastreador para regenerar la copia desde el sitio vivo.
-
-## Qué ya NO depende de WordPress y qué cambió
-| Función | Estado |
+| Ruta | Contenido |
 |---|---|
-| Diseño, menús, sliders, idiomas (selector es/ca/en/fr) | Funciona (HTML ya renderizado) |
-| Formularios de contacto y de reserva | **Reescritos**: `forms.js` los envía a `/api/forms` (guarda en `data/submissions.jsonl`). Para recibir avisos define `FORM_WEBHOOK_URL` (Zapier/Make/Formspree…) o `window.VOYAGER_FORMS_ENDPOINT` si alojas solo estático. **Sin esto no te llega ningún correo.** |
-| reCAPTCHA de los formularios | Eliminado (añade uno nuevo, p. ej. Cloudflare Turnstile, al endpoint) |
-| Banner de cookies (Complianz) | Funciona con la configuración congelada en `public/wp-json/complianz/v1/cookie_data` |
-| Reservas Turitop, WhatsApp, Google Tag, accesibilidad Elementor | Siguen cargándose de sus servicios externos |
-| Panel de WordPress / editar contenido | **Ya no existe**: edita los HTML o migra a un generador (Astro, Eleventy…) |
-| Búsqueda, comentarios, feeds RSS, `wp-json` | No disponibles |
+| `src/content/pages/<idioma>/*.md` | Páginas y fichas de excursión (frontmatter: precio, datos clave, FAQ, reseñas, galería…) |
+| `src/content/posts/<idioma>/*.md` | Artículos del blog |
+| `src/images/` | Fotos originales; `scripts/images.mjs` genera WebP responsive en `public/_img/` |
+| `src/data/home.json`, `categories.json`, `redirects.json` | Textos de portada por idioma, árbol de categorías, redirecciones |
+| `src/views/`, `src/components/`, `src/layouts/` | Plantillas (Home, Tour, Page, Post, Listing) y componentes |
+| `src/lib/i18n.ts` | Textos de interfaz en 4 idiomas, URLs clave, datos de contacto (`SITE`) |
+| `src/styles/global.css` | Sistema de diseño (tokens de color/tipografía/espaciado) |
+| `netlify/functions/contact.mjs` | Formularios: validación, antispam, e-mail |
+| `public/admin/` | CMS (Decap) para editar sin tocar código |
+| `tools/` | Scripts de migración desde la copia de WordPress (`extract.py`, `build_content.py`); no se usan en producción |
+| `legacy/` | Copia estática anterior de WordPress (referencia). Etiqueta Git `estatico-wordpress-v1` |
 
-## Limitaciones conocidas
-- Es una instantánea: cambios posteriores en el WordPress no aparecen hasta volver a ejecutar `tools/crawl.py`.
-- Enlaces rotos **que ya estaban rotos en el original** (404 allí): `/blog/ciutadella-ruta-historia-mercados-restaurantes/`,
-  `/faros/`, `/playas-de-menorca-segun-el-viento/`, `/visita-guiada-por-mahon/`.
-- Archivos de fechas, autores y etiquetas no se copiaron. El HTML conserva el CSS/JS de Elementor (pesado);
-  la mejora siguiente es migrar a plantillas propias y optimizar imágenes.
-- Las 4 páginas borrador/copias de seguridad del WordPress no se incluyen (no eran públicas).
+## Sistema de diseño
+Identidad “guía local”: azul marino del logo (`#27336e`/`#14204a`), verde mar (`#61d19e`), ocre de marés (`#e8b54a`) para etiquetas de precio, blanco de cal con matiz verdoso. Titulares en **Bricolage Grotesque**, texto en **Figtree** (autoalojadas, sin Google Fonts). Elemento memorable: etiqueta de precio tipo “tag” sobre cada foto y línea de ruta punteada en “Así de sencillo”. Contraste AA, foco visible, `prefers-reduced-motion`, objetivos táctiles ≥ 44 px.
+
+## Edición de contenido
+`/admin/` (Decap CMS): excursiones (precio, datos, galería, FAQ, reseñas, Turitop), páginas y artículos en cada idioma. Cada guardado es un commit y Netlify republica. Fotos nuevas: se suben a `src/images/` y se optimizan solas.
+Para **añadir una excursión nueva**: crear una página en cada idioma con plantilla `tour`, la misma `translationKey` y su URL.
+
+## Qué cambia respecto a WordPress
+Formularios → función propia (ver DEPLOY.md) · cookies → banner propio (la analítica solo carga tras aceptar) · Turitop → se carga solo al pulsar «Reservar online» (requiere el snippet de cada excursión en el CMS) · sin búsqueda, comentarios ni RSS.

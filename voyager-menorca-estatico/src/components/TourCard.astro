@@ -1,0 +1,20 @@
+---
+import Img from './Img.astro';
+import { t, type Lang } from '../lib/i18n';
+const { tour, lang, eager = false } = Astro.props as { tour: any; lang: Lang; eager?: boolean };
+const d = tour.data, img = d.gallery?.[0] ?? d.image;
+const meta = (d.facts ?? []).slice(0, 2).map((f: any) => f.value).join(' · ');
+---
+<a class="tc" href={d.url}>
+  <div class="ph"><Img src={img} alt="" sizes="(min-width: 60rem) 24rem, 90vw" ratio="4/3" eager={eager} />{d.price && <span class="tag">{d.price.from ? `${t(lang, 'from')} ` : ''}<b>{d.price.amount}</b></span>}</div>
+  <div class="tx"><h3>{d.title}</h3>{d.tagline && <p class="tg">{d.tagline}</p>}{meta && <p class="mt">{meta}</p>}<span class="go">{t(lang, 'ask')}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6" /></svg></span></div>
+</a>
+<style>
+  .tc { display: flex; flex-direction: column; text-decoration: none; color: var(--ink); background: var(--paper); border-radius: var(--radius); overflow: hidden; border: 1px solid var(--line); transition: transform .3s var(--ease), box-shadow .3s; height: 100%; }
+  .tc:hover { transform: translateY(-4px); box-shadow: var(--shadow); color: var(--ink); }
+  .ph { position: relative; overflow: hidden; } .ph :global(img) { width: 100%; aspect-ratio: 4/3; object-fit: cover; transition: transform .6s var(--ease); } .tc:hover .ph :global(img) { transform: scale(1.04); }
+  .tag { position: absolute; left: 1rem; bottom: 1rem; background: var(--ochre); color: var(--ink); padding: .4rem .9rem .4rem 1.3rem; font-size: .85rem; clip-path: polygon(.7rem 0, 100% 0, 100% 100%, .7rem 100%, 0 50%); filter: drop-shadow(0 2px 4px rgba(0,0,0,.25)); } .tag b { font: 700 1.15rem var(--font-display); }
+  .tx { padding: 1.2rem 1.3rem 1.4rem; display: flex; flex-direction: column; gap: .35rem; flex: 1; }
+  h3 { margin: 0; font-size: var(--step-1); } .tg { margin: 0; color: var(--muted); font-size: .95rem; } .mt { margin: 0; font-size: .85rem; color: var(--sea-d); font-weight: 600; }
+  .go { margin-top: auto; padding-top: .8rem; display: inline-flex; align-items: center; gap: .5rem; font-weight: 650; color: var(--navy); } .go svg { width: 1.2rem; height: 1.2rem; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; transition: transform .2s; } .tc:hover .go svg { transform: translateX(4px); }
+</style>

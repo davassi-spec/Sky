@@ -1,0 +1,75 @@
+---
+import Icon from './Icon.astro';
+import { KEY_URLS, SITE, t, wa, type Lang } from '../lib/i18n';
+interface Props { lang: Lang; tour?: string; tours?: string[]; id?: string; heading?: boolean; compact?: boolean }
+const { lang, tour = '', tours = [], id = 'reservar', heading = true } = Astro.props;
+const sitekey = import.meta.env.PUBLIC_TURNSTILE_SITEKEY;
+const langs: [string, string][] = [['es', 'Español'], ['ca', 'Català'], ['en', 'English'], ['fr', 'Français']];
+const uid = Math.random().toString(36).slice(2, 7);
+---
+<section class="booking" id={id} aria-labelledby={`bk-${uid}`}>
+  {heading && <><h2 id={`bk-${uid}`}>{t(lang, 'requestTitle')}</h2><p class="lede">{t(lang, 'requestLede')}</p></>}
+  <form class="bf" method="post" action="/api/contact" novalidate data-lang={lang} data-thanks={KEY_URLS[lang].thanks} data-ok={t(lang, 'f_ok')} data-err={t(lang, 'f_err')} data-req={t(lang, 'f_req')} data-mail={t(lang, 'f_mail')} data-sending={t(lang, 'f_sending')}>
+    <input type="hidden" name="page" value="" /><input type="hidden" name="ts" value="" /><input type="hidden" name="lang" value={lang} />
+    <div class="hp" aria-hidden="true"><label>Web <input type="text" name="website" tabindex="-1" autocomplete="off" /></label></div>
+    <div class="row2">
+      <div class="f"><label for={`n-${uid}`}>{t(lang, 'f_name')} *</label><input id={`n-${uid}`} name="name" autocomplete="name" required maxlength="120" /></div>
+      <div class="f"><label for={`e-${uid}`}>{t(lang, 'f_email')} *</label><input id={`e-${uid}`} name="email" type="email" autocomplete="email" required maxlength="160" /></div>
+    </div>
+    <div class="row2">
+      <div class="f"><label for={`p-${uid}`}>{t(lang, 'f_phone')}</label><input id={`p-${uid}`} name="phone" type="tel" autocomplete="tel" maxlength="40" /></div>
+      {tours.length > 0
+        ? <div class="f"><label for={`t-${uid}`}>{t(lang, 'f_tour')}</label><select id={`t-${uid}`} name="tour"><option value="">{t(lang, 'f_any')}</option>{tours.map((x) => <option selected={x === tour}>{x}</option>)}</select></div>
+        : <input type="hidden" name="tour" value={tour} />}
+    </div>
+    <div class="row3">
+      <div class="f"><label for={`d-${uid}`}>{t(lang, 'f_date')}</label><input id={`d-${uid}`} name="date" type="date" /></div>
+      <div class="f"><label for={`g-${uid}`}>{t(lang, 'f_people')}</label><input id={`g-${uid}`} name="people" type="number" min="1" max="60" inputmode="numeric" /></div>
+      <div class="f"><label for={`l-${uid}`}>{t(lang, 'f_lang')}</label><select id={`l-${uid}`} name="tourLang">{langs.map(([v, n]) => <option value={v} selected={v === lang}>{n}</option>)}</select></div>
+    </div>
+    <div class="f"><label for={`m-${uid}`}>{t(lang, 'f_message')}</label><textarea id={`m-${uid}`} name="message" rows="4" maxlength="2000"></textarea></div>
+    <label class="chk"><input type="checkbox" name="accept" required /><span>{t(lang, 'f_accept')} <a href={KEY_URLS[lang].privacy} target="_blank" rel="noopener">{t(lang, 'f_privacy')}</a> *</span></label>
+    {sitekey && <div class="cf-turnstile" data-sitekey={sitekey}></div>}
+    <p class="msg" role="alert" aria-live="polite" hidden></p>
+    <div class="actions">
+      <button class="btn" type="submit">{t(lang, 'f_send')}<Icon name="arrow" /></button>
+      <ul class="trust"><li><Icon name="check" />{t(lang, 'trust1')}</li><li><Icon name="check" />{t(lang, 'trust2')}</li><li><Icon name="check" />{t(lang, 'trust3')}</li></ul>
+    </div>
+    <p class="alt">{t(lang, 'prefer')} <a href={wa(tour ? `${tour}` : undefined)} target="_blank" rel="noopener">WhatsApp</a> · <a href={`tel:${SITE.phone.replace(/\s/g, '')}`}>{SITE.phone}</a></p>
+  </form>
+  {sitekey && <script is:inline src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>}
+</section>
+<script>
+  document.querySelectorAll<HTMLFormElement>('form.bf').forEach((f) => {
+    const set = (n: string, v: string) => ((f.elements.namedItem(n) as HTMLInputElement).value = v);
+    set('page', location.pathname); set('ts', String(Date.now()));
+    const msg = f.querySelector<HTMLElement>('.msg')!, btn = f.querySelector<HTMLButtonElement>('button[type=submit]')!, label = btn.firstChild!.textContent!;
+    const show = (t: string, ok = false) => { msg.hidden = false; msg.textContent = t; msg.className = 'msg ' + (ok ? 'ok' : 'err'); };
+    f.addEventListener('submit', async (e) => {
+      e.preventDefault(); const d = f.dataset as Record<string, string>; msg.hidden = true;
+      const data = Object.fromEntries(new FormData(f).entries()) as Record<string, string>;
+      if (!data.name?.trim() || !data.email?.trim() || !data.accept) return show(d.req);
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(data.email)) return show(d.mail);
+      btn.disabled = true; btn.firstChild!.textContent = d.sending;
+      try {
+        const r = await fetch(f.action, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+        if (!r.ok) throw new Error(String(r.status));
+        location.href = d.thanks;
+      } catch { show(d.err); btn.disabled = false; btn.firstChild!.textContent = label; }
+    });
+  });
+</script>
+<style>
+  .booking { background: var(--paper); border: 1px solid var(--line); border-radius: calc(var(--radius) + 6px); padding: clamp(1.25rem, 4vw, 2.5rem); box-shadow: var(--shadow); }
+  .booking h2 { font-size: var(--step-2); margin-bottom: .4rem; } .lede { font-size: 1rem; margin-bottom: 1.5rem; }
+  .bf { display: grid; gap: 1rem; }
+  .row2 { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); } .row3 { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr)); }
+  .f { display: grid; gap: .35rem; } label { font-weight: 600; font-size: .95rem; }
+  input:not([type='checkbox']), select, textarea { width: 100%; font: inherit; color: var(--ink); background: var(--cal); border: 1.5px solid #9fb0aa; border-radius: 10px; padding: .75rem .9rem; min-height: 3rem; }
+  textarea { resize: vertical; } input:focus, select:focus, textarea:focus { outline: 3px solid var(--sea); outline-offset: 0; border-color: var(--ink); box-shadow: none; }
+  .hp { position: absolute; left: -9999px; height: 0; overflow: hidden; }
+  .chk { display: flex; gap: .7rem; align-items: flex-start; font-weight: 400; } .chk input { width: 1.3rem; height: 1.3rem; margin-top: .2rem; accent-color: var(--ink); flex: none; }
+  .actions { display: flex; flex-wrap: wrap; gap: 1rem 1.5rem; align-items: center; } .trust { list-style: none; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: .3rem 1.1rem; font-size: .9rem; color: var(--muted); } .trust li { display: flex; gap: .35rem; align-items: center; } .trust :global(svg) { width: 1.1rem; color: var(--sea-d); stroke-width: 3; }
+  .msg { margin: 0; padding: .8rem 1rem; border-radius: 10px; font-weight: 550; } .msg.err { background: #fde8e6; color: #8a1c14; } .msg.ok { background: #e1f5ea; color: #145a3a; }
+  .alt { margin: 0; font-size: .95rem; color: var(--muted); }
+</style>

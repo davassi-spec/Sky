@@ -1,0 +1,14 @@
+---
+import manifest from '../data/images.json';
+interface Props { src?: string; alt?: string; sizes?: string; class?: string; eager?: boolean; ratio?: string; fit?: 'cover' | 'contain' }
+const { src, alt = '', sizes = '100vw', class: cls, eager = false, ratio, fit = 'cover' } = Astro.props;
+const name = (src ?? '').replace(/^\/images\//, '').replace(/\.[a-z0-9]+$/i, '');
+const m = (manifest as Record<string, any>)[name];
+---
+{m && (m.svg ? <img src={`/_img/${name}.svg`} alt={alt} class={cls} loading={eager ? 'eager' : 'lazy'} decoding="async" /> :
+  <img
+    src={`/_img/${name}-${m.widths[m.widths.length - 1]}.webp`}
+    srcset={m.widths.map((w: number) => `/_img/${name}-${w}.webp ${w}w`).join(', ')}
+    sizes={sizes} width={m.w} height={m.h} alt={alt} class={cls}
+    loading={eager ? 'eager' : 'lazy'} fetchpriority={eager ? 'high' : 'auto'} decoding="async"
+    style={`${ratio ? `aspect-ratio:${ratio};` : ''}object-fit:${fit}`} />)}

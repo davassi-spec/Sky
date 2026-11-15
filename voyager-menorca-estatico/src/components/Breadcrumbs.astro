@@ -1,0 +1,9 @@
+---
+import { t, type Lang } from '../lib/i18n';
+const { items, lang } = Astro.props as { items: { name: string; href?: string }[]; lang: Lang };
+---
+<nav class="bc" aria-label={t(lang, 'breadcrumb')}><ol>{items.map((i, n) => <li>{i.href ? <a href={i.href}>{i.name}</a> : <span aria-current="page">{i.name}</span>}</li>)}</ol></nav>
+<style>
+  .bc ol { list-style: none; display: flex; flex-wrap: wrap; gap: .3rem; padding: 0; margin: 0 0 1rem; font-size: .9rem; color: var(--muted); } .bc li + li::before { content: '/'; margin-right: .3rem; color: var(--line); }
+  .bc a { color: var(--muted); } .bc a:hover { color: var(--ink); }
+</style>

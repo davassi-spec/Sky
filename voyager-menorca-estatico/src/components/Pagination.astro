@@ -1,0 +1,15 @@
+---
+import { t, type Lang } from '../lib/i18n';
+const { base, page, total, lang } = Astro.props as { base: string; page: number; total: number; lang: Lang };
+const href = (n: number) => (n === 1 ? base : `${base}page/${n}/`);
+---
+{total > 1 && <nav class="pg" aria-label={t(lang, 'pagination')}>
+  {page > 1 && <a href={href(page - 1)} rel="prev">← {t(lang, 'prev')}</a>}
+  <ol>{Array.from({ length: total }, (_, i) => i + 1).map((n) => <li><a href={href(n)} aria-current={n === page ? 'page' : undefined} aria-label={`${t(lang, 'page')} ${n}`}>{n}</a></li>)}</ol>
+  {page < total && <a href={href(page + 1)} rel="next">{t(lang, 'next')} →</a>}
+</nav>}
+<style>
+  .pg { display: flex; justify-content: center; align-items: center; gap: 1rem; margin-top: 2.5rem; flex-wrap: wrap; } ol { list-style: none; display: flex; gap: .4rem; padding: 0; margin: 0; }
+  a { text-decoration: none; padding: .5rem .85rem; border-radius: 999px; font-weight: 600; min-width: 2.6rem; text-align: center; display: inline-block; } ol a { border: 1px solid var(--line); background: var(--paper); }
+  a[aria-current='page'] { background: var(--ink); color: #fff; border-color: var(--ink); }
+</style>

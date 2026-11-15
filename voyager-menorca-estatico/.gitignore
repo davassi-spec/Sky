@@ -1,2 +1,8 @@
-data/
 node_modules/
+dist/
+.astro/
+public/_img/
+src/data/images.json
+tests/shots/
+.env
+.netlify/

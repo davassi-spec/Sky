@@ -1,0 +1,64 @@
+---
+import type { GetStaticPaths } from 'astro';
+import Base from '../layouts/Base.astro';
+import Home from '../views/Home.astro';
+import Tour from '../views/Tour.astro';
+import Page from '../views/Page.astro';
+import Post from '../views/Post.astro';
+import Listing from '../views/Listing.astro';
+import { KEY_URLS, LANGS, NAV_LABEL, t, type Lang } from '../lib/i18n';
+import { PAGE_SIZE, alternates, categories, categoryAlts, pages, postsFor, postsInCategory, posts as allPosts } from '../lib/site';
+import manifest from '../data/images.json';
+import { breadcrumbs, crumbsFor, faqLd, org, postLd, tourLd, website } from '../lib/schema';
+
+export const getStaticPaths = (async () => {
+  const out: { params: { path: string | undefined }; props: any }[] = [];
+  const p = (url: string) => ({ path: url === '/' ? undefined : url.replace(/^\/|\/$/g, '') });
+  for (const e of await pages()) out.push({ params: p(e.data.url), props: { kind: 'page', entry: e } });
+  for (const e of await allPosts()) out.push({ params: p(e.data.url), props: { kind: 'post', entry: e } });
+  const list = async (lang: Lang, base: string, title: string, items: any[], extra: any = {}) => {
+    const total = Math.max(1, Math.ceil(items.length / PAGE_SIZE));
+    for (let n = 1; n <= total; n++) out.push({ params: p(n === 1 ? base : `${base}page/${n}/`), props: { kind: 'list', lang, title, base, n, total, items: items.slice((n - 1) * PAGE_SIZE, n * PAGE_SIZE), ...extra } });
+  };
+  for (const lang of LANGS) await list(lang, KEY_URLS[lang].blog, NAV_LABEL[lang].blog, await postsFor(lang), { alts: Object.fromEntries(LANGS.map((l) => [l, KEY_URLS[l].blog])) });
+  for (const c of categories) {
+    const parentUrl = c.url.replace(/[^/]+\/$/, '');
+    const parent = categories.find((x) => x.url === parentUrl);
+    await list(c.lang, c.url, c.name, postsInCategory(await postsFor(c.lang), c), { alts: categoryAlts(c), parent: parent ? { name: parent.name, href: parent.url } : undefined });
+  }
+  return out;
+}) satisfies GetStaticPaths;
+
+const props = Astro.props as any;
+let preload: string | undefined;
+if (props.kind === 'page' && props.entry.data.template === 'home') {
+  const hero = (await import('../data/home.json')).default as any; const h = hero[props.entry.data.lang] ?? hero.es; const name = h.heroImage.replace(/^\/images\//, '').replace(/\.[a-z0-9]+$/i, ''); const m = (manifest as any)[name];
+  if (m && m.widths) preload = m.widths.map((w: number) => `/_img/${name}-${w}.webp ${w}w`).join(', ') + '|100vw';
+}
+let lang: Lang, title = '', description = '', path = '', alts: any = {}, image: string | undefined, jsonld: object[] = [], type: 'website' | 'article' = 'website', noindex = false, published: string | undefined, modified: string | undefined, prev: string | undefined, next: string | undefined, waText: string | undefined;
+
+if (props.kind === 'page') {
+  const d = props.entry.data; lang = d.lang; path = d.url; title = d.seoTitle || d.title; description = d.description ?? ''; image = d.gallery?.[0] ?? d.image; noindex = d.noindex || /(solicitud-recibida|request-received|demande-recue|sol-star-licitud-rebuda)/.test(d.url);
+  alts = await alternates('page', d.translationKey);
+  if (d.template === 'home') { jsonld = [org(), website(lang)]; title = d.seoTitle || title; }
+  else {
+    jsonld = [breadcrumbs(crumbsFor(lang, [{ name: d.title, href: d.url }]))];
+    if (d.template === 'tour') { jsonld.push(tourLd({ ...d, description }, lang)); if (d.faq?.length) jsonld.push(faqLd(d.faq)); waText = d.title; }
+    else if (d.faq?.length) jsonld.push(faqLd(d.faq));
+  }
+} else if (props.kind === 'post') {
+  const d = props.entry.data; lang = d.lang; path = d.url; title = d.seoTitle || d.title; description = d.description ?? ''; image = d.image; type = 'article'; published = d.date || undefined; modified = d.updated || undefined;
+  alts = await alternates('post', d.translationKey);
+  jsonld = [postLd(d, lang), breadcrumbs(crumbsFor(lang, [{ name: NAV_LABEL[lang].blog, href: KEY_URLS[lang].blog }, { name: d.title, href: d.url }]))];
+} else {
+  lang = props.lang; title = props.n > 1 ? `${props.title} · ${t(lang, 'page')} ${props.n}` : props.title; path = props.n === 1 ? props.base : `${props.base}page/${props.n}/`; alts = props.n === 1 ? props.alts : {};
+  noindex = props.n > 1 && false; prev = props.n > 1 ? (props.n === 2 ? props.base : `${props.base}page/${props.n - 1}/`) : undefined; next = props.n < props.total ? `${props.base}page/${props.n + 1}/` : undefined;
+  description = props.title;
+  jsonld = [breadcrumbs(crumbsFor(lang, [{ name: NAV_LABEL[lang].blog, href: KEY_URLS[lang].blog }, ...(props.base !== KEY_URLS[lang].blog ? [{ name: props.title, href: props.base }] : [])]))];
+}
+---
+<Base preload={preload} lang={lang} title={title} description={description} path={path} alts={alts} image={image} type={type} noindex={noindex} jsonld={jsonld} waText={waText} published={published} modified={modified} prev={prev} next={next}>
+  {props.kind === 'page' && (props.entry.data.template === 'home' ? <Home lang={lang} /> : props.entry.data.template === 'tour' ? <Tour entry={props.entry} lang={lang} /> : <Page entry={props.entry} lang={lang} />)}
+  {props.kind === 'post' && <Post entry={props.entry} lang={lang} />}
+  {props.kind === 'list' && <Listing lang={lang} title={props.title} base={props.base} items={props.items} page={props.n} total={props.total} parent={props.parent} />}
+</Base>

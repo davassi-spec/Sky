@@ -1,0 +1,13 @@
+---
+import Base from '../layouts/Base.astro';
+import Icon from '../components/Icon.astro';
+import { KEY_URLS, LANGS, LANG_NAME, t } from '../lib/i18n';
+---
+<Base lang="es" title="404 — Página no encontrada" path="/404/" noindex>
+  <section class="wrap nf">
+    <h1>{t('es', 'notFound')}</h1><p class="lede">{t('es', 'notFoundText')}</p>
+    <p class="ls">{LANGS.map((l) => <a class="btn btn--ghost" href={KEY_URLS[l].tours}>{LANG_NAME[l]} · {t(l, 'seeTours')}</a>)}</p>
+    <a class="btn btn--sea" href="/">{t('es', 'home')}<Icon name="arrow" /></a>
+  </section>
+</Base>
+<style>.nf { padding-block: 5rem; } .ls { display: flex; gap: .6rem; flex-wrap: wrap; margin: 1.5rem 0; }</style>

@@ -1,0 +1,16 @@
+---
+import { t, type Lang } from '../lib/i18n';
+const { items, lang } = Astro.props as { items: { q: string; a: string[] }[]; lang: Lang };
+---
+<section class="faq" aria-labelledby="faq-h">
+  <h2 id="faq-h">{t(lang, 'faq')}</h2>
+  {items.map((i) => <details><summary>{i.q}</summary><div>{i.a.map((p) => <p>{p}</p>)}</div></details>)}
+</section>
+<style>
+  details { border-bottom: 1px solid var(--line); } details:first-of-type { border-top: 1px solid var(--line); }
+  summary { cursor: pointer; list-style: none; padding: 1.1rem 2.5rem 1.1rem 0; font: 600 1.1rem/1.35 var(--font-display); position: relative; }
+  summary::-webkit-details-marker { display: none; }
+  summary::after { content: '+'; position: absolute; right: .3rem; top: 50%; transform: translateY(-50%); font-size: 1.6rem; color: var(--sea-d); transition: transform .2s var(--ease); }
+  details[open] summary::after { transform: translateY(-50%) rotate(45deg); }
+  details div { padding: 0 2.5rem 1rem 0; color: var(--muted); }
+</style>

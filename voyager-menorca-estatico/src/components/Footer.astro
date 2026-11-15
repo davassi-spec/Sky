@@ -1,0 +1,51 @@
+---
+import Icon from './Icon.astro';
+import Img from './Img.astro';
+import { KEY_URLS, NAV_LABEL, SITE, t, wa, type Lang } from '../lib/i18n';
+const { lang } = Astro.props as { lang: Lang };
+const u = KEY_URLS[lang], L = NAV_LABEL[lang];
+---
+<footer class="site-footer">
+  <div class="wrap top">
+    <div class="about">
+      <img src="/logo.svg" width="150" height="58" alt="Voyager Menorca" loading="lazy" class="logo" />
+      <p>{t(lang, 'footerTag')}</p>
+      <p class="contact">
+        <a href={wa()} target="_blank" rel="noopener"><Icon name="whatsapp" fill />WhatsApp {SITE.phone}</a>
+        <a href={`mailto:${SITE.email}`}><Icon name="mail" />{SITE.email}</a>
+        <a href={SITE.instagram} target="_blank" rel="noopener"><Icon name="instagram" />Instagram</a>
+      </p>
+    </div>
+    <nav aria-label={t(lang, 'explore')}>
+      <h2>{t(lang, 'explore')}</h2>
+      <ul>
+        <li><a href={u.tours}>{L.tours}</a></li><li><a href={u.services}>{L.services}</a></li><li><a href={u.about}>{L.about}</a></li><li><a href={u.blog}>{L.blog}</a></li><li><a href={u.contact}>{L.contact}</a></li>
+      </ul>
+    </nav>
+    <nav aria-label="Legal">
+      <h2>Legal</h2>
+      <ul>
+        <li><a href={u.legal}>{t(lang, 'legal')}</a></li><li><a href={u.privacy}>{t(lang, 'privacy')}</a></li><li><a href={u.cookies}>{t(lang, 'cookiePolicy')}</a></li><li><a href={u.access}>{t(lang, 'access')}</a></li>
+        <li><button type="button" data-open-consent>{t(lang, 'settings')}</button></li>
+      </ul>
+    </nav>
+    <div class="badges">
+      <a href="https://www.marcamenorcabiosfera.org" target="_blank" rel="noopener"><Img src="/images/marca-menorca-reserva-biosfera.png" alt="Marca Menorca Reserva de Biosfera" sizes="180px" /></a>
+      <a href={`${KEY_URLS[lang].home.replace(/\/$/, '')}/declaracion-de-financiacion/`}><Img src="/images/plan-recuperacion-ue-01-2.webp" alt={t(lang, 'funded')} sizes="180px" /></a>
+    </div>
+  </div>
+  <div class="wrap bottom"><p>© {new Date().getFullYear()} {SITE.name} · {SITE.owner}</p></div>
+</footer>
+<style>
+  .site-footer { background: var(--ink); color: #dfe6f3; margin-top: clamp(3rem, 6vw, 5rem); padding-top: clamp(2.5rem, 5vw, 4rem); font-size: .95rem; }
+  .top { display: grid; gap: 2rem; grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr)); }
+  .about { grid-column: span 2; max-width: 26rem; } @media (max-width: 40rem) { .about { grid-column: auto; } }
+  .logo { filter: brightness(0) invert(1); height: 2.6rem; width: auto; margin-bottom: 1rem; }
+  h2 { font: 650 1rem/1.2 var(--font-display); color: #fff; margin-bottom: 1rem; letter-spacing: 0; }
+  ul { list-style: none; padding: 0; margin: 0; display: grid; gap: .55rem; }
+  a, button { color: #dfe6f3; background: none; border: 0; padding: 0; font: inherit; text-align: left; cursor: pointer; text-decoration: none; }
+  a:hover, button:hover { color: var(--sea); text-decoration: underline; }
+  .contact { display: grid; gap: .5rem; } .contact a { display: inline-flex; gap: .55rem; align-items: center; } .contact :global(svg) { width: 1.2rem; height: 1.2rem; }
+  .badges { display: grid; gap: 1rem; align-content: start; } .badges a { background: #fff; border-radius: 10px; padding: .6rem; display: block; max-width: 11rem; } .badges :global(img) { width: 100%; height: auto; }
+  .bottom { border-top: 1px solid rgba(255, 255, 255, .14); margin-top: 2.5rem; padding-block: 1.2rem; color: #aab5d0; font-size: .85rem; } .bottom p { margin: 0; }
+</style>

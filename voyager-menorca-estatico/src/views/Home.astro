@@ -1,0 +1,94 @@
+---
+import Img from '../components/Img.astro';
+import Icon from '../components/Icon.astro';
+import TourCard from '../components/TourCard.astro';
+import BookingForm from '../components/BookingForm.astro';
+import home from '../data/home.json';
+import { KEY_URLS, t, wa, type Lang } from '../lib/i18n';
+import { tours } from '../lib/site';
+const { lang } = Astro.props as { lang: Lang };
+const h = (home as any)[lang] ?? (home as any).es, u = KEY_URLS[lang];
+const list = (await tours(lang)).slice(0, 3);
+---
+<section class="hero">
+  <Img src={h.heroImage} alt="" sizes="100vw" eager class="bg" />
+  <div class="shade"></div>
+  <div class="wrap in">
+    <p class="kicker">{h.heroEyebrow}</p>
+    <h1>{h.heroTitle}</h1>
+    <p class="lede">{h.heroLede}</p>
+    <div class="cta">
+      <a class="btn btn--sea" href={u.tours}>{t(lang, 'seeTours')}<Icon name="arrow" /></a>
+      <a class="btn btn--light" href={wa()} target="_blank" rel="noopener"><Icon name="whatsapp" fill />{t(lang, 'whatsapp')}</a>
+    </div>
+  </div>
+  <svg class="wave" viewBox="0 0 1440 90" preserveAspectRatio="none" aria-hidden="true"><path d="M0 50c120 30 240 30 360 0s240-30 360 0 240 30 360 0 240-30 360 0v40H0z" fill="var(--cal)" /></svg>
+</section>
+
+<section class="trust wrap" aria-label="Voyager Menorca">
+  <ul>{h.stats.map((s: any) => <li><Icon name="check" /><span><b>{s.value}</b> {s.label}</span></li>)}</ul>
+</section>
+
+<section class="section tours">
+  <div class="wrap">
+    <p class="kicker">{h.toursKicker}</p>
+    <h2>{h.toursTitle}</h2>
+    <p class="lede">{h.toursLede}</p>
+    <div class="grid grid--3">{list.map((x) => <TourCard tour={x} lang={lang} />)}</div>
+    <p class="more"><a class="btn btn--ghost" href={u.tours}>{h.toursLink.replace(/\s*→\s*$/, '')}<Icon name="arrow" /></a></p>
+  </div>
+</section>
+
+<section class="section guide">
+  <div class="wrap g">
+    <div class="pt"><Img src={h.guideImage} alt="Daniel Vaquera" sizes="(min-width: 60rem) 28rem, 80vw" ratio="4/5" /></div>
+    <div class="tx">
+      <p class="kicker">{h.guideKicker}</p>
+      <blockquote>{h.guideQuote}</blockquote>
+      {h.guideText.map((p: string) => <p>{p}</p>)}
+      <a class="btn" href={u.about}>{h.guideLink.replace(/\s*→\s*$/, '')}<Icon name="arrow" /></a>
+    </div>
+  </div>
+</section>
+
+<section class="section steps">
+  <div class="wrap">
+    <p class="kicker">{h.stepsKicker}</p>
+    <h2>{h.stepsTitle}</h2>
+    <p class="lede">{h.stepsLede}</p>
+    <ol>{h.steps.map((s: any, i: number) => <li><span class="n" aria-hidden="true">{i + 1}</span><h3>{s.title}</h3><p>{s.text}</p></li>)}</ol>
+  </div>
+</section>
+
+<section class="section final">
+  <div class="wrap f">
+    <div class="tx"><p class="kicker">{h.ctaKicker}</p><h2>{h.ctaTitle}</h2><p class="lede">{h.ctaText}</p></div>
+    <BookingForm lang={lang} heading={false} id="reservar" />
+  </div>
+</section>
+
+<style>
+  .hero { position: relative; min-height: min(88svh, 52rem); display: grid; align-items: end; color: #fff; isolation: isolate; overflow: hidden; }
+  .hero :global(.bg) { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: -2; }
+  .shade { position: absolute; inset: 0; z-index: -1; background: linear-gradient(180deg, rgba(20,32,74,.25) 0%, rgba(20,32,74,.1) 35%, rgba(20,32,74,.82) 100%), linear-gradient(90deg, rgba(20,32,74,.55), transparent 70%); }
+  .in { padding-block: clamp(6rem, 14vh, 9rem) clamp(5rem, 10vw, 7rem); }
+  .hero h1 { color: #fff; max-width: 17ch; font-size: clamp(2.5rem, 1.4rem + 5.4vw, 5.6rem); line-height: 1.02; margin-bottom: 1.2rem; text-shadow: 0 2px 30px rgba(0,0,0,.25); }
+  .hero .kicker { color: var(--sea); } .hero .lede { color: #eef3fb; max-width: 36rem; margin-bottom: 2rem; }
+  .cta { display: flex; flex-wrap: wrap; gap: .8rem; }
+  .wave { position: absolute; left: 0; bottom: -1px; width: 100%; height: clamp(2rem, 5vw, 5rem); z-index: 0; }
+  .trust ul { list-style: none; margin: 0; padding: 1.4rem 0 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr)); gap: .8rem 2rem; }
+  .trust li { display: flex; gap: .7rem; align-items: flex-start; line-height: 1.35; } .trust :global(svg) { flex: none; width: 1.5rem; height: 1.5rem; padding: .25rem; border-radius: 50%; background: var(--sea); color: var(--ink); stroke-width: 3; margin-top: .05rem; }
+  .trust b { font-weight: 700; }
+  .tours .more { margin: 2rem 0 0; display: flex; justify-content: center; } .tours .lede { margin-bottom: 2rem; }
+  .guide { background: var(--ink); color: #e4ebf7; } .guide .kicker { color: var(--sea); }
+  .g { display: grid; gap: clamp(2rem, 6vw, 5rem); align-items: center; grid-template-columns: 1fr; } @media (min-width: 56rem) { .g { grid-template-columns: .85fr 1.15fr; } }
+  .pt { position: relative; max-width: 26rem; } .pt :global(img) { width: 100%; aspect-ratio: 4/5; object-fit: cover; object-position: center top; border-radius: 40% 40% var(--radius) var(--radius) / 28% 28% var(--radius) var(--radius); background: var(--navy); }
+  blockquote { margin: 0 0 1.2rem; font: 600 var(--step-3)/1.15 var(--font-display); color: #fff; letter-spacing: -.02em; text-wrap: balance; }
+  .guide .btn { --bg: var(--sea); --fg: var(--ink); margin-top: .5rem; }
+  .steps ol { list-style: none; padding: 0; margin: 2.5rem 0 0; display: grid; gap: 2rem; grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); counter-reset: s; position: relative; }
+  .steps li { position: relative; padding-top: 4.2rem; } .steps li::before { content: ''; position: absolute; top: 1.6rem; left: 3.4rem; right: -2rem; border-top: 3px dotted var(--sea-d); opacity: .6; } .steps li:last-child::before { display: none; }
+  .n { position: absolute; top: 0; left: 0; width: 3.2rem; height: 3.2rem; border-radius: 50%; background: var(--sea); color: var(--ink); display: grid; place-items: center; font: 700 1.3rem var(--font-display); }
+  .steps h3 { margin-bottom: .3rem; } .steps p { color: var(--muted); margin: 0; }
+  @media (max-width: 40rem) { .steps li::before { display: none; } }
+  .final { background: linear-gradient(180deg, var(--cal), var(--mist)); } .f { display: grid; gap: 2.5rem; align-items: start; grid-template-columns: 1fr; } @media (min-width: 62rem) { .f { grid-template-columns: .8fr 1.2fr; } .f .tx { position: sticky; top: 7rem; } }
+</style>

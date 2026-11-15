@@ -1,0 +1,281 @@
+# Decap CMS — edición de excursiones, precios, textos, fotos y artículos sin tocar código.
+# Los cambios se guardan como commits en Git; Netlify reconstruye y publica la web automáticamente.
+# Requiere activar Netlify Identity + Git Gateway (ver DEPLOY.md) o cambiar el backend a github.
+backend:
+  name: git-gateway
+  branch: main
+  commit_messages:
+    create: 'Contenido: crea {{collection}} “{{slug}}”'
+    update: 'Contenido: actualiza {{collection}} “{{slug}}”'
+    delete: 'Contenido: elimina {{collection}} “{{slug}}”'
+locale: es
+media_folder: src/images
+public_folder: /images
+publish_mode: simple
+site_url: https://voyagermenorca.com
+logo_url: /logo.svg
+slug:
+  encoding: ascii
+  clean_accents: true
+
+collections:
+  - name: pages_es
+    label: "Páginas y excursiones · Español"
+    folder: src/content/pages/es
+    extension: md
+    format: yaml-frontmatter
+    create: true
+    slug: '{{slug}}'
+    identifier_field: title
+    summary: '{{title}} — {{url}}'
+    fields:
+      - { label: Idioma, name: lang, widget: hidden, default: es }
+      - { label: URL pública, name: url, widget: string, hint: 'Ruta exacta con barras, p. ej. /en/private-tour-of-ciutadella/ . No la cambies en páginas existentes (SEO).' }
+      - { label: Clave de traducción, name: translationKey, widget: string, hint: 'Igual en las 4 versiones del mismo contenido (se usa para el selector de idioma y hreflang).' }
+      - { label: Plantilla, name: template, widget: select, options: [home, tour, excursiones, contacto, about, page], default: page }
+      - { label: Título (H1), name: title, widget: string }
+      - { label: Título SEO, name: seoTitle, widget: string, required: false }
+      - { label: Descripción SEO, name: description, widget: text, required: false, pattern: ['^.{0,170}$', 'Máximo 170 caracteres'] }
+      - { label: Imagen destacada / redes, name: image, widget: image, required: false }
+      - { label: No indexar, name: noindex, widget: boolean, default: false }
+      - { label: Orden en listados (excursiones), name: tourOrder, widget: number, required: false }
+      - { label: Antetítulo, name: eyebrow, widget: string, required: false }
+      - { label: Frase breve, name: tagline, widget: string, required: false }
+      - { label: Aviso (p. ej. Completo hasta 2027), name: badge, widget: string, required: false }
+      - { label: Introducción, name: intro, widget: list, required: false, field: { label: Párrafo, name: p, widget: text } }
+      - label: Datos clave
+        name: facts
+        widget: list
+        required: false
+        fields: [ { label: Valor, name: value, widget: string }, { label: Etiqueta, name: label, widget: string, required: false } ]
+      - label: Precio
+        name: price
+        widget: object
+        required: false
+        fields: [ { label: '"Desde"', name: from, widget: boolean, default: false }, { label: Importe, name: amount, widget: string }, { label: Nota, name: note, widget: string, required: false } ]
+      - { label: Galería (la primera es la principal), name: gallery, widget: list, required: false, field: { label: Foto, name: img, widget: image } }
+      - { label: Reseñas, name: reviews, widget: list, required: false, field: { label: Texto, name: text, widget: text }, summary: '{{fields.text}}' }
+      - label: Preguntas frecuentes
+        name: faq
+        widget: list
+        required: false
+        fields: [ { label: Pregunta, name: q, widget: string }, { label: Respuesta (un párrafo por línea), name: a, widget: list, field: { label: Párrafo, name: p, widget: text } } ]
+      - { label: Código de inserción de Turitop (opcional, HTML), name: turitop, widget: text, required: false, hint: 'Pega aquí el snippet de reserva de Turitop de esta excursión. Se carga solo cuando el visitante pulsa «Reservar online».' }
+      - { label: Contenido, name: body, widget: markdown }
+  - name: pages_ca
+    label: "Páginas y excursiones · Català"
+    folder: src/content/pages/ca
+    extension: md
+    format: yaml-frontmatter
+    create: true
+    slug: '{{slug}}'
+    identifier_field: title
+    summary: '{{title}} — {{url}}'
+    fields:
+      - { label: Idioma, name: lang, widget: hidden, default: ca }
+      - { label: URL pública, name: url, widget: string, hint: 'Ruta exacta con barras, p. ej. /en/private-tour-of-ciutadella/ . No la cambies en páginas existentes (SEO).' }
+      - { label: Clave de traducción, name: translationKey, widget: string, hint: 'Igual en las 4 versiones del mismo contenido (se usa para el selector de idioma y hreflang).' }
+      - { label: Plantilla, name: template, widget: select, options: [home, tour, excursiones, contacto, about, page], default: page }
+      - { label: Título (H1), name: title, widget: string }
+      - { label: Título SEO, name: seoTitle, widget: string, required: false }
+      - { label: Descripción SEO, name: description, widget: text, required: false, pattern: ['^.{0,170}$', 'Máximo 170 caracteres'] }
+      - { label: Imagen destacada / redes, name: image, widget: image, required: false }
+      - { label: No indexar, name: noindex, widget: boolean, default: false }
+      - { label: Orden en listados (excursiones), name: tourOrder, widget: number, required: false }
+      - { label: Antetítulo, name: eyebrow, widget: string, required: false }
+      - { label: Frase breve, name: tagline, widget: string, required: false }
+      - { label: Aviso (p. ej. Completo hasta 2027), name: badge, widget: string, required: false }
+      - { label: Introducción, name: intro, widget: list, required: false, field: { label: Párrafo, name: p, widget: text } }
+      - label: Datos clave
+        name: facts
+        widget: list
+        required: false
+        fields: [ { label: Valor, name: value, widget: string }, { label: Etiqueta, name: label, widget: string, required: false } ]
+      - label: Precio
+        name: price
+        widget: object
+        required: false
+        fields: [ { label: '"Desde"', name: from, widget: boolean, default: false }, { label: Importe, name: amount, widget: string }, { label: Nota, name: note, widget: string, required: false } ]
+      - { label: Galería (la primera es la principal), name: gallery, widget: list, required: false, field: { label: Foto, name: img, widget: image } }
+      - { label: Reseñas, name: reviews, widget: list, required: false, field: { label: Texto, name: text, widget: text }, summary: '{{fields.text}}' }
+      - label: Preguntas frecuentes
+        name: faq
+        widget: list
+        required: false
+        fields: [ { label: Pregunta, name: q, widget: string }, { label: Respuesta (un párrafo por línea), name: a, widget: list, field: { label: Párrafo, name: p, widget: text } } ]
+      - { label: Código de inserción de Turitop (opcional, HTML), name: turitop, widget: text, required: false, hint: 'Pega aquí el snippet de reserva de Turitop de esta excursión. Se carga solo cuando el visitante pulsa «Reservar online».' }
+      - { label: Contenido, name: body, widget: markdown }
+  - name: pages_en
+    label: "Páginas y excursiones · English"
+    folder: src/content/pages/en
+    extension: md
+    format: yaml-frontmatter
+    create: true
+    slug: '{{slug}}'
+    identifier_field: title
+    summary: '{{title}} — {{url}}'
+    fields:
+      - { label: Idioma, name: lang, widget: hidden, default: en }
+      - { label: URL pública, name: url, widget: string, hint: 'Ruta exacta con barras, p. ej. /en/private-tour-of-ciutadella/ . No la cambies en páginas existentes (SEO).' }
+      - { label: Clave de traducción, name: translationKey, widget: string, hint: 'Igual en las 4 versiones del mismo contenido (se usa para el selector de idioma y hreflang).' }
+      - { label: Plantilla, name: template, widget: select, options: [home, tour, excursiones, contacto, about, page], default: page }
+      - { label: Título (H1), name: title, widget: string }
+      - { label: Título SEO, name: seoTitle, widget: string, required: false }
+      - { label: Descripción SEO, name: description, widget: text, required: false, pattern: ['^.{0,170}$', 'Máximo 170 caracteres'] }
+      - { label: Imagen destacada / redes, name: image, widget: image, required: false }
+      - { label: No indexar, name: noindex, widget: boolean, default: false }
+      - { label: Orden en listados (excursiones), name: tourOrder, widget: number, required: false }
+      - { label: Antetítulo, name: eyebrow, widget: string, required: false }
+      - { label: Frase breve, name: tagline, widget: string, required: false }
+      - { label: Aviso (p. ej. Completo hasta 2027), name: badge, widget: string, required: false }
+      - { label: Introducción, name: intro, widget: list, required: false, field: { label: Párrafo, name: p, widget: text } }
+      - label: Datos clave
+        name: facts
+        widget: list
+        required: false
+        fields: [ { label: Valor, name: value, widget: string }, { label: Etiqueta, name: label, widget: string, required: false } ]
+      - label: Precio
+        name: price
+        widget: object
+        required: false
+        fields: [ { label: '"Desde"', name: from, widget: boolean, default: false }, { label: Importe, name: amount, widget: string }, { label: Nota, name: note, widget: string, required: false } ]
+      - { label: Galería (la primera es la principal), name: gallery, widget: list, required: false, field: { label: Foto, name: img, widget: image } }
+      - { label: Reseñas, name: reviews, widget: list, required: false, field: { label: Texto, name: text, widget: text }, summary: '{{fields.text}}' }
+      - label: Preguntas frecuentes
+        name: faq
+        widget: list
+        required: false
+        fields: [ { label: Pregunta, name: q, widget: string }, { label: Respuesta (un párrafo por línea), name: a, widget: list, field: { label: Párrafo, name: p, widget: text } } ]
+      - { label: Código de inserción de Turitop (opcional, HTML), name: turitop, widget: text, required: false, hint: 'Pega aquí el snippet de reserva de Turitop de esta excursión. Se carga solo cuando el visitante pulsa «Reservar online».' }
+      - { label: Contenido, name: body, widget: markdown }
+  - name: pages_fr
+    label: "Páginas y excursiones · Français"
+    folder: src/content/pages/fr
+    extension: md
+    format: yaml-frontmatter
+    create: true
+    slug: '{{slug}}'
+    identifier_field: title
+    summary: '{{title}} — {{url}}'
+    fields:
+      - { label: Idioma, name: lang, widget: hidden, default: fr }
+      - { label: URL pública, name: url, widget: string, hint: 'Ruta exacta con barras, p. ej. /en/private-tour-of-ciutadella/ . No la cambies en páginas existentes (SEO).' }
+      - { label: Clave de traducción, name: translationKey, widget: string, hint: 'Igual en las 4 versiones del mismo contenido (se usa para el selector de idioma y hreflang).' }
+      - { label: Plantilla, name: template, widget: select, options: [home, tour, excursiones, contacto, about, page], default: page }
+      - { label: Título (H1), name: title, widget: string }
+      - { label: Título SEO, name: seoTitle, widget: string, required: false }
+      - { label: Descripción SEO, name: description, widget: text, required: false, pattern: ['^.{0,170}$', 'Máximo 170 caracteres'] }
+      - { label: Imagen destacada / redes, name: image, widget: image, required: false }
+      - { label: No indexar, name: noindex, widget: boolean, default: false }
+      - { label: Orden en listados (excursiones), name: tourOrder, widget: number, required: false }
+      - { label: Antetítulo, name: eyebrow, widget: string, required: false }
+      - { label: Frase breve, name: tagline, widget: string, required: false }
+      - { label: Aviso (p. ej. Completo hasta 2027), name: badge, widget: string, required: false }
+      - { label: Introducción, name: intro, widget: list, required: false, field: { label: Párrafo, name: p, widget: text } }
+      - label: Datos clave
+        name: facts
+        widget: list
+        required: false
+        fields: [ { label: Valor, name: value, widget: string }, { label: Etiqueta, name: label, widget: string, required: false } ]
+      - label: Precio
+        name: price
+        widget: object
+        required: false
+        fields: [ { label: '"Desde"', name: from, widget: boolean, default: false }, { label: Importe, name: amount, widget: string }, { label: Nota, name: note, widget: string, required: false } ]
+      - { label: Galería (la primera es la principal), name: gallery, widget: list, required: false, field: { label: Foto, name: img, widget: image } }
+      - { label: Reseñas, name: reviews, widget: list, required: false, field: { label: Texto, name: text, widget: text }, summary: '{{fields.text}}' }
+      - label: Preguntas frecuentes
+        name: faq
+        widget: list
+        required: false
+        fields: [ { label: Pregunta, name: q, widget: string }, { label: Respuesta (un párrafo por línea), name: a, widget: list, field: { label: Párrafo, name: p, widget: text } } ]
+      - { label: Código de inserción de Turitop (opcional, HTML), name: turitop, widget: text, required: false, hint: 'Pega aquí el snippet de reserva de Turitop de esta excursión. Se carga solo cuando el visitante pulsa «Reservar online».' }
+      - { label: Contenido, name: body, widget: markdown }
+  - name: posts_es
+    label: "Blog · Español"
+    folder: src/content/posts/es
+    extension: md
+    format: yaml-frontmatter
+    create: true
+    slug: '{{slug}}'
+    identifier_field: title
+    summary: '{{title}} — {{date}}'
+    sortable_fields: [date, title]
+    fields:
+      - { label: Idioma, name: lang, widget: hidden, default: es }
+      - { label: URL pública, name: url, widget: string, hint: 'Ruta exacta con barras, p. ej. /ca/mahon-en-invierno/' }
+      - { label: Clave de traducción, name: translationKey, widget: string, hint: 'Igual en las 4 versiones del artículo.' }
+      - { label: Título, name: title, widget: string }
+      - { label: Título SEO, name: seoTitle, widget: string, required: false }
+      - { label: Descripción SEO, name: description, widget: text, required: false }
+      - { label: Fecha de publicación, name: date, widget: datetime, date_format: 'YYYY-MM-DD', time_format: false, format: 'YYYY-MM-DD' }
+      - { label: Última actualización, name: updated, widget: datetime, date_format: 'YYYY-MM-DD', time_format: false, format: 'YYYY-MM-DD', required: false }
+      - { label: Imagen destacada, name: image, widget: image, required: false }
+      - { label: Categorías (URLs), name: categories, widget: list, required: false, field: { label: URL de categoría, name: c, widget: string }, hint: 'Ver src/data/categories.json para las URLs válidas.' }
+      - { label: Contenido, name: body, widget: markdown }
+  - name: posts_ca
+    label: "Blog · Català"
+    folder: src/content/posts/ca
+    extension: md
+    format: yaml-frontmatter
+    create: true
+    slug: '{{slug}}'
+    identifier_field: title
+    summary: '{{title}} — {{date}}'
+    sortable_fields: [date, title]
+    fields:
+      - { label: Idioma, name: lang, widget: hidden, default: ca }
+      - { label: URL pública, name: url, widget: string, hint: 'Ruta exacta con barras, p. ej. /ca/mahon-en-invierno/' }
+      - { label: Clave de traducción, name: translationKey, widget: string, hint: 'Igual en las 4 versiones del artículo.' }
+      - { label: Título, name: title, widget: string }
+      - { label: Título SEO, name: seoTitle, widget: string, required: false }
+      - { label: Descripción SEO, name: description, widget: text, required: false }
+      - { label: Fecha de publicación, name: date, widget: datetime, date_format: 'YYYY-MM-DD', time_format: false, format: 'YYYY-MM-DD' }
+      - { label: Última actualización, name: updated, widget: datetime, date_format: 'YYYY-MM-DD', time_format: false, format: 'YYYY-MM-DD', required: false }
+      - { label: Imagen destacada, name: image, widget: image, required: false }
+      - { label: Categorías (URLs), name: categories, widget: list, required: false, field: { label: URL de categoría, name: c, widget: string }, hint: 'Ver src/data/categories.json para las URLs válidas.' }
+      - { label: Contenido, name: body, widget: markdown }
+  - name: posts_en
+    label: "Blog · English"
+    folder: src/content/posts/en
+    extension: md
+    format: yaml-frontmatter
+    create: true
+    slug: '{{slug}}'
+    identifier_field: title
+    summary: '{{title}} — {{date}}'
+    sortable_fields: [date, title]
+    fields:
+      - { label: Idioma, name: lang, widget: hidden, default: en }
+      - { label: URL pública, name: url, widget: string, hint: 'Ruta exacta con barras, p. ej. /ca/mahon-en-invierno/' }
+      - { label: Clave de traducción, name: translationKey, widget: string, hint: 'Igual en las 4 versiones del artículo.' }
+      - { label: Título, name: title, widget: string }
+      - { label: Título SEO, name: seoTitle, widget: string, required: false }
+      - { label: Descripción SEO, name: description, widget: text, required: false }
+      - { label: Fecha de publicación, name: date, widget: datetime, date_format: 'YYYY-MM-DD', time_format: false, format: 'YYYY-MM-DD' }
+      - { label: Última actualización, name: updated, widget: datetime, date_format: 'YYYY-MM-DD', time_format: false, format: 'YYYY-MM-DD', required: false }
+      - { label: Imagen destacada, name: image, widget: image, required: false }
+      - { label: Categorías (URLs), name: categories, widget: list, required: false, field: { label: URL de categoría, name: c, widget: string }, hint: 'Ver src/data/categories.json para las URLs válidas.' }
+      - { label: Contenido, name: body, widget: markdown }
+  - name: posts_fr
+    label: "Blog · Français"
+    folder: src/content/posts/fr
+    extension: md
+    format: yaml-frontmatter
+    create: true
+    slug: '{{slug}}'
+    identifier_field: title
+    summary: '{{title}} — {{date}}'
+    sortable_fields: [date, title]
+    fields:
+      - { label: Idioma, name: lang, widget: hidden, default: fr }
+      - { label: URL pública, name: url, widget: string, hint: 'Ruta exacta con barras, p. ej. /ca/mahon-en-invierno/' }
+      - { label: Clave de traducción, name: translationKey, widget: string, hint: 'Igual en las 4 versiones del artículo.' }
+      - { label: Título, name: title, widget: string }
+      - { label: Título SEO, name: seoTitle, widget: string, required: false }
+      - { label: Descripción SEO, name: description, widget: text, required: false }
+      - { label: Fecha de publicación, name: date, widget: datetime, date_format: 'YYYY-MM-DD', time_format: false, format: 'YYYY-MM-DD' }
+      - { label: Última actualización, name: updated, widget: datetime, date_format: 'YYYY-MM-DD', time_format: false, format: 'YYYY-MM-DD', required: false }
+      - { label: Imagen destacada, name: image, widget: image, required: false }
+      - { label: Categorías (URLs), name: categories, widget: list, required: false, field: { label: URL de categoría, name: c, widget: string }, hint: 'Ver src/data/categories.json para las URLs válidas.' }
+      - { label: Contenido, name: body, widget: markdown }

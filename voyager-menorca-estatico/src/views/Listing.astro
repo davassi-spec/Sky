@@ -1,0 +1,21 @@
+---
+import PostCard from '../components/PostCard.astro';
+import Pagination from '../components/Pagination.astro';
+import Breadcrumbs from '../components/Breadcrumbs.astro';
+import { KEY_URLS, NAV_LABEL, t, type Lang } from '../lib/i18n';
+import { categories } from '../lib/site';
+const { lang, title, base, items, page, total, parent } = Astro.props as { lang: Lang; title: string; base: string; items: any[]; page: number; total: number; parent?: { name: string; href: string } };
+const top = categories.filter((c) => c.lang === lang && c.url.split('/').filter(Boolean).length === (lang === 'es' ? 2 : 3));
+const crumbs = [{ name: t(lang, 'home'), href: KEY_URLS[lang].home }, { name: NAV_LABEL[lang].blog, href: KEY_URLS[lang].blog }, ...(parent ? [parent] : []), { name: title }];
+---
+<div class="wrap lst">
+  <Breadcrumbs lang={lang} items={crumbs} />
+  <h1>{title}</h1>
+  <nav class="chips" aria-label="Categorías"><a href={KEY_URLS[lang].blog} aria-current={base === KEY_URLS[lang].blog ? 'page' : undefined}>{t(lang, 'allPosts')}</a>{top.map((c) => <a href={c.url} aria-current={base === c.url ? 'page' : undefined}>{c.name}</a>)}</nav>
+  <div class="grid grid--3">{items.map((p) => <PostCard post={p} lang={lang} />)}</div>
+  <Pagination base={base} page={page} total={total} lang={lang} />
+</div>
+<style>
+  .lst { padding-block: 1.5rem 3rem; } h1 { font-size: var(--step-4); } .chips { display: flex; flex-wrap: wrap; gap: .5rem; margin: 0 0 2rem; }
+  .chips a { text-decoration: none; padding: .45rem 1rem; border-radius: 999px; border: 1px solid var(--line); background: var(--paper); font-weight: 600; font-size: .92rem; color: var(--ink); } .chips a:hover { border-color: var(--ink); } .chips a[aria-current='page'] { background: var(--ink); color: #fff; border-color: var(--ink); }
+</style>
