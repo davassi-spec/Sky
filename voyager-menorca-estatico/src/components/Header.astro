@@ -1,0 +1,56 @@
+---
+import Icon from './Icon.astro';
+import { KEY_URLS, LANGS, LANG_NAME, NAV_LABEL, t, type Lang } from '../lib/i18n';
+const { lang, path, alts } = Astro.props as { lang: Lang; path: string; alts: Partial<Record<Lang, string>> };
+const u = KEY_URLS[lang], L = NAV_LABEL[lang];
+const links = [[L.tours, u.tours], [L.services, u.services], [L.about, u.about], [L.blog, u.blog], [L.contact, u.contact]] as const;
+const isCurrent = (href: string) => path === href || (href !== u.home && path.startsWith(href.replace(/\/$/, '') + '/') );
+---
+<header class="site-header">
+  <div class="wrap bar">
+    <a class="brand" href={u.home} aria-label="Voyager Menorca — {t(lang, 'home')}"><img src="/logo.svg" width="150" height="58" alt="Voyager Menorca" fetchpriority="high" /></a>
+    <nav class="nav" id="nav" aria-label={t(lang, 'menu')}>
+      <ul>
+        {links.map(([label, href]) => <li><a href={href} aria-current={isCurrent(href) ? 'page' : undefined}>{label}</a></li>)}
+      </ul>
+      <ul class="langs" aria-label={t(lang, 'lang')}>
+        {LANGS.map((l) => <li><a href={alts[l] ?? KEY_URLS[l].home} hreflang={l} lang={l} aria-current={l === lang ? 'true' : undefined} title={LANG_NAME[l]}>{l.toUpperCase()}</a></li>)}
+      </ul>
+    </nav>
+    <a class="btn btn--sea cta" href={`${u.contact}#reservar`}>{t(lang, 'book')}</a>
+    <button class="burger" type="button" aria-expanded="false" aria-controls="nav"><span class="vh">{t(lang, 'menu')}</span><Icon name="menu" class="i-open" /><Icon name="close" class="i-close" /></button>
+  </div>
+</header>
+<script>
+  const b = document.querySelector<HTMLButtonElement>('.burger'), nav = document.getElementById('nav');
+  b?.addEventListener('click', () => { const o = b.getAttribute('aria-expanded') === 'true'; b.setAttribute('aria-expanded', String(!o)); document.body.classList.toggle('menu-open', !o); });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && b?.getAttribute('aria-expanded') === 'true') { b.setAttribute('aria-expanded', 'false'); document.body.classList.remove('menu-open'); b.focus(); } });
+  nav?.addEventListener('click', (e) => { if ((e.target as HTMLElement).closest('a')) { b?.setAttribute('aria-expanded', 'false'); document.body.classList.remove('menu-open'); } });
+</script>
+<style>
+  .site-header { position: sticky; top: 0; z-index: 50; background: rgba(244, 248, 246, .92); backdrop-filter: saturate(1.4) blur(10px); border-bottom: 1px solid var(--line); }
+  .bar { display: flex; align-items: center; gap: 1rem; min-height: 4.5rem; }
+  .brand img { height: 2.9rem; width: auto; }
+  .nav { margin-left: auto; display: flex; align-items: center; gap: 1.6rem; }
+  ul { list-style: none; margin: 0; padding: 0; display: flex; align-items: center; gap: 1.5rem; }
+  .nav a { text-decoration: none; color: var(--ink); font-weight: 550; padding-block: .5rem; border-bottom: 2px solid transparent; }
+  .nav a:hover { border-color: var(--sea); }
+  .nav a[aria-current='page'] { border-color: var(--sea-d); }
+  .langs { gap: .15rem; padding-left: 1.2rem; border-left: 1px solid var(--line); }
+  .langs a { font-size: var(--step--1); font-weight: 650; padding: .35rem .5rem; border-radius: 8px; border: 0; color: var(--muted); }
+  .langs a[aria-current='true'] { background: var(--ink); color: #fff; }
+  .cta { min-height: 2.6rem; padding-inline: 1.1rem; }
+  .burger { display: none; margin-left: auto; background: none; border: 0; padding: .5rem; color: var(--ink); width: 3rem; height: 3rem; }
+  .burger :global(svg) { width: 1.8rem; height: 1.8rem; } :global(.i-close) { display: none; }
+  .burger[aria-expanded="true"] :global(.i-open) { display: none; } .burger[aria-expanded="true"] :global(.i-close) { display: block; }
+  @media (max-width: 62rem) {
+    .burger { display: grid; place-items: center; } .cta { display: none; }
+    .nav { position: fixed; inset: 4.5rem 0 0 0; background: var(--cal); flex-direction: column; align-items: stretch; gap: 1rem; padding: 1.5rem var(--gutter) 2rem; overflow: auto; transform: translateY(-1rem); opacity: 0; visibility: hidden; transition: opacity .2s, transform .25s var(--ease), visibility .25s; margin: 0; }
+    .nav ul { flex-direction: column; align-items: stretch; gap: 0; }
+    .nav a { display: block; font: 650 1.5rem/1.2 var(--font-display); padding: .9rem 0; border-bottom: 1px solid var(--line); }
+    .langs { flex-direction: row; border: 0; padding: 1rem 0 0; gap: .4rem; }
+    .langs a { font-size: 1rem; padding: .6rem .9rem; border: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+    :global(body.menu-open) .nav { opacity: 1; visibility: visible; transform: none; }
+    :global(body.menu-open) { overflow: hidden; }
+  }
+</style>

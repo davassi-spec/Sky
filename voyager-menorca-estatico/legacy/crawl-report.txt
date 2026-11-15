@@ -1,0 +1,9 @@
+paginas: 11
+recursos: 202
+fallos: 6
+https://i0.wp.com	HTTP Error 400: Bad Request
+https://voyagermenorca.com/blog/ciutadella-ruta-historia-mercados-restaurantes/	HTTP Error 404: Not Found
+https://voyagermenorca.com/wp-admin/admin-ajax.php	HTTP Error 400: Bad Request
+https://voyagermenorca.com/faros/	HTTP Error 404: Not Found
+https://voyagermenorca.com/playas-de-menorca-segun-el-viento/	HTTP Error 404: Not Found
+https://voyagermenorca.com/visita-guiada-por-mahon/	HTTP Error 404: Not Found

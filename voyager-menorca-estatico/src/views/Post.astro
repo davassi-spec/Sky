@@ -1,0 +1,35 @@
+---
+import { render } from 'astro:content';
+import Img from '../components/Img.astro';
+import PostCard from '../components/PostCard.astro';
+import Breadcrumbs from '../components/Breadcrumbs.astro';
+import Icon from '../components/Icon.astro';
+import { KEY_URLS, NAV_LABEL, t, wa, type Lang } from '../lib/i18n';
+import { categories, fmtDate, postsFor, tours } from '../lib/site';
+const { entry, lang } = Astro.props as { entry: any; lang: Lang };
+const d = entry.data, { Content } = await render(entry);
+const cats = categories.filter((c) => d.categories.includes(c.url));
+const rel = (await postsFor(lang)).filter((p) => p.id !== entry.id && p.data.categories.some((c: string) => d.categories.includes(c))).slice(0, 3);
+const fallback = rel.length ? rel : (await postsFor(lang)).filter((p) => p.id !== entry.id).slice(0, 3);
+const tour = (await tours(lang))[0];
+---
+<article class="wrap post">
+  <Breadcrumbs lang={lang} items={[{ name: t(lang, 'home'), href: KEY_URLS[lang].home }, { name: NAV_LABEL[lang].blog, href: KEY_URLS[lang].blog }, { name: d.title }]} />
+  <header class="narrow">
+    {cats.length > 0 && <p class="cats">{cats.slice(0, 2).map((c) => <a href={c.url}>{c.name}</a>)}</p>}
+    <h1>{d.title}</h1>
+    <p class="meta"><time datetime={d.date}>{fmtDate(d.date, lang)}</time>{d.updated && d.updated !== d.date && <> · {t(lang, 'updated')} <time datetime={d.updated}>{fmtDate(d.updated, lang)}</time></>}</p>
+  </header>
+  {d.image && <div class="fi"><Img src={d.image} alt="" sizes="(min-width: 62rem) 60rem, 100vw" eager ratio="16/9" /></div>}
+  <div class="narrow prose"><Content /></div>
+  {tour && <aside class="cta narrow"><div><p class="kicker">{t(lang, 'officialGuide')}</p><h2>{tour.data.title}</h2>{tour.data.tagline && <p>{tour.data.tagline}</p>}</div><a class="btn btn--sea" href={tour.data.url}>{t(lang, 'ask')}<Icon name="arrow" /></a></aside>}
+  {fallback.length > 0 && <section class="rel" aria-labelledby="rl"><h2 id="rl">{t(lang, 'related')}</h2><div class="grid grid--3">{fallback.map((p) => <PostCard post={p} lang={lang} />)}</div></section>}
+</article>
+<style>
+  .post { padding-block: 1.5rem 3rem; } header { margin-bottom: 1.5rem; } h1 { font-size: var(--step-4); margin-bottom: .8rem; }
+  .cats { display: flex; gap: .5rem; flex-wrap: wrap; margin: 0 0 .8rem; } .cats a { font-size: .85rem; font-weight: 650; text-decoration: none; background: var(--mist); color: var(--sea-d); padding: .25rem .75rem; border-radius: 999px; } .cats a:hover { background: var(--sea); color: var(--ink); }
+  .meta { color: var(--muted); font-size: .92rem; margin: 0; } .fi { margin: 0 0 2.5rem; } .fi :global(img) { width: 100%; max-height: 34rem; aspect-ratio: 16/9; object-fit: cover; border-radius: var(--radius); background: var(--mist); }
+  .narrow { margin-inline: auto; max-width: 46rem; }
+  .cta { margin-top: 3rem; background: var(--ink); color: #e4ebf7; border-radius: var(--radius); padding: 1.6rem; display: flex; gap: 1.2rem; align-items: center; justify-content: space-between; flex-wrap: wrap; } .cta h2 { color: #fff; font-size: var(--step-2); margin: 0 0 .3rem; } .cta p { margin: 0; } .cta .kicker { color: var(--sea); margin-bottom: .3rem; }
+  .rel { margin-top: 4rem; } .rel h2 { font-size: var(--step-2); }
+</style>

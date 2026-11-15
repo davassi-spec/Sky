@@ -1,0 +1,18 @@
+---
+import Img from './Img.astro';
+import { fmtDate } from '../lib/site';
+import { t, type Lang } from '../lib/i18n';
+const { post, lang } = Astro.props as { post: any; lang: Lang };
+const d = post.data;
+---
+<article class="pc">
+  <a href={d.url} class="ph" tabindex="-1" aria-hidden="true"><Img src={d.image} alt="" sizes="(min-width: 60rem) 22rem, 90vw" ratio="3/2" /></a>
+  <div class="tx"><time datetime={d.date}>{fmtDate(d.date, lang)}</time><h3><a href={d.url}>{d.title}</a></h3>{d.description && <p>{d.description.slice(0, 140)}{d.description.length > 140 ? '…' : ''}</p>}</div>
+</article>
+<style>
+  .pc { background: var(--paper); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; display: flex; flex-direction: column; height: 100%; }
+  .ph { display: block; overflow: hidden; background: var(--mist); } .ph :global(img) { width: 100%; aspect-ratio: 3/2; object-fit: cover; transition: transform .5s var(--ease); } .pc:hover .ph :global(img) { transform: scale(1.04); }
+  .tx { padding: 1.1rem 1.2rem 1.3rem; } time { font-size: .82rem; color: var(--sea-d); font-weight: 600; }
+  h3 { font-size: 1.15rem; margin: .3rem 0 .5rem; } h3 a { color: var(--ink); text-decoration: none; } h3 a:hover { color: var(--sea-d); text-decoration: underline; } h3 a::after { content: ''; position: absolute; inset: 0; }
+  .pc { position: relative; } p { font-size: .92rem; color: var(--muted); margin: 0; line-height: 1.5; }
+</style>

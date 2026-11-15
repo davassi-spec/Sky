@@ -1,0 +1,72 @@
+---
+import { render } from 'astro:content';
+import Img from '../components/Img.astro';
+import Icon from '../components/Icon.astro';
+import Faq from '../components/Faq.astro';
+import TuritopBooking from '../components/TuritopBooking.astro';
+import BookingForm from '../components/BookingForm.astro';
+import Breadcrumbs from '../components/Breadcrumbs.astro';
+import { KEY_URLS, NAV_LABEL, SITE, t, wa, type Lang } from '../lib/i18n';
+import { tours } from '../lib/site';
+const { entry, lang } = Astro.props as { entry: any; lang: Lang };
+const d = entry.data, { Content } = await render(entry);
+const hero = d.gallery?.[0] ?? d.image, thumbs = (d.gallery ?? []).slice(1, 4);
+const all = await tours(lang);
+const others = all.filter((x) => x.id !== entry.id);
+---
+<div class="wrap tour">
+  <Breadcrumbs lang={lang} items={[{ name: t(lang, 'home'), href: KEY_URLS[lang].home }, { name: NAV_LABEL[lang].tours, href: KEY_URLS[lang].tours }, { name: d.title }]} />
+  <header class="head">
+    {d.eyebrow && <p class="kicker">{d.eyebrow}</p>}
+    <h1>{d.title}</h1>
+    {d.tagline && <p class="lede">{d.tagline}</p>}
+  </header>
+  <div class="hero">
+    <Img src={hero} alt={d.title} sizes="(min-width: 62rem) 44rem, 100vw" eager ratio="16/10" class="main" />
+    {thumbs.length > 0 && <div class="th">{thumbs.map((s: string) => <Img src={s} alt="" sizes="14rem" ratio="4/3" />)}</div>}
+  </div>
+  <div class="cols">
+    <div class="body">
+      {d.intro?.map((p: string) => <p class="lede intro">{p}</p>)}
+      <div class="prose"><Content /></div>
+      {d.reviews && d.reviews.length > 0 && <section class="rev" aria-labelledby="rv"><h2 id="rv">{t(lang, 'reviews')}</h2>
+        <div class="rg">{d.reviews.map((r: any) => <figure><div class="st" role="img" aria-label="5/5">{[1,2,3,4,5].map(() => <Icon name="star" fill />)}</div><blockquote>{r.text}</blockquote></figure>)}</div>
+        <p><a href={SITE.googleReviews} target="_blank" rel="noopener">{t(lang, 'reviewsLink')} →</a></p></section>}
+      {d.turitop && <TuritopBooking lang={lang} embed={d.turitop} />}
+      {d.faq && d.faq.length > 0 && <Faq items={d.faq} lang={lang} />}
+    </div>
+    <aside class="side" aria-label={t(lang, 'book')}>
+      <div class="card">
+        {d.badge && <p class="badge">{d.badge}</p>}
+        {d.price && <p class="price"><span>{d.price.from ? t(lang, 'from') : ''}</span> <b>{d.price.amount}</b> <small>{d.price.note}</small></p>}
+        {d.facts && <ul class="facts">{d.facts.map((f: any) => <li><b>{f.value}</b>{f.label && <span>{f.label}</span>}</li>)}</ul>}
+        <a class="btn btn--sea block" href="#reservar">{t(lang, 'ask')}<Icon name="arrow" /></a>
+        <a class="btn btn--ghost block" href={wa(`${d.title}`)} target="_blank" rel="noopener"><Icon name="whatsapp" fill />{t(lang, 'whatsapp')}</a>
+        <p class="note"><Icon name="shield" />{t(lang, 'officialGuide')}</p>
+      </div>
+    </aside>
+  </div>
+  <div class="bk"><BookingForm lang={lang} tour={d.title} tours={all.map((x) => x.data.title)} /></div>
+  {others.length > 0 && <section class="more" aria-labelledby="mo"><h2 id="mo">{NAV_LABEL[lang].tours}</h2><ul>{others.map((o) => <li><a href={o.data.url}>{o.data.title}{o.data.price ? <small> · {o.data.price.from ? t(lang, 'from') + ' ' : ''}{o.data.price.amount}</small> : null}</a></li>)}</ul></section>}
+</div>
+<div class="sticky" role="region" aria-label={t(lang, 'book')}>{d.price && <span>{d.price.from ? t(lang, 'from') + ' ' : ''}<b>{d.price.amount}</b></span>}<a class="btn btn--sea" href="#reservar">{t(lang, 'ask')}</a></div>
+<style>
+  .tour { padding-block: 1.5rem 3rem; } .head { max-width: 48rem; margin-bottom: 1.5rem; } .head h1 { font-size: var(--step-4); margin-bottom: .6rem; } .head .lede { margin: 0; }
+  .hero { display: grid; gap: .6rem; margin-bottom: 2rem; } .hero :global(.main) { width: 100%; aspect-ratio: 16/10; object-fit: cover; border-radius: var(--radius); background: var(--mist); }
+  .th { display: grid; grid-template-columns: repeat(3, 1fr); gap: .6rem; } .th :global(img) { width: 100%; aspect-ratio: 4/3; object-fit: cover; border-radius: 10px; }
+  @media (min-width: 62rem) { .hero { grid-template-columns: 1fr; } .hero :global(.main) { aspect-ratio: 21/9; } }
+  .cols { display: grid; gap: 2.5rem; align-items: start; grid-template-columns: 1fr; } @media (min-width: 62rem) { .cols { grid-template-columns: minmax(0, 1fr) 21rem; gap: 4rem; } .side { position: sticky; top: 6rem; order: 2; } }
+  .side { order: -1; } @media (min-width: 62rem) { .side { order: 2; } }
+  .card { background: var(--paper); border: 1px solid var(--line); border-radius: calc(var(--radius) + 4px); padding: 1.5rem; box-shadow: var(--shadow); display: grid; gap: .9rem; }
+  .price { margin: 0; display: flex; align-items: baseline; gap: .4rem; flex-wrap: wrap; color: var(--muted); } .price b { font: 700 2.6rem/1 var(--font-display); color: var(--ink); } .price small { flex-basis: 100%; font-size: .9rem; }
+  .badge { margin: 0; background: #fff3d1; border: 1px solid var(--ochre); color: #5b4300; padding: .4rem .8rem; border-radius: 8px; font-size: .9rem; font-weight: 600; }
+  .facts { list-style: none; padding: 1rem 0; margin: 0; display: grid; gap: .8rem; border-block: 1px solid var(--line); } .facts li { display: grid; } .facts b { font-family: var(--font-display); font-size: 1.1rem; } .facts span { font-size: .9rem; color: var(--muted); }
+  .block { width: 100%; } .note { margin: 0; display: flex; gap: .5rem; align-items: center; font-size: .9rem; color: var(--muted); } .note :global(svg) { width: 1.2rem; color: var(--sea-d); }
+  .body :global(.intro) { color: var(--ink); } .prose :global(p:has(> strong:only-child):has(+ h3)) { margin: 1.8em 0 -.5em; font-size: .85rem; color: var(--sea-d); letter-spacing: .03em; }
+  .rev { margin-top: 3rem; } .rg { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); margin-bottom: 1rem; } figure { margin: 0; background: var(--paper); border: 1px solid var(--line); border-radius: var(--radius); padding: 1.2rem; } .st { display: flex; gap: 2px; color: #f4b400; margin-bottom: .6rem; } .st :global(svg) { width: 1.1rem; } figure blockquote { margin: 0; font-size: .98rem; line-height: 1.6; color: var(--muted); }
+  .faq, :global(.faq) { margin-top: 3rem; }
+  .bk { margin-top: 3.5rem; scroll-margin-top: 6rem; }
+  .more { margin-top: 3rem; } .more ul { list-style: none; padding: 0; margin: 0; display: grid; gap: .5rem; } .more a { font-weight: 600; }
+  .sticky { position: fixed; left: 0; right: 0; bottom: 0; z-index: 30; display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: .7rem var(--gutter) calc(.7rem + env(safe-area-inset-bottom)); background: rgba(255,255,255,.96); backdrop-filter: blur(8px); border-top: 1px solid var(--line); } .sticky b { font: 700 1.4rem var(--font-display); } @media (min-width: 62rem) { .sticky { display: none; } }
+  @media (max-width: 61.99rem) { :global(.fab) { bottom: 5rem; } }
+</style>

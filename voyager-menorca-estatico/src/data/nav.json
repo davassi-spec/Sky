@@ -1,0 +1,106 @@
+{
+ "es": [
+  [
+   "Inicio",
+   "/"
+  ],
+  [
+   "Quiénes somos",
+   "/quienes-somos/"
+  ],
+  [
+   "Servicios",
+   "/servicios/"
+  ],
+  [
+   "Excursiones",
+   "/excursiones/"
+  ],
+  [
+   "Blog",
+   "/blog/"
+  ],
+  [
+   "Contacto",
+   "/contacto/"
+  ]
+ ],
+ "ca": [
+  [
+   "Inici",
+   "/ca/"
+  ],
+  [
+   "Qui som",
+   "/ca/quienes-somos/"
+  ],
+  [
+   "Serveis",
+   "/ca/servicios/"
+  ],
+  [
+   "Excursions",
+   "/ca/excursions/"
+  ],
+  [
+   "Blog",
+   "/ca/blog/"
+  ],
+  [
+   "Contacte",
+   "/ca/contacto/"
+  ]
+ ],
+ "en": [
+  [
+   "Home",
+   "/en/"
+  ],
+  [
+   "Who We Are",
+   "/en/quienes-somos/"
+  ],
+  [
+   "Services",
+   "/en/servicios/"
+  ],
+  [
+   "Excursions",
+   "/en/field-trips/"
+  ],
+  [
+   "Blog",
+   "/en/blog/"
+  ],
+  [
+   "Contact",
+   "/en/contacto/"
+  ]
+ ],
+ "fr": [
+  [
+   "Accueil",
+   "/fr/"
+  ],
+  [
+   "Qui sommes-nous ?",
+   "/fr/quienes-somos/"
+  ],
+  [
+   "Services",
+   "/fr/servicios/"
+  ],
+  [
+   "Excursions",
+   "/fr/excursions/"
+  ],
+  [
+   "Blog",
+   "/fr/blog/"
+  ],
+  [
+   "Contact",
+   "/fr/contacto/"
+  ]
+ ]
+}

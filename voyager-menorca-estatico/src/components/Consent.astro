@@ -1,0 +1,40 @@
+---
+import { SITE, KEY_URLS, t, type Lang } from '../lib/i18n';
+const { lang } = Astro.props as { lang: Lang };
+---
+<div class="consent" id="consent" role="region" aria-label={t(lang, 'cookies')} hidden>
+  <div class="box">
+    <p class="ttl">{t(lang, 'cookies')}</p>
+    <p>{t(lang, 'cookiesText')} <a href={KEY_URLS[lang].cookies}>{t(lang, 'cookiePolicy')}</a>.</p>
+    <div class="act">
+      <button type="button" class="btn btn--ghost" data-consent="no">{t(lang, 'reject')}</button>
+      <button type="button" class="btn" data-consent="yes">{t(lang, 'accept')}</button>
+    </div>
+  </div>
+</div>
+<script define:vars={{ gaId: SITE.gaId }}>
+  (function () {
+    var KEY = 'vm_consent_v1', el = document.getElementById('consent');
+    function get() { try { return JSON.parse(localStorage.getItem(KEY)); } catch (e) { return null; } }
+    function loadGA() {
+      if (!gaId || window.__gaLoaded) return; window.__gaLoaded = true;
+      window.dataLayer = window.dataLayer || []; window.gtag = function () { dataLayer.push(arguments); };
+      gtag('consent', 'default', { analytics_storage: 'granted', ad_storage: 'denied', ad_user_data: 'denied', ad_personalization: 'denied' });
+      gtag('js', new Date()); gtag('config', gaId, { anonymize_ip: true });
+      var s = document.createElement('script'); s.async = true; s.src = 'https://www.googletagmanager.com/gtag/js?id=' + gaId; document.head.appendChild(s);
+    }
+    function set(v) { try { localStorage.setItem(KEY, JSON.stringify({ analytics: v, ts: Date.now() })); } catch (e) {} el.hidden = true; if (v) loadGA(); }
+    var c = get();
+    if (c && c.analytics) loadGA();
+    if (!c) { el.hidden = false; }
+    el.addEventListener('click', function (e) { var b = e.target.closest('[data-consent]'); if (b) set(b.dataset.consent === 'yes'); });
+    document.addEventListener('click', function (e) { if (e.target.closest('[data-open-consent]')) { el.hidden = false; el.querySelector('button').focus(); } });
+  })();
+</script>
+<style>
+  .consent { position: fixed; left: 0; right: 0; bottom: 0; z-index: 60; padding: 1rem var(--gutter); pointer-events: none; }
+  .consent[hidden] { display: none; }
+  .box { pointer-events: auto; max-width: 40rem; margin-inline: auto; background: var(--paper); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: 0 20px 60px -10px rgba(20, 32, 74, .4); padding: 1.25rem 1.4rem; }
+  p { margin: 0 0 .8rem; font-size: .95rem; line-height: 1.5; } .ttl { font: 650 1.1rem var(--font-display); margin-bottom: .4rem; }
+  .act { display: flex; gap: .7rem; flex-wrap: wrap; } .act .btn { flex: 1 1 8rem; min-height: 2.75rem; }
+</style>

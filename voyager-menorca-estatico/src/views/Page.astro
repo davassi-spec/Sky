@@ -1,0 +1,39 @@
+---
+import { render } from 'astro:content';
+import Img from '../components/Img.astro';
+import Icon from '../components/Icon.astro';
+import TourCard from '../components/TourCard.astro';
+import BookingForm from '../components/BookingForm.astro';
+import Breadcrumbs from '../components/Breadcrumbs.astro';
+import Faq from '../components/Faq.astro';
+import home from '../data/home.json';
+import { KEY_URLS, SITE, t, wa, type Lang } from '../lib/i18n';
+import { tours } from '../lib/site';
+const { entry, lang } = Astro.props as { entry: any; lang: Lang };
+const d = entry.data, { Content } = await render(entry);
+const tpl = d.template as string;
+const list = tpl === 'excursiones' || tpl === 'contacto' ? await tours(lang) : [];
+const h = (home as any)[lang] ?? (home as any).es;
+---
+<div class="wrap pg">
+  <Breadcrumbs lang={lang} items={[{ name: t(lang, 'home'), href: KEY_URLS[lang].home }, { name: d.title }]} />
+  <header class="head"><h1>{d.title}</h1>{d.description && tpl !== 'page' && <p class="lede">{d.description}</p>}</header>
+
+  {tpl === 'excursiones' && <section class="grid grid--3 tl" aria-label={d.title}>{list.map((x, i) => <TourCard tour={x} lang={lang} eager={i < 2} />)}</section>}
+
+  {tpl === 'contacto'
+    ? <div class="two"><div class="prose"><Content /><p class="cn"><a class="btn btn--ghost" href={wa()} target="_blank" rel="noopener"><Icon name="whatsapp" fill />WhatsApp</a> <a class="btn btn--ghost" href={`tel:${SITE.phone.replace(/\s/g, '')}`}><Icon name="phone" />{SITE.phone}</a></p></div>
+        <BookingForm lang={lang} tours={list.map((x) => x.data.title)} /></div>
+    : tpl === 'about'
+    ? <div class="two about"><div class="prose"><Content /></div><div class="pt"><Img src={h.guideImage} alt="Daniel Vaquera" sizes="(min-width: 60rem) 24rem, 80vw" ratio="4/5" /></div></div>
+    : <div class={tpl === 'page' ? 'narrow prose' : 'prose wide'}><Content /></div>}
+
+  {d.faq && d.faq.length > 0 && <div class="narrow"><Faq items={d.faq} lang={lang} /></div>}
+  {tpl === 'excursiones' && <div class="end"><BookingForm lang={lang} tours={list.map((x) => x.data.title)} /></div>}
+</div>
+<style>
+  .pg { padding-block: 1.5rem 3rem; } .head { max-width: 46rem; margin-bottom: 2rem; } .head h1 { font-size: var(--step-4); } .tl { margin-bottom: 3rem; }
+  .two { display: grid; gap: 3rem; grid-template-columns: 1fr; align-items: start; } @media (min-width: 62rem) { .two { grid-template-columns: 1fr 1.1fr; } .about { grid-template-columns: 1.2fr .8fr; } .about .pt { position: sticky; top: 7rem; } }
+  .pt :global(img) { width: 100%; aspect-ratio: 4/5; object-fit: cover; object-position: top; border-radius: var(--radius); }
+  .cn { display: flex; flex-wrap: wrap; gap: .6rem; } .wide { max-width: 52rem; } .end { margin-top: 3rem; } .narrow { margin-inline: 0; }
+</style>

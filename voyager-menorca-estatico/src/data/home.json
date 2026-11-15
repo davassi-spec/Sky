@@ -1,0 +1,330 @@
+{
+ "es": {
+  "heroEyebrow": "Visitas privadas · Guía oficial local",
+  "heroTitle": "Menorca se entiende mejor cuando te la cuenta alguien de aquí.",
+  "heroLede": "Rutas privadas por Ciutadella, Maó y la Menorca Talayótica, diseñadas para vuestro grupo y guiadas por Daniel Vaquera, menorquín y guía oficial.",
+  "heroImage": "/images/visita-guiada-ciutadella.webp",
+  "heroCardTitle": "Ciutadella, sin prisas",
+  "heroCardSub": "Historia, rincones y vida local",
+  "stats": [
+   {
+    "value": "10+ años",
+    "label": "guiando en Menorca"
+   },
+   {
+    "value": "Solo vosotros",
+    "label": "sin grupos compartidos"
+   },
+   {
+    "value": "Precio cerrado",
+    "label": "por grupo"
+   },
+   {
+    "value": "Guía oficial",
+    "label": "acreditado en la isla"
+   }
+  ],
+  "toursKicker": "Elige por dónde empezar",
+  "toursTitle": "Tres maneras de descubrir la isla",
+  "toursLede": "No son recorridos de catálogo: adaptamos cada visita al ritmo, las preguntas y los intereses de vuestro grupo.",
+  "toursLink": "Comparar todas las excursiones →",
+  "cards": [
+   {
+    "image": "/images/port20de20ciutadella.jpg",
+    "kicker": "La más elegida · 2 horas",
+    "title": "Tour privado por Ciutadella",
+    "text": "El Born, la Catedral, Ses Voltes y el puerto antiguo, conectados por las historias que explican la ciudad.",
+    "badge": "Completo hasta 2027"
+   },
+   {
+    "image": "/images/tour-privado-mahon.jpg",
+    "kicker": "2 horas",
+    "title": "Maó y su herencia británica",
+    "text": "El gran puerto natural y el centro histórico, con entrada a Santa María.",
+    "badge": "Completo hasta 2027"
+   },
+   {
+    "image": "/images/naveta20des20tudons20-20001.jpg",
+    "kicker": "Patrimonio mundial · 4 horas",
+    "title": "Menorca Talayótica",
+    "text": "Tres yacimientos para comprender 3.000 años de historia de la isla.",
+    "badge": "Completo hasta 2027"
+   }
+  ],
+  "guideImage": "/images/daniel-vaquera-sintes.png",
+  "guideKicker": "Tu guía en la isla",
+  "guideQuote": "“Quiero que te vayas entendiendo Menorca, no solo habiéndola fotografiado.”",
+  "guideText": [
+   "Soy Daniel Vaquera. Nací aquí y llevo más de una década trabajando en turismo. En mis rutas mezclo historia, vida cotidiana y esas recomendaciones que normalmente solo le darías a un amigo.",
+   "Hablas conmigo desde el primer mensaje y soy yo quien os acompaña durante la visita."
+  ],
+  "guideLink": "Conocer a Daniel →",
+  "stepsKicker": "Así de sencillo",
+  "stepsTitle": "Una buena visita empieza escuchándoos",
+  "stepsLede": "Sin formularios interminables ni procesos impersonales.",
+  "steps": [
+   {
+    "title": "Cuéntame vuestro plan",
+    "text": "Fechas, número de personas y qué os apetece descubrir."
+   },
+   {
+    "title": "Ajustamos la ruta",
+    "text": "Confirmo disponibilidad y adaptamos el recorrido a vuestro ritmo."
+   },
+   {
+    "title": "Nos vemos en Menorca",
+    "text": "Punto de encuentro claro y una visita privada, sin prisas."
+   }
+  ],
+  "ctaKicker": "¿Tienes otra idea?",
+  "ctaTitle": "Diseñemos vuestra Menorca a medida.",
+  "ctaText": "Cuéntame qué días estaréis en la isla y qué os interesa. Te responderé personalmente con una propuesta clara.",
+  "ctaImage": "/images/ciutadella-puerto-casco-antiguo.jpg"
+ },
+ "ca": {
+  "heroEyebrow": "Visites privades · Guia oficial local",
+  "heroTitle": "Menorca s’entén millor quan te la conta algú d’aquí.",
+  "heroLede": "Rutes privades per Ciutadella, Maó i la Menorca Talaiòtica, dissenyades per al vostre grup i guiades per Daniel Vaquera, menorquí i guia oficial.",
+  "heroImage": "/images/visita-guiada-ciutadella.webp",
+  "heroCardTitle": "Ciutadella, sense presses",
+  "heroCardSub": "Història, racons i vida local",
+  "stats": [
+   {
+    "value": "10+ anys",
+    "label": "guiant a Menorca"
+   },
+   {
+    "value": "Només vosaltres",
+    "label": "sense grups compartits"
+   },
+   {
+    "value": "Preu tancat",
+    "label": "per grup"
+   },
+   {
+    "value": "Guia oficial",
+    "label": "acreditat a l’illa"
+   }
+  ],
+  "toursKicker": "Tria per on començar",
+  "toursTitle": "Tres maneres de descobrir l’illa",
+  "toursLede": "No són recorreguts de catàleg: adaptem cada visita al ritme, les preguntes i els interessos del vostre grup.",
+  "toursLink": "Comparar totes les excursions →",
+  "cards": [
+   {
+    "image": "/images/port20de20ciutadella.jpg",
+    "kicker": "La més escollida · 2 hores",
+    "title": "Tour privat per Ciutadella",
+    "text": "El Born, la Catedral, Ses Voltes i el port antic, connectats per les històries que expliquen la ciutat.",
+    "badge": "Complet fins al 2027"
+   },
+   {
+    "image": "/images/tour-privado-mahon.jpg",
+    "kicker": "2 hores",
+    "title": "Maó i el seu llegat britànic",
+    "text": "El gran port natural i el centre històric, amb entrada a Santa Maria.",
+    "badge": "Complet fins al 2027"
+   },
+   {
+    "image": "/images/naveta20des20tudons20-20001.jpg",
+    "kicker": "Patrimoni mundial · 4 hores",
+    "title": "Menorca Talaiòtica",
+    "text": "Tres jaciments per comprendre 3.000 anys d’història de l’illa.",
+    "badge": "Complet fins al 2027"
+   }
+  ],
+  "guideImage": "/images/daniel-vaquera-sintes.png",
+  "guideKicker": "El teu guia a l’illa",
+  "guideQuote": "“Vull que te’n vagis entenent Menorca, no només havent-la fotografiada.”",
+  "guideText": [
+   "Sóc Daniel Vaquera. Vaig néixer aquí i porto més d’una dècada treballant en turisme. A les meves rutes barrejo història, vida quotidiana i aquelles recomanacions que normalment només li donaries a un amic.",
+   "Parles amb mi des del primer missatge i sóc jo qui us acompanya durant la visita."
+  ],
+  "guideLink": "Conèixer Daniel →",
+  "stepsKicker": "Així de senzill",
+  "stepsTitle": "Una bona visita comença escoltant-vos",
+  "stepsLede": "Sense formularis interminables ni processos impersonals.",
+  "steps": [
+   {
+    "title": "Explica’m el vostre pla",
+    "text": "Dates, nombre de persones i què us ve de gust descobrir."
+   },
+   {
+    "title": "Ajustem la ruta",
+    "text": "Confirmo disponibilitat i adaptem el recorregut al vostre ritme."
+   },
+   {
+    "title": "Ens veiem a Menorca",
+    "text": "Punt de trobada clar i una visita privada, sense presses."
+   }
+  ],
+  "ctaKicker": "Tens una altra idea?",
+  "ctaTitle": "Dissenyem la vostra Menorca a mida.",
+  "ctaText": "Explica’m quins dies estareu a l’illa i què us interessa. Us respondré personalment amb una proposta clara.",
+  "ctaImage": ""
+ },
+ "en": {
+  "heroEyebrow": "Private tours · Local official guide",
+  "heroTitle": "Menorca is best understood when someone from here tells you about it.",
+  "heroLede": "Private routes through Ciutadella, Maó, and Menorca Talayótica, designed for your group and guided by Daniel Vaquera, Menorcan and official guide.",
+  "heroImage": "/images/visita-guiada-ciutadella.webp",
+  "heroCardTitle": "Ciutadella, at your own pace",
+  "heroCardSub": "History, hidden corners, and local life",
+  "stats": [
+   {
+    "value": "10+ years",
+    "label": "guiding in Menorca"
+   },
+   {
+    "value": "Just you",
+    "label": "no shared groups"
+   },
+   {
+    "value": "Fixed price",
+    "label": "per group"
+   },
+   {
+    "value": "Official guide",
+    "label": "accredited on the island"
+   }
+  ],
+  "toursKicker": "Choose where to start",
+  "toursTitle": "Three ways to discover the island",
+  "toursLede": "These aren’t catalog tours: we adapt each visit to the pace, questions, and interests of your group.",
+  "toursLink": "Compare all excursions →",
+  "cards": [
+   {
+    "image": "/images/port20de20ciutadella.jpg",
+    "kicker": "Most popular · 2 hours",
+    "title": "Private Tour of Ciutadella",
+    "text": "El Born, the Cathedral, Ses Voltes, and the old port, connected by the stories that explain the city.",
+    "badge": "Fully booked until 2027"
+   },
+   {
+    "image": "/images/tour-privado-mahon.jpg",
+    "kicker": "2 hours",
+    "title": "Maó and its British heritage",
+    "text": "The great natural harbor and the historic center, with entry to Santa María.",
+    "badge": "Fully booked until 2027"
+   },
+   {
+    "image": "/images/naveta20des20tudons20-20001.jpg",
+    "kicker": "World Heritage · 4 hours",
+    "title": "Talayotic Menorca",
+    "text": "Three sites to understand 3,000 years of the island’s history.",
+    "badge": "Fully booked until 2027"
+   }
+  ],
+  "guideImage": "/images/daniel-vaquera-sintes.png",
+  "guideKicker": "Your guide on the island",
+  "guideQuote": "“I want you to leave understanding Menorca, not just having photographed it.”",
+  "guideText": [
+   "I’m Daniel Vaquera. I was born here and I’ve been working in tourism for over a decade. On my tours I mix history, everyday life, and those recommendations you’d normally only give to a friend.",
+   "You talk to me from the first message and I’m the one who accompanies you during the visit."
+  ],
+  "guideLink": "Meet Daniel →",
+  "stepsKicker": "It’s that simple",
+  "stepsTitle": "A good visit starts by listening to you",
+  "stepsLede": "No endless forms or impersonal processes.",
+  "steps": [
+   {
+    "title": "Tell me your plan",
+    "text": "Dates, number of people, and what you’d like to discover."
+   },
+   {
+    "title": "We adjust the route",
+    "text": "I confirm availability and we adapt the itinerary to your pace."
+   },
+   {
+    "title": "See you in Menorca",
+    "text": "Clear meeting point and a private visit, without rushing."
+   }
+  ],
+  "ctaKicker": "Have another idea?",
+  "ctaTitle": "Let’s design your customized Menorca.",
+  "ctaText": "Tell me what days you’ll be on the island and what interests you. I’ll reply personally with a clear proposal.",
+  "ctaImage": "/images/ciutadella-puerto-casco-antiguo.jpg"
+ },
+ "fr": {
+  "heroEyebrow": "Visites privées · Guide officiel local",
+  "heroTitle": "Minorque se comprend mieux quand c'est quelqu'un d'ici qui te la raconte.",
+  "heroLede": "Itinéraires privés à Ciutadella, Maó et la Minorque talayotique, conçus pour votre groupe et guidés par Daniel Vaquera, minorquin et guide officiel.",
+  "heroImage": "/images/visita-guiada-ciutadella.webp",
+  "heroCardTitle": "Ciutadella, sans se presser",
+  "heroCardSub": "Histoire, recoins et vie locale",
+  "stats": [
+   {
+    "value": "10+ ans",
+    "label": "à guider à Minorque"
+   },
+   {
+    "value": "Rien que vous",
+    "label": "sans groupes partagés"
+   },
+   {
+    "value": "Prix fixe",
+    "label": "par groupe"
+   },
+   {
+    "value": "Guide officiel",
+    "label": "accrédité sur l'île"
+   }
+  ],
+  "toursKicker": "Choisis par où commencer",
+  "toursTitle": "Trois façons de découvrir l'île",
+  "toursLede": "Ce ne sont pas des parcours de catalogue : nous adaptons chaque visite au rythme, aux questions et aux centres d'intérêt de votre groupe.",
+  "toursLink": "Comparer toutes les excursions →",
+  "cards": [
+   {
+    "image": "/images/port20de20ciutadella.jpg",
+    "kicker": "La plus choisie · 2 heures",
+    "title": "Visite privée de Ciutadella",
+    "text": "Le Born, la cathédrale, Ses Voltes et le vieux port, reliés par les histoires qui expliquent la ville.",
+    "badge": "Complet jusqu'en 2027"
+   },
+   {
+    "image": "/images/tour-privado-mahon.jpg",
+    "kicker": "2 heures",
+    "title": "Maó et son héritage britannique",
+    "text": "Le grand port naturel et le centre historique, avec entrée à Santa María.",
+    "badge": "Complet jusqu'en 2027"
+   },
+   {
+    "image": "/images/naveta20des20tudons20-20001.jpg",
+    "kicker": "Patrimoine mondial · 4 heures",
+    "title": "Minorque talayotique",
+    "text": "Trois sites pour comprendre 3 000 ans d'histoire de l'île.",
+    "badge": "Complet jusqu'en 2027"
+   }
+  ],
+  "guideImage": "/images/daniel-vaquera-sintes.png",
+  "guideKicker": "Ton guide sur l'île",
+  "guideQuote": "« Je veux que tu repartes en comprenant Minorque, pas seulement en l'ayant photographiée. »",
+  "guideText": [
+   "Je suis Daniel Vaquera. Je suis né ici et je travaille dans le tourisme depuis plus d'une décennie. Dans mes itinéraires, je mêle histoire, vie quotidienne et ces recommandations qu'on ne donne normalement qu'à un ami.",
+   "Tu me parles dès le premier message et c'est moi qui vous accompagne pendant la visite."
+  ],
+  "guideLink": "Faire connaissance avec Daniel →",
+  "stepsKicker": "Aussi simple que ça",
+  "stepsTitle": "Une bonne visite commence en vous écoutant",
+  "stepsLede": "Sans formulaires interminables ni processus impersonnels.",
+  "steps": [
+   {
+    "title": "Raconte-moi votre projet",
+    "text": "Dates, nombre de personnes et ce que vous avez envie de découvrir."
+   },
+   {
+    "title": "Nous ajustons l'itinéraire",
+    "text": "Je confirme la disponibilité et nous adaptons le parcours à votre rythme."
+   },
+   {
+    "title": "On se retrouve à Minorque",
+    "text": "Point de rencontre clair et une visite privée, sans hâte."
+   }
+  ],
+  "ctaKicker": "Tu as une autre idée ?",
+  "ctaTitle": "Concevons votre Minorque sur mesure.",
+  "ctaText": "Dis-moi quels jours vous serez sur l'île et ce qui vous intéresse. Je te répondrai personnellement avec une proposition claire.",
+  "ctaImage": "/images/ciutadella-puerto-casco-antiguo.jpg"
+ }
+}

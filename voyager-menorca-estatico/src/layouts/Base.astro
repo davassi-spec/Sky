@@ -1,0 +1,66 @@
+---
+import '../styles/global.css';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import Consent from '../components/Consent.astro';
+import Icon from '../components/Icon.astro';
+import { LANGS, LOCALE, SITE, t, wa, type Lang } from '../lib/i18n';
+import { SITE as ORIGIN } from '../../astro.config.mjs';
+import fontDisplay from '@fontsource-variable/bricolage-grotesque/files/bricolage-grotesque-latin-wdth-normal.woff2?url';
+import fontBody from '@fontsource-variable/figtree/files/figtree-latin-wght-normal.woff2?url';
+
+interface Props { lang: Lang; title: string; description?: string; path: string; alts?: Partial<Record<Lang, string>>; image?: string; type?: 'website' | 'article'; noindex?: boolean; preload?: string; jsonld?: object[]; waText?: string; published?: string; modified?: string; prev?: string; next?: string }
+const { lang, title, description = '', path, alts = {}, image, type = 'website', noindex = false, preload, jsonld = [], waText, published, modified, prev, next } = Astro.props;
+const abs = (p: string) => new URL(p, ORIGIN).href;
+const canonical = abs(path);
+const ogImage = image ? abs(`/_img/${image.replace(/^\/images\//, '').replace(/\.[a-z0-9]+$/i, '')}-1280.webp`) : abs('/og-default.jpg');
+const fullTitle = title.toLowerCase().includes('voyager') ? title : `${title} | ${SITE.name}`;
+---
+<!doctype html>
+<html lang={lang}>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{fullTitle}</title>
+  {description && <meta name="description" content={description} />}
+  <link rel="preload" href={fontDisplay} as="font" type="font/woff2" crossorigin />
+  <link rel="preload" href={fontBody} as="font" type="font/woff2" crossorigin />
+  {preload && <link rel="preload" as="image" imagesrcset={preload.split("|")[0]} imagesizes={preload.split("|")[1]} fetchpriority="high" />}
+  <link rel="canonical" href={canonical} />
+  {noindex && <meta name="robots" content="noindex, follow" />}
+  {Object.entries(alts).map(([l, u]) => <link rel="alternate" hreflang={l} href={abs(u!)} />)}
+  {alts.es && <link rel="alternate" hreflang="x-default" href={abs(alts.es)} />}
+  {prev && <link rel="prev" href={abs(prev)} />}{next && <link rel="next" href={abs(next)} />}
+  <meta property="og:site_name" content={SITE.name} />
+  <meta property="og:type" content={type} />
+  <meta property="og:title" content={fullTitle} />
+  {description && <meta property="og:description" content={description} />}
+  <meta property="og:url" content={canonical} />
+  <meta property="og:locale" content={LOCALE[lang]} />
+  {LANGS.filter((l) => l !== lang && alts[l]).map((l) => <meta property="og:locale:alternate" content={LOCALE[l]} />)}
+  <meta property="og:image" content={ogImage} />
+  {published && <meta property="article:published_time" content={published} />}
+  {modified && <meta property="article:modified_time" content={modified} />}
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="theme-color" content="#27336e" />
+  <link rel="icon" href="/favicon.png" sizes="32x32" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+  <link rel="manifest" href="/manifest.webmanifest" />
+  {jsonld.map((j) => <script type="application/ld+json" set:html={JSON.stringify(j)} />)}
+</head>
+<body>
+  <a class="skip" href="#main">{t(lang, 'skip')}</a>
+  <Header lang={lang} path={path} alts={alts} />
+  <main id="main" tabindex="-1"><slot /></main>
+  <Footer lang={lang} />
+  <a class="fab" href={wa(waText)} target="_blank" rel="noopener" aria-label={t(lang, 'whatsapp')}><Icon name="whatsapp" fill /><span>WhatsApp</span></a>
+  <Consent lang={lang} />
+</body>
+</html>
+<style is:global>
+  .fab { position: fixed; right: max(1rem, env(safe-area-inset-right)); bottom: max(1rem, env(safe-area-inset-bottom)); z-index: 40; display: inline-flex; align-items: center; gap: .5rem; background: #12683a; color: #fff; text-decoration: none; padding: .85rem; border-radius: 999px; box-shadow: var(--shadow); font-weight: 650; transition: transform .2s var(--ease); }
+  .fab:hover { color: #fff; transform: translateY(-2px) scale(1.03); }
+  .fab svg { width: 1.7rem; height: 1.7rem; }
+  .fab span { display: none; padding-right: .4rem; }
+  @media (min-width: 900px) { .fab span { display: inline; } .fab { padding: .8rem 1.1rem .8rem .9rem; } }
+</style>

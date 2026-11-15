@@ -1,0 +1,23 @@
+---
+import Icon from './Icon.astro';
+import { SITE, t, type Lang } from '../lib/i18n';
+const { lang, embed } = Astro.props as { lang: Lang; embed: string };
+---
+<section class="tt" aria-labelledby="tt-h">
+  <h2 id="tt-h">{t(lang, 'bookOnline')}</h2>
+  <button type="button" class="btn" id="tt-open" aria-expanded="false" aria-controls="tt-box">{t(lang, 'bookOnline')}<Icon name="arrow" /></button>
+  <div id="tt-box" hidden></div>
+  <template id="tt-tpl" set:html={embed} />
+</section>
+<script define:vars={{ company: SITE.turitopCompany }}>
+  // Turitop se carga solo cuando la persona pulsa el botón (no hay terceros antes de la acción).
+  var b = document.getElementById('tt-open'), box = document.getElementById('tt-box'), tpl = document.getElementById('tt-tpl');
+  b.addEventListener('click', function () {
+    if (b.getAttribute('aria-expanded') === 'true') return;
+    b.setAttribute('aria-expanded', 'true'); box.hidden = false;
+    var frag = tpl.content.cloneNode(true); box.appendChild(frag);
+    box.querySelectorAll('script').forEach(function (old) { var s = document.createElement('script'); for (var i = 0; i < old.attributes.length; i++) s.setAttribute(old.attributes[i].name, old.attributes[i].value); s.text = old.text; old.replaceWith(s); });
+    if (!document.getElementById('js-turitop')) { var s = document.createElement('script'); s.id = 'js-turitop'; s.src = 'https://app.turitop.com/js/load-turitop.min.js'; s.dataset.company = company; s.dataset.buttoncolor = 'green'; document.body.appendChild(s); }
+  });
+</script>
+<style>.tt { margin-top: 2.5rem; } .tt h2 { font-size: var(--step-2); } #tt-box { margin-top: 1rem; }</style>

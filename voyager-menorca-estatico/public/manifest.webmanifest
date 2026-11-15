@@ -1,0 +1,1 @@
+{ "name": "Voyager Menorca", "short_name": "Voyager", "start_url": "/", "display": "browser", "background_color": "#f4f8f6", "theme_color": "#27336e", "icons": [{ "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" }] }

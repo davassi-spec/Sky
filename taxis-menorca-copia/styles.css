@@ -1,0 +1,163 @@
+:root{
+  --amarillo:#fae300; --azul:#114a7f; --azul-titulo:#003f8c; --naranja:#ff6a00;
+  --rojo:#7f0000; --gris-campo:#e5e5ea; --gris-oscuro:#555; --texto:#111;
+  --verde-ok:#7d7a14;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  color:var(--texto);font-size:15px;
+  background:
+    linear-gradient(180deg,#4f8f6a 0%,#7fb7a0 18%,#a9d6d0 34%,#e8dcc0 52%,#f1e3c6 58%,#5fc4cf 66%,#2fb3c4 85%,#1c9fb5 100%);
+  background-attachment:fixed;
+}
+#app{position:relative;max-width:480px;min-height:100dvh;margin:0 auto;display:flex;flex-direction:column;
+  background:transparent;overflow-x:hidden}
+@media(min-width:700px){
+  #app{box-shadow:0 0 0 1px rgba(0,0,0,.08),0 20px 60px rgba(0,0,0,.35);margin-top:0}
+}
+button{font:inherit;cursor:pointer}
+input{font:inherit}
+
+/* Cabecera */
+.cab{background:var(--amarillo);height:calc(64px + env(safe-area-inset-top));padding-top:env(safe-area-inset-top);
+  display:grid;grid-template-columns:56px 1fr 56px;align-items:center;flex:none;position:relative;z-index:5}
+.cab h1{margin:0;font-size:16.5px;font-weight:500;text-align:center;letter-spacing:.2px}
+.cab .logo{width:42px;height:38px;border-radius:5px;margin-left:12px;display:block;object-fit:cover}
+.cab .ib{background:none;border:0;width:48px;height:48px;display:grid;place-items:center;color:#111}
+.cab svg{width:26px;height:26px;stroke:#111;fill:none;stroke-width:2.6;stroke-linecap:round}
+.cab .ib.hamb svg{width:30px;height:30px;stroke-width:3.4}
+
+/* Contenido */
+.cont{flex:1;background:transparent;border-radius:22px 22px 0 0;margin-top:-1px;position:relative;
+  padding:12px 12px 36px;display:flex;flex-direction:column;gap:10px}
+.cont::before{content:"";position:absolute;inset:0;border-radius:22px 22px 0 0;background:rgba(160,195,225,.18);pointer-events:none}
+.cont>*{position:relative}
+.tarjeta{background:#fff;border-radius:18px;padding:18px 14px;box-shadow:0 1px 3px rgba(0,0,0,.1)}
+.tarjeta.sin-pad{padding:0;overflow:hidden}
+.titulo{color:var(--azul-titulo);text-align:center;font-size:18px;margin:6px 0 14px;font-weight:400;text-transform:uppercase}
+.sub{font-size:13px;color:#222}
+
+/* Login / registro */
+.login{margin:68px 28px 0;background:#fff;border-radius:18px;padding:30px 32px 26px;box-shadow:0 2px 6px rgba(0,0,0,.12)}
+.login .titulo{font-size:21px;margin:0 0 26px}
+label.lbl{display:block;font-size:13px;margin:0 0 8px;color:#111}
+.campo{width:100%;height:36px;border:0;background:var(--gris-campo);border-radius:6px;padding:0 10px;font-size:15px;outline:0}
+.campo:focus{box-shadow:0 0 0 2px var(--azul)}
+.fila{margin-bottom:18px;position:relative}
+.ojo{position:absolute;right:6px;bottom:3px;background:none;border:0;width:32px;height:30px;color:#777}
+.ojo svg{width:24px;height:24px;stroke:#666;fill:none;stroke-width:2}
+.link{background:none;border:0;display:block;margin:2px auto 22px;font-size:12.5px;color:#222;padding:6px}
+.btn{display:block;width:100%;height:44px;border:0;border-radius:4px;background:var(--azul);color:#fff;font-size:16px;letter-spacing:.3px}
+.btn.naranja{background:var(--naranja);width:81%;margin:18px auto 6px;height:50px;border-radius:5px}
+.btn.rojo{background:var(--rojo);width:80%;margin:8px auto 6px;height:38px;border-radius:4px;font-size:14px}
+.btn.gris{background:var(--gris-oscuro);width:auto;margin:0 auto;padding:0 28px;height:42px;font-size:13px;border-radius:5px}
+.btn.sec{background:#fff;color:var(--azul);border:1px solid var(--azul)}
+.btn[disabled]{opacity:.55}
+.alta{margin:70px 28px 0;background:#fff;border-radius:18px;padding:18px 32px;box-shadow:0 2px 6px rgba(0,0,0,.12)}
+.msg-error{color:#a00;font-size:12.5px;margin:-8px 0 12px;min-height:0}
+.msg-ok{color:#1a6a2a;font-size:13px;text-align:center;margin:0 0 12px}
+
+/* Pestañas */
+.tabs{display:flex;background:#eeeef0;border-radius:9px;padding:2px;gap:0;margin:0 4px 14px;position:relative}
+.tabs button{flex:1;border:0;background:none;height:30px;font-size:13px;border-radius:7px;color:#111;position:relative}
+.tabs button.act{background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.2);font-weight:500}
+.tabs button+button:not(.act)::before{content:"";position:absolute;left:0;top:7px;bottom:7px;width:1px;background:#c8c8cc}
+.tabs.off button{color:#999}
+
+/* Campos de ubicación */
+.ubi-t{font-size:17px;margin:14px 4px 6px}
+.ubi{display:flex;align-items:stretch;gap:0;background:var(--gris-campo);border-radius:7px;min-height:56px;width:100%;border:0;text-align:left;padding:0;overflow:hidden}
+.ubi .ico{width:30px;display:grid;place-items:center;flex:none}
+.ubi .ico svg{width:12px;height:30px;fill:#555}
+.ubi .txt{flex:1;display:flex;align-items:center;padding:8px 6px;font-size:14px;line-height:1.25;min-width:0}
+.ubi .txt.vacio{color:#888}
+.ubi .lado{width:52px;flex:none;background:var(--azul);border:0;color:#fff;display:grid;place-items:center}
+.ubi .lado svg{width:28px;height:28px;stroke:#fff;fill:none;stroke-width:2}
+.ubi.est{cursor:default}
+.ubi.dest{min-height:58px}
+.centro{text-align:center;font-size:14px;line-height:1.35;margin:16px 6px 0}
+
+/* Búsqueda */
+.busq{display:flex;align-items:center;background:var(--gris-campo);border-radius:9px;margin:0 2px 0;height:38px;overflow:hidden}
+.busq .lupa{width:34px;display:grid;place-items:center;flex:none}
+.busq .lupa svg{width:19px;height:19px;stroke:#777;fill:none;stroke-width:2.2}
+.busq input{flex:1;border:0;background:none;height:100%;outline:0;font-size:16px;min-width:0}
+.busq .mapa{width:40px;height:100%;border:0;background:var(--azul);display:grid;place-items:center}
+.busq .mapa svg{width:24px;height:24px;stroke:#fff;fill:none;stroke-width:1.8}
+.sep{height:1px;background:#d2d2d6;margin:12px -14px 0}
+.lista-t{text-align:center;font-size:17px;margin:2px 0 0;padding:14px 8px 12px;text-transform:uppercase;background:#fff;border-radius:16px;
+  box-shadow:0 1px 3px rgba(0,0,0,.1)}
+.res{display:flex;gap:6px;align-items:center;background:#fff;border:1.5px solid #bbb;border-radius:9px;padding:10px 12px 10px 8px;width:100%;text-align:left;
+  box-shadow:0 1px 3px rgba(0,0,0,.12);font-size:14px;line-height:1.25}
+.res svg{width:10px;height:26px;fill:#555;flex:none}
+.res small{display:block;color:#777;font-size:11px;margin-top:2px}
+.vacio-msg{background:#fff;border-radius:12px;padding:18px;text-align:center;color:#444;font-size:14px}
+
+/* Mapa / ruta */
+.mapa-pant{position:relative;flex:1;min-height:calc(100dvh - 64px);margin-top:-1px;background:#cfe3f0}
+.mapa-pant .map{position:absolute;inset:0}
+.leaflet-container{font:inherit}
+.pin{width:26px;height:36px;filter:drop-shadow(0 2px 2px rgba(0,0,0,.35))}
+.ok-btn{position:absolute;right:16px;bottom:96px;z-index:600;width:48px;height:48px;border-radius:8px;border:0;background:var(--verde-ok);box-shadow:0 2px 6px rgba(0,0,0,.35);display:grid;place-items:center}
+.ok-btn svg{width:34px;height:34px;stroke:#fff;fill:none;stroke-width:4;stroke-linecap:round;stroke-linejoin:round}
+.ok-btn[disabled]{opacity:.5}
+.pie-ruta{position:absolute;left:10px;right:10px;bottom:12px;z-index:600;background:#fff;border-radius:12px;padding:10px 12px;display:flex;gap:8px;align-items:center;
+  font-size:12.5px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.25)}
+.pie-ruta svg{width:10px;height:28px;fill:#555;flex:none}
+.pie-ruta div{flex:1;line-height:1.3}
+.aviso-ruta{position:absolute;top:8px;left:50%;transform:translateX(-50%);z-index:600;background:rgba(255,255,255,.95);border-radius:8px;padding:4px 10px;font-size:11.5px;color:#444;max-width:92%;text-align:center}
+
+/* Modal resumen */
+.modal-fondo{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:900;display:flex;justify-content:center;align-items:flex-start;overflow:auto}
+.modal{width:100%;max-width:480px;padding:76px 12px 24px}
+.modal .caja{background:#fff;border-radius:18px;overflow:hidden;box-shadow:0 6px 24px rgba(0,0,0,.3)}
+.modal .cab-m{background:var(--gris-oscuro);color:#fff;text-align:center;padding:24px 10px;font-size:16px}
+.modal .cuerpo{padding:12px 12px 6px;text-align:center;font-size:12.5px;line-height:1.35}
+.modal .minimapa{height:182px;position:relative;margin:8px 0 0}
+.modal .minimapa .map{position:absolute;inset:0}
+.modal .lupa-m{position:absolute;right:0;top:0;bottom:0;width:30px;z-index:500;background:var(--azul);border:0;display:grid;place-items:center}
+.modal .lupa-m svg{width:20px;height:20px;stroke:#fff;fill:none;stroke-width:2.2}
+.modal .datos{padding:6px 10px 14px}
+.modal .datos .ubi-t{font-size:14px;margin:8px 2px 4px}
+.modal .datos .ubi{min-height:48px;border-radius:5px}
+.modal .datos .ubi .txt{font-size:13px}
+.aviso-local{background:#fff7d6;border:1px solid #e6cf55;color:#5b4b00;border-radius:8px;padding:8px 10px;font-size:11.5px;line-height:1.3;margin:8px 10px 0;text-align:left}
+
+/* Diálogo confirmación */
+.dlg-fondo{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:1000;display:grid;place-items:center;padding:20px}
+.dlg{background:#fff;border-radius:14px;max-width:320px;width:100%;overflow:hidden;text-align:center}
+.dlg h2{font-size:17px;margin:20px 16px 6px}
+.dlg p{margin:0 16px 18px;font-size:13.5px;color:#333}
+.dlg .bt{display:flex;border-top:1px solid #ddd}
+.dlg .bt button{flex:1;height:46px;border:0;background:none;font-size:16px;color:var(--azul)}
+.dlg .bt button+button{border-left:1px solid #ddd;font-weight:600}
+.dlg .bt button.pel{color:#b00020}
+
+/* Menú lateral */
+.drawer-fondo{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:800}
+.drawer{position:fixed;top:0;right:0;bottom:0;width:min(300px,82vw);background:#fff;z-index:850;padding:calc(20px + env(safe-area-inset-top)) 0 20px;
+  box-shadow:-4px 0 18px rgba(0,0,0,.3);display:flex;flex-direction:column}
+.drawer .quien{padding:8px 20px 16px;border-bottom:1px solid #eee;font-size:13px;color:#444;word-break:break-all}
+.drawer .quien b{display:block;color:#111;font-size:16px;margin-bottom:2px}
+.drawer button{background:none;border:0;text-align:left;padding:15px 20px;font-size:16px;color:#111}
+.drawer button:active{background:#f2f2f2}
+
+/* Reservas / perfil */
+.reserva{background:#fff;border-radius:14px;padding:12px 14px;margin-bottom:8px;box-shadow:0 1px 3px rgba(0,0,0,.1);font-size:13.5px;line-height:1.4}
+.reserva .estado{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11.5px;color:#fff;background:var(--azul);margin-bottom:6px}
+.reserva .estado.cancelado{background:#8a8a8a}
+.reserva .precio{float:right;font-weight:600}
+
+/* Pie y avisos */
+.dev{text-align:center;color:#fff;font-size:15px;letter-spacing:.3px;text-shadow:0 1px 2px rgba(0,0,0,.45);margin-top:auto;padding-top:14px}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#222;color:#fff;padding:10px 16px;border-radius:20px;font-size:13.5px;z-index:1100;max-width:90%;text-align:center}
+.vh{position:absolute;left:-9999px}
+
+.login-pant{padding:0 12px 36px}
+.login-pant .login{margin-top:56px}
+.login-pant .alta{margin-top:auto;margin-bottom:0}
+.login-pant .dev{margin-top:12px;padding-top:0}
+.busq input::-webkit-search-cancel-button{-webkit-appearance:none}
+.btn.gris{white-space:nowrap;font-size:12.5px;padding:0 18px}

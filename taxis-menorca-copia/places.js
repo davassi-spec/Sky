@@ -1,0 +1,32 @@
+/* Lugares locales de Menorca (coordenadas aproximadas) para buscar sin red.
+ * Los cuatro primeros son los que muestra la app original al buscar "Aer". */
+window.TM_PLACES = [
+  { label: "Aeropuerto de Menorca (MAH), Carretera de San Clemente, España", lat: 39.8626, lng: 4.2186 },
+  { label: "Aeródromo de San Luis, Avinguda de Josep A. Clavé, Sant Lluís, España", lat: 39.8508, lng: 4.2606 },
+  { label: "Sala VIP Tramuntana - Aeropuerto Menorca (MAH), Menorca Airport, Menorca, España", lat: 39.8620, lng: 4.2170 },
+  { label: "Real Aeroclub de Mahón Menorca, Avinguda de Josep A. Clavé, Maó-Mahón, España", lat: 39.8540, lng: 4.2580 },
+  { label: "Puerto de Mahón, Moll de Llevant, Maó-Mahón, España", lat: 39.8885, lng: 4.2745 },
+  { label: "Maó-Mahón, Illes Balears, España", lat: 39.8890, lng: 4.2650 },
+  { label: "Ciutadella de Menorca, Illes Balears, España", lat: 40.0010, lng: 3.8390 },
+  { label: "Puerto de Ciutadella, Ciutadella de Menorca, España", lat: 40.0032, lng: 3.8360 },
+  { label: "Alaior, Illes Balears, España", lat: 39.9330, lng: 4.1370 },
+  { label: "Es Mercadal, Illes Balears, España", lat: 39.9900, lng: 4.0870 },
+  { label: "Ferreries, Illes Balears, España", lat: 39.9830, lng: 4.0080 },
+  { label: "Es Migjorn Gran, Illes Balears, España", lat: 39.9460, lng: 4.0360 },
+  { label: "Es Castell, Illes Balears, España", lat: 39.8770, lng: 4.2930 },
+  { label: "Sant Lluís, Illes Balears, España", lat: 39.8490, lng: 4.2560 },
+  { label: "Binibeca, Sant Lluís, España", lat: 39.8260, lng: 4.2310 },
+  { label: "Cala en Porter, Alaior, España", lat: 39.8800, lng: 4.1340 },
+  { label: "Son Bou, Alaior, España", lat: 39.9070, lng: 4.0680 },
+  { label: "Cala Galdana, Ferreries, España", lat: 39.9355, lng: 3.9640 },
+  { label: "Fornells, Es Mercadal, España", lat: 40.0560, lng: 4.1290 },
+  { label: "Arenal d'en Castell, Es Mercadal, España", lat: 40.0450, lng: 4.1980 },
+  { label: "Cala Morell, Ciutadella de Menorca, España", lat: 40.0580, lng: 3.8750 },
+  { label: "Cala en Blanes, Ciutadella de Menorca, España", lat: 39.9890, lng: 3.8000 },
+  { label: "Cap d'Artrutx, Ciutadella de Menorca, España", lat: 39.9250, lng: 3.8300 },
+  { label: "Es Grau, Maó-Mahón, España", lat: 39.9460, lng: 4.2560 },
+  { label: "Punta Prima, Sant Lluís, España", lat: 39.8110, lng: 4.2760 },
+  { label: "Monte Toro, Es Mercadal, España", lat: 39.9930, lng: 4.1100 },
+  { label: "Hospital Mateu Orfila, Maó-Mahón, España", lat: 39.8740, lng: 4.2620 },
+  { label: "Estación de autobuses de Ciutadella, España", lat: 39.9990, lng: 3.8420 }
+];
