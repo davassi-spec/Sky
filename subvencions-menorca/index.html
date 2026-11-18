@@ -385,7 +385,7 @@ const S = {
       off:"Obre la convocatòria oficial",ics:"Afegeix el termini al calendari",save:"Desa",saved:"Desada",web:"Web de l'organisme",
       nourl:"Encara no tenim l'enllaç oficial. Consultau la seu electrònica de l'ajuntament.",icsNote:"El calendari t'avisarà 3 dies abans del termini.",
       close:"Tanca",saveA:t=>`Desa «${t}»`,openN:n=>n===1?"1 oberta":`${n} obertes`,none:"cap oberta",ex:"Dades d'exemple",
-      lang:"Castellano",langCode:"es",direct:"Concessió directa",directL:"Concessió directa (sense sol·licitud)",any:"Any de publicació",anyTots:"Tots",publ:"publ.",publicada:"Publicada a la BDNS",tipus:"Tipus",finalitat:"Finalitat",qui:"Qui ho pot demanar",noDate:"Sense data al registre",boib:"Extracte al BOIB",bases:"Bases reguladores",bdns:"Fitxa a la BDNS",seu:"Seu electrònica",directNote:"És una subvenció nominativa o de concessió directa: no s'obre a sol·licituds públiques.",esText:"El resum procedeix de l'extracte oficial (en castellà).",demoEx:"<strong>Dades d'exemple.</strong> Les convocatòries d'aquesta versió no són reals.",demoReal:(d,f,miss)=>`<strong>Dades reals de la BDNS</strong>, actualitzades el ${d}. ${miss.length?`${miss.join(", ")} no hi han publicat convocatòries en aquest període: consultau la seva seu electrònica.`:""}`,rm:l=>`Treu el filtre ${l}`,deadlineSR:(d)=>`Termini: ${d}.`},
+      lang:"Castellano",langCode:"es",direct:"Concessió directa",directL:"Concessió directa (sense sol·licitud)",any:"Any de publicació",anyTots:"Tots",publ:"publ.",publicada:"Publicada a la BDNS",publicadaBoib:"Publicada al BOIB",tipus:"Tipus",finalitat:"Finalitat",qui:"Qui ho pot demanar",noDate:"Sense data al registre",boib:"Extracte al BOIB",bases:"Bases reguladores",bdns:"Fitxa a la BDNS",seu:"Seu electrònica",aprox:"aprox.",edicte:"Edicte al BOIB",pdf:"PDF de l'edicte",boibNote:"Dades extretes automàticament del text de l'edicte del BOIB: el termini i l'import són aproximats. Comprovau-los a l'edicte.",segonsBases:"Segons les bases",directNote:"És una subvenció nominativa o de concessió directa: no s'obre a sol·licituds públiques.",esText:"El resum procedeix de l'extracte oficial (en castellà).",demoEx:"<strong>Dades d'exemple.</strong> Les convocatòries d'aquesta versió no són reals.",demoReal:(d,f,miss,boib)=>`<strong>Dades reals</strong> de la BDNS, actualitzades el ${d}.${boib.length?` ${boib.join(" i ")}: extretes del BOIB (termini i import aproximats).`:""}${miss.length?` ${miss.join(", ")} no ha publicat convocatòries d'ajuts en aquest període.`:""}`,rm:l=>`Treu el filtre ${l}`,deadlineSR:(d)=>`Termini: ${d}.`},
   es:{ph:"Pared seca, alquiler, club deportivo…",
       now:(o,u)=>`Ahora mismo hay <b>${o} convocatorias abiertas</b>${u?`, y <b>${u} cierran esta semana</b>`:""}. Las ordenamos por plazo para que no se te pase ninguna.`,
       who:{entitats:"Una entidad o asociación",empreses:"Empresa o autónomo",particulars:"Particular o familia"},
@@ -400,7 +400,7 @@ const S = {
       off:"Abrir la convocatoria oficial",ics:"Añadir el plazo al calendario",save:"Guardar",saved:"Guardada",web:"Web del organismo",
       nourl:"Aún no tenemos el enlace oficial. Consulta la sede electrónica del ayuntamiento.",icsNote:"El calendario te avisará 3 días antes del plazo.",
       close:"Cerrar",saveA:t=>`Guardar «${t}»`,openN:n=>n===1?"1 abierta":`${n} abiertas`,none:"ninguna abierta",ex:"Datos de ejemplo",
-      lang:"Català",langCode:"ca",direct:"Concesión directa",directL:"Concesión directa (sin solicitud)",any:"Año de publicación",anyTots:"Todos",publ:"publ.",publicada:"Publicada en la BDNS",tipus:"Tipo",finalitat:"Finalidad",qui:"Quién puede pedirla",noDate:"Sin fecha en el registro",boib:"Extracto en el BOIB",bases:"Bases reguladoras",bdns:"Ficha en la BDNS",seu:"Sede electrónica",directNote:"Es una subvención nominativa o de concesión directa: no se abre a solicitudes públicas.",esText:"El resumen procede del extracto oficial.",demoEx:"<strong>Datos de ejemplo.</strong> Las convocatorias de esta versión no son reales.",demoReal:(d,f,miss)=>`<strong>Datos reales de la BDNS</strong>, actualizados el ${d}. ${miss.length?`${miss.join(", ")} no han publicado convocatorias en este periodo: consulta su sede electrónica.`:""}`,rm:l=>`Quitar el filtro ${l}`,deadlineSR:(d)=>`Plazo: ${d}.`}
+      lang:"Català",langCode:"ca",direct:"Concesión directa",directL:"Concesión directa (sin solicitud)",any:"Año de publicación",anyTots:"Todos",publ:"publ.",publicada:"Publicada en la BDNS",publicadaBoib:"Publicada en el BOIB",tipus:"Tipo",finalitat:"Finalidad",qui:"Quién puede pedirla",noDate:"Sin fecha en el registro",boib:"Extracto en el BOIB",bases:"Bases reguladoras",bdns:"Ficha en la BDNS",seu:"Sede electrónica",aprox:"aprox.",edicte:"Edicto en el BOIB",pdf:"PDF del edicto",boibNote:"Datos extraídos automáticamente del texto del edicto del BOIB: el plazo y el importe son aproximados. Compruébalos en el edicto.",segonsBases:"Según las bases",directNote:"Es una subvención nominativa o de concesión directa: no se abre a solicitudes públicas.",esText:"El resumen procede del extracto oficial.",demoEx:"<strong>Datos de ejemplo.</strong> Las convocatorias de esta versión no son reales.",demoReal:(d,f,miss,boib)=>`<strong>Datos reales</strong> de la BDNS, actualizados el ${d}.${boib.length?` ${boib.join(" y ")}: extraídos del BOIB (plazo e importe aproximados).`:""}${miss.length?` ${miss.join(", ")} no ha publicado convocatorias de ayudas en este periodo.`:""}`,rm:l=>`Quitar el filtro ${l}`,deadlineSR:(d)=>`Plazo: ${d}.`}
 };
 const store = {
   get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}},
@@ -516,7 +516,7 @@ function row(c){
     <div class="body">
       <p class="org"><span class="dot" style="background:${o.color}" aria-hidden="true"></span>${esc(o.nom)}</p>
       <h4><button type="button" data-open="${c.id}">${esc(T_(c))}<span class="sr"> ${s().deadlineSR(c._fi?fdate(c._fi):s().always)}</span></button></h4>
-      <p class="facts">${c.import?`<span>${s().total}: <b>${eur(c.import)}</b></span>`:""}${c.maxim?`<span>${s().max}: <b>${eur(c.maxim)}</b></span>`:""}</p>
+      <p class="facts">${c.import?`<span>${s().total}: <b>${c.import_aprox?"≈ ":""}${eur(c.import)}</b></span>`:""}${c.maxim?`<span>${s().max}: <b>${eur(c.maxim)}</b></span>`:""}</p>
       <div class="badges">${status(c)}<span class="tag">${esc(a[lang])}</span></div>
     </div>
     <button type="button" class="fav" data-fav="${c.id}" aria-pressed="${saved}" aria-label="${esc(s().saveA(T_(c)))}">${ICON.save}</button>
@@ -553,7 +553,7 @@ function openModal(id){
   const o = D.ORGANISMES[c.organisme], a = D.AMBITS[c.ambit], saved = favs.has(c.id);
   const dd = (k,v) => v ? `<div><dt>${k}</dt><dd>${v}</dd></div>` : "";
   const link = (u,l,pri) => u ? `<a class="btn${pri?" pri":""}" href="${esc(u)}" target="_blank" rel="noopener">${l}${ICON.ext}</a>` : "";
-  const fiTxt = c._fi ? fdate(c._fi) : (c.text_fi ? esc(c.text_fi) : (c._st==="direct"?"—":s().noDate));
+  const fiTxt = c._fi ? fdate(c._fi)+(c.fi_aprox?` (${s().aprox})`:"") : (c.text_fi ? esc(c.text_fi) : (c._st==="direct"?"—":s().noDate));
   $("#modalBody").innerHTML = `
     <div class="dh"><div><p class="org"><span class="dot" style="background:${o.color}" aria-hidden="true"></span>${esc(o.nom)}</p><h2 id="dlgTitle">${esc(T_(c))}</h2></div>
       <button type="button" class="x" id="mdx" aria-label="${s().close}">${ICON.x}</button></div>
@@ -562,20 +562,23 @@ function openModal(id){
       <dl class="kv">
         ${c._st!=="direct"?dd(s().termini,fiTxt):""}
         ${c._st!=="direct"?dd(s().inici,c._ini?fdate(c._ini):(c.text_inici?esc(c.text_inici):"")):""}
-        ${dd(s().total,c.import?eur(c.import):"")}
+        ${dd(s().total,c.import?(c.import_aprox?"≈ ":"")+eur(c.import):"")}
         ${dd(s().max,c.maxim?eur(c.maxim):"")}
-        ${dd(s().publicada,c._pub?fdate(c._pub):"")}
+        ${dd(c.font==="boib"?s().publicadaBoib:s().publicada,c._pub?fdate(c._pub):"")}
         ${dd(s().tipus,esc(c.tipus))}
         ${dd(s().finalitat,esc(c.finalitat))}
         ${dd("BDNS",esc(c.bdns))}
       </dl>
       ${c._st==="direct"?`<p class="note" style="margin-top:0">${s().directNote}</p>`:""}
+      ${c.font==="boib"?`<p class="note" style="margin-top:0">${s().boibNote}</p>`:""}
       ${c.resum?`<p>${esc(c.resum)}</p>`:""}
+      ${c.font==="boib"&&c.text_fi?`<h3>${s().termini}</h3><p style="margin:0">${s().segonsBases}: «${esc(c.text_fi)}»</p>`:""}
       <h3>${s().benefH}</h3><p style="margin:0">${c.beneficiaris.map(b=>esc(D.BENEFICIARIS[b][lang])).join(", ")}</p>
       ${(c.requisits||[]).length?`<h3>${s().qui}</h3><ul>${c.requisits.map(r=>`<li>${esc(r)}</li>`).join("")}</ul>`:""}
       ${c.bdns_url && lang==="ca" && (c.resum||c.requisits?.length)?`<p class="note">${s().esText}</p>`:""}
       <div class="acts">
-        ${link(c.url, c.bdns_url?s().boib:s().off, true)}
+        ${link(c.url, c.font==="boib"?s().edicte:(c.bdns_url?s().boib:s().off), true)}
+        ${link(c.pdf, s().pdf)}
         ${link(c.bdns_url, s().bdns)}
         ${c.bases && c.bases!==c.url ? link(c.bases, s().bases) : ""}
         ${c._st!=="direct" ? link(c.seu || o.web, s().seu) : ""}
@@ -625,7 +628,8 @@ function applyLang(){
   const lb = $("#langBtn"); lb.querySelector(".llong").textContent = s().lang; lb.querySelector(".lshort").textContent = s().langCode.toUpperCase(); lb.setAttribute("aria-label", s().lang); lb.lang = s().langCode;
   $("#q").placeholder = s().ph;
   const miss = Object.entries(D.ORGANISMES).filter(([k])=>!D.CONVOCATORIES.some(c=>c.organisme===k)).map(([,o])=>o.curt);
-  $("#demoText").innerHTML = D.exemple ? s().demoEx : s().demoReal(new Date(D.actualitzat+"T00:00:00").toLocaleDateString(loc(),{day:"numeric",month:"long",year:"numeric"}), D.font, miss);
+  const boibOrgs = Object.entries(D.ORGANISMES).filter(([k])=>D.CONVOCATORIES.some(c=>c.organisme===k&&c.font==="boib")).map(([,o])=>o.curt);
+  $("#demoText").innerHTML = D.exemple ? s().demoEx : s().demoReal(new Date(D.actualitzat+"T00:00:00").toLocaleDateString(loc(),{day:"numeric",month:"long",year:"numeric"}), D.font, miss, boibOrgs);
   renderNow(); renderWho(); renderOrgs(); renderAll();
 }
 function applyTheme(t){ if(t) document.documentElement.dataset.theme=t; else delete document.documentElement.dataset.theme; }
