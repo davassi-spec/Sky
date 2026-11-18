@@ -152,7 +152,8 @@ legend{font-weight:600;font-size:15px;padding:0;margin-bottom:6px}
 .row.is-urgent .when .m{background:var(--urgent);color:#fff}
 .row.is-soon .when .m{background:var(--soon);color:#fff}
 .row.is-closed .when{opacity:.7}
-.row.is-closed .when .m{background:var(--closed);color:#fff}
+.row.is-closed .when .m,.row.is-direct .when .m{background:var(--closed);color:#fff}
+.row.is-direct .when{opacity:.7}
 
 .body{min-width:0}
 .org{margin:0;display:flex;align-items:center;gap:7px;font-size:14px;color:var(--ink-3)}
@@ -262,7 +263,7 @@ dialog::backdrop{background:rgba(8,20,28,.55)}
   </div>
 </header>
 
-<div class="demo" id="demoBanner" hidden><div class="wrap" data-i="demo"><strong>Dades d'exemple.</strong> Les convocatòries d'aquesta versió no són reals. Abans de sol·licitar res, consultau el BOIB o la seu electrònica de cada organisme.</div></div>
+<div class="demo" id="demoBanner" hidden><div class="wrap" id="demoText"></div></div>
 
 <section class="intro" aria-labelledby="h1">
   <div class="wrap">
@@ -371,34 +372,34 @@ const T = { es:{
 const S = {
   ca:{ph:"Paret seca, lloguer, club esportiu…",
       now:(o,u)=>`Ara mateix hi ha <b>${o} convocatòries obertes</b>${u?`, i <b>${u} tanquen aquesta setmana</b>`:""}. Les ordenam per termini perquè no se te'n passi cap.`,
-      who:{entitats:"Una entitat",empreses:"Empresa o autònom",particulars:"Particular o família",pagesos:"Explotació agrària",estudiants:"Estudiant o jove"},
+      who:{entitats:"Una entitat o associació",empreses:"Empresa o autònom",particulars:"Particular o família"},
       open:"Oberta",soon:"Properament",closed:"Tancada",
       left:n=>n===0?"Tanca avui":n===1?"Tanca demà":`Queden ${n} dies`,opens:n=>n===1?"Obre demà":`Obre d'aquí a ${n} dies`,always:"Tot l'any",
       estat:"Estat",tot:"Totes",organisme:"Organisme",ambit:"Àmbit",benef:"Per a qui",reset:"Treu tots els filtres",onlyFav:"Només les desades",
       res:n=>n===1?"1 convocatòria":`${n} convocatòries`,
-      g:{week:"Tanquen aquesta setmana",month:"Tanquen en els propers 30 dies",later:"Més endavant o tot l'any",soon:"Obriran properament",closed:"Tancades"},
+      g:{week:"Tanquen aquesta setmana",month:"Tanquen en els propers 30 dies",later:"Més endavant o sense data límit",soon:"Obriran properament",closed:"Tancades",direct:"Concessions directes"},
       emptyH:"Cap convocatòria coincideix amb aquesta cerca",emptyP:"Pot ser que n'hi hagi de tancades o que els filtres siguin massa estrictes.",
       emptyB1:"Mostra també les tancades",emptyB2:"Treu els filtres",
       total:"Import total",max:"Màxim per sol·licitud",termini:"Termini",inici:"Obertura",req:"Requisits principals",benefH:"Per a qui és",
       off:"Obre la convocatòria oficial",ics:"Afegeix el termini al calendari",save:"Desa",saved:"Desada",web:"Web de l'organisme",
       nourl:"Encara no tenim l'enllaç oficial. Consultau la seu electrònica de l'ajuntament.",icsNote:"El calendari t'avisarà 3 dies abans del termini.",
       close:"Tanca",saveA:t=>`Desa «${t}»`,openN:n=>n===1?"1 oberta":`${n} obertes`,none:"cap oberta",ex:"Dades d'exemple",
-      lang:"Castellano",langCode:"es",rm:l=>`Treu el filtre ${l}`,deadlineSR:(d)=>`Termini: ${d}.`},
+      lang:"Castellano",langCode:"es",direct:"Concessió directa",directL:"Concessió directa (sense sol·licitud)",any:"Any de publicació",anyTots:"Tots",publ:"publ.",publicada:"Publicada a la BDNS",tipus:"Tipus",finalitat:"Finalitat",qui:"Qui ho pot demanar",noDate:"Sense data al registre",boib:"Extracte al BOIB",bases:"Bases reguladores",bdns:"Fitxa a la BDNS",seu:"Seu electrònica",directNote:"És una subvenció nominativa o de concessió directa: no s'obre a sol·licituds públiques.",esText:"El resum procedeix de l'extracte oficial (en castellà).",demoEx:"<strong>Dades d'exemple.</strong> Les convocatòries d'aquesta versió no són reals.",demoReal:(d,f,miss)=>`<strong>Dades reals de la BDNS</strong>, actualitzades el ${d}. ${miss.length?`${miss.join(", ")} no hi han publicat convocatòries en aquest període: consultau la seva seu electrònica.`:""}`,rm:l=>`Treu el filtre ${l}`,deadlineSR:(d)=>`Termini: ${d}.`},
   es:{ph:"Pared seca, alquiler, club deportivo…",
       now:(o,u)=>`Ahora mismo hay <b>${o} convocatorias abiertas</b>${u?`, y <b>${u} cierran esta semana</b>`:""}. Las ordenamos por plazo para que no se te pase ninguna.`,
-      who:{entitats:"Una entidad",empreses:"Empresa o autónomo",particulars:"Particular o familia",pagesos:"Explotación agraria",estudiants:"Estudiante o joven"},
+      who:{entitats:"Una entidad o asociación",empreses:"Empresa o autónomo",particulars:"Particular o familia"},
       open:"Abierta",soon:"Próximamente",closed:"Cerrada",
       left:n=>n===0?"Cierra hoy":n===1?"Cierra mañana":`Quedan ${n} días`,opens:n=>n===1?"Abre mañana":`Abre en ${n} días`,always:"Todo el año",
       estat:"Estado",tot:"Todas",organisme:"Organismo",ambit:"Ámbito",benef:"Para quién",reset:"Quitar todos los filtros",onlyFav:"Solo las guardadas",
       res:n=>n===1?"1 convocatoria":`${n} convocatorias`,
-      g:{week:"Cierran esta semana",month:"Cierran en los próximos 30 días",later:"Más adelante o todo el año",soon:"Abrirán próximamente",closed:"Cerradas"},
+      g:{week:"Cierran esta semana",month:"Cierran en los próximos 30 días",later:"Más adelante o sin fecha límite",soon:"Abrirán próximamente",closed:"Cerradas",direct:"Concesiones directas"},
       emptyH:"Ninguna convocatoria coincide con esta búsqueda",emptyP:"Puede que haya alguna cerrada o que los filtros sean demasiado estrictos.",
       emptyB1:"Mostrar también las cerradas",emptyB2:"Quitar los filtros",
       total:"Importe total",max:"Máximo por solicitud",termini:"Plazo",inici:"Apertura",req:"Requisitos principales",benefH:"Para quién es",
       off:"Abrir la convocatoria oficial",ics:"Añadir el plazo al calendario",save:"Guardar",saved:"Guardada",web:"Web del organismo",
       nourl:"Aún no tenemos el enlace oficial. Consulta la sede electrónica del ayuntamiento.",icsNote:"El calendario te avisará 3 días antes del plazo.",
       close:"Cerrar",saveA:t=>`Guardar «${t}»`,openN:n=>n===1?"1 abierta":`${n} abiertas`,none:"ninguna abierta",ex:"Datos de ejemplo",
-      lang:"Català",langCode:"ca",rm:l=>`Quitar el filtro ${l}`,deadlineSR:(d)=>`Plazo: ${d}.`}
+      lang:"Català",langCode:"ca",direct:"Concesión directa",directL:"Concesión directa (sin solicitud)",any:"Año de publicación",anyTots:"Todos",publ:"publ.",publicada:"Publicada en la BDNS",tipus:"Tipo",finalitat:"Finalidad",qui:"Quién puede pedirla",noDate:"Sin fecha en el registro",boib:"Extracto en el BOIB",bases:"Bases reguladoras",bdns:"Ficha en la BDNS",seu:"Sede electrónica",directNote:"Es una subvención nominativa o de concesión directa: no se abre a solicitudes públicas.",esText:"El resumen procede del extracto oficial.",demoEx:"<strong>Datos de ejemplo.</strong> Las convocatorias de esta versión no son reales.",demoReal:(d,f,miss)=>`<strong>Datos reales de la BDNS</strong>, actualizados el ${d}. ${miss.length?`${miss.join(", ")} no han publicado convocatorias en este periodo: consulta su sede electrónica.`:""}`,rm:l=>`Quitar el filtro ${l}`,deadlineSR:(d)=>`Plazo: ${d}.`}
 };
 const store = {
   get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}},
@@ -409,7 +410,8 @@ const s = () => S[lang];
 const caTexts = {};
 document.querySelectorAll("[data-i]").forEach(el => caTexts[el.dataset.i] ??= el.innerHTML);
 
-const st = { q:"", estat:"open", orgs:[], ambits:[], benef:[], sort:"fi", fav:false };
+const st = { q:"", estat:"open", orgs:[], ambits:[], benef:[], anys:[], sort:"fi", fav:false };
+const T_ = c => lang==="es" && c.titol_es ? c.titol_es : c.titol;
 let favs = new Set(store.get("sm-favs",[]));
 
 /* ---------- utilitats ---------- */
@@ -423,16 +425,20 @@ const esc = t => String(t??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">
 
 D.CONVOCATORIES.forEach(c => {
   c._ini = parse(c.inici); c._fi = parse(c.fi);
-  c._st = c._ini && c._ini > TODAY ? "soon" : (c._fi && c._fi < TODAY ? "closed" : "open");
+  c._pub = parse(c.publicada) || c._ini; c._any = c._pub ? String(c._pub.getFullYear()) : "";
+  if (c.directa) c._st = "direct";
+  else if (!c._ini && !c._fi) c._st = c.obert_bdns ? "open" : "closed";
+  else c._st = c._ini && c._ini > TODAY ? "soon" : (c._fi && c._fi < TODAY ? "closed" : "open");
   c._left = c._fi ? days(c._fi) : null;
   c._urgent = c._st==="open" && c._left!=null && c._left<=7;
-  c._txt = norm([c.titol,c.resum,D.ORGANISMES[c.organisme].nom,D.AMBITS[c.ambit].ca,D.AMBITS[c.ambit].es,...c.requisits].join(" "));
+  c._txt = norm([c.titol,c.titol_es||"",c.resum||"",c.finalitat||"",D.ORGANISMES[c.organisme].nom,D.AMBITS[c.ambit].ca,D.AMBITS[c.ambit].es,...(c.requisits||[])].join(" "));
 });
 
 function status(c){
   if (c._urgent) return `<span class="st urgent">${ICON.clock}${s().left(c._left)}</span>`;
   if (c._st==="open") return `<span class="st open">${s().open}${c._left!=null?`, ${s().left(c._left).toLowerCase()}`:""}</span>`;
   if (c._st==="soon") return `<span class="st soon">${s().opens(days(c._ini))}</span>`;
+  if (c._st==="direct") return `<span class="st closed">${s().direct}</span>`;
   return `<span class="st closed">${s().closed}</span>`;
 }
 
@@ -443,17 +449,18 @@ function matches(c, ignore){
   if (ignore!=="orgs" && st.orgs.length && !st.orgs.includes(c.organisme)) return false;
   if (ignore!=="ambits" && st.ambits.length && !st.ambits.includes(c.ambit)) return false;
   if (ignore!=="benef" && st.benef.length && !c.beneficiaris.some(b => st.benef.includes(b))) return false;
+  if (ignore!=="anys" && st.anys.length && !st.anys.includes(c._any)) return false;
   if (st.fav && !favs.has(c.id)) return false;
   return true;
 }
-const rank = {open:0,soon:1,closed:2};
+const rank = {open:0,soon:1,closed:2,direct:3};
 const sorters = {
-  fi:(a,b)=> rank[a._st]-rank[b._st] || (a._st==="soon"? a._ini-b._ini : a._st==="closed"? b._fi-a._fi : (a._fi??Infinity)-(b._fi??Infinity)),
+  fi:(a,b)=> rank[a._st]-rank[b._st] || (a._st==="soon"? a._ini-b._ini : (a._st==="closed"||a._st==="direct")? (b._fi||b._pub)-(a._fi||a._pub) : (a._fi??Infinity)-(b._fi??Infinity)),
   import:(a,b)=>(b.import||0)-(a.import||0),
-  recent:(a,b)=>b._ini-a._ini
+  recent:(a,b)=>(b._pub||0)-(a._pub||0)
 };
 function groupOf(c){
-  if (c._st==="soon") return "soon"; if (c._st==="closed") return "closed";
+  if (c._st==="soon") return "soon"; if (c._st==="closed") return "closed"; if (c._st==="direct") return "direct";
   if (c._left==null) return "later"; if (c._left<=7) return "week"; if (c._left<=30) return "month"; return "later";
 }
 
@@ -471,9 +478,10 @@ function renderFilters(){
   const cb = (g,k,label,n,pre="") => `<label class="opt"><input type="checkbox" data-g="${g}" value="${k}" ${st[g].includes(k)?"checked":""}>${pre}${esc(label)}<small>${n}</small></label>`;
   $("#filters").innerHTML = `
     <fieldset><legend>${s().estat}</legend>
-      ${[["open",s().open],["soon",s().soon],["closed",s().closed],["all",s().tot]].map(([k,l])=>`<label class="opt"><input type="radio" name="estat" value="${k}" ${st.estat===k?"checked":""}>${l}<small>${k==="all"?cnt("estat",()=>true):cnt("estat",c=>c._st===k)}</small></label>`).join("")}
+      ${[["open",s().open],["soon",s().soon],["closed",s().closed],["direct",s().directL],["all",s().tot]].map(([k,l])=>`<label class="opt"><input type="radio" name="estat" value="${k}" ${st.estat===k?"checked":""}>${l}<small>${k==="all"?cnt("estat",()=>true):cnt("estat",c=>c._st===k)}</small></label>`).join("")}
       <label class="opt"><input type="checkbox" id="onlyFav" ${st.fav?"checked":""}>${s().onlyFav}<small>${favs.size}</small></label>
     </fieldset>
+    <fieldset><legend>${s().any}</legend>${[...new Set(D.CONVOCATORIES.map(c=>c._any).filter(Boolean))].sort().reverse().map(y=>cb("anys",y,y,cnt("anys",c=>c._any===y))).join("")}</fieldset>
     <fieldset><legend>${s().benef}</legend>${Object.entries(D.BENEFICIARIS).map(([k,b])=>cb("benef",k,b[lang],cnt("benef",c=>c.beneficiaris.includes(k)))).join("")}</fieldset>
     <fieldset><legend>${s().organisme}</legend>${Object.entries(D.ORGANISMES).map(([k,o])=>cb("orgs",k,o.curt,cnt("orgs",c=>c.organisme===k),`<span class="dot" style="background:${o.color}" aria-hidden="true"></span>`)).join("")}</fieldset>
     <fieldset><legend>${s().ambit}</legend>${Object.entries(D.AMBITS).map(([k,a])=>cb("ambits",k,a[lang],cnt("ambits",c=>c.ambit===k))).join("")}</fieldset>
@@ -485,10 +493,15 @@ function renderActive(){
   st.benef.forEach(k=>tags.push(["benef",k,D.BENEFICIARIS[k][lang]]));
   st.orgs.forEach(k=>tags.push(["orgs",k,D.ORGANISMES[k].curt]));
   st.ambits.forEach(k=>tags.push(["ambits",k,D.AMBITS[k][lang]]));
+  st.anys.forEach(k=>tags.push(["anys",k,k]));
   if (st.fav) tags.push(["fav","",s().onlyFav]);
   $("#activeTags").innerHTML = tags.map(([g,k,l])=>`<button type="button" data-rm="${g}" data-k="${k}" aria-label="${esc(s().rm(l))}">${esc(l)}${ICON.x}</button>`).join("");
 }
 function whenBlock(c){
+  if (c._st==="direct" || (!c._fi && !c._ini && c._st==="closed")){
+    const p = c._pub; if (!p) return `<div class="when always" aria-hidden="true"><span class="m">—</span><span class="d">—</span></div>`;
+    return `<div class="when" aria-hidden="true"><span class="m">${s().publ} ${p.toLocaleDateString(loc(),{month:"short"}).replace(".","")}</span><span class="d">${p.getDate()}</span><span class="y">${p.getFullYear()}</span></div>`;
+  }
   const d = c._st==="soon" ? c._ini : c._fi;
   if (!d) return `<div class="when always" aria-hidden="true"><span class="m">${lang==="ca"?"oberta":"abierta"}</span><span class="d">${s().always}</span></div>`;
   const m = d.toLocaleDateString(loc(),{month:"short"}).replace(".","");
@@ -496,16 +509,16 @@ function whenBlock(c){
 }
 function row(c){
   const o = D.ORGANISMES[c.organisme], a = D.AMBITS[c.ambit], saved = favs.has(c.id);
-  const cls = c._urgent?"is-urgent":c._st==="soon"?"is-soon":c._st==="closed"?"is-closed":"";
+  const cls = c._urgent?"is-urgent":c._st==="soon"?"is-soon":c._st==="closed"?"is-closed":c._st==="direct"?"is-direct":"";
   return `<li class="row ${cls}">
     ${whenBlock(c)}
     <div class="body">
       <p class="org"><span class="dot" style="background:${o.color}" aria-hidden="true"></span>${esc(o.nom)}</p>
-      <h4><button type="button" data-open="${c.id}">${esc(c.titol)}<span class="sr"> ${s().deadlineSR(c._fi?fdate(c._fi):s().always)}</span></button></h4>
-      <p class="facts"><span>${s().total}: <b>${eur(c.import)}</b></span>${c.maxim?`<span>${s().max}: <b>${eur(c.maxim)}</b></span>`:""}</p>
+      <h4><button type="button" data-open="${c.id}">${esc(T_(c))}<span class="sr"> ${s().deadlineSR(c._fi?fdate(c._fi):s().always)}</span></button></h4>
+      <p class="facts">${c.import?`<span>${s().total}: <b>${eur(c.import)}</b></span>`:""}${c.maxim?`<span>${s().max}: <b>${eur(c.maxim)}</b></span>`:""}</p>
       <div class="badges">${status(c)}<span class="tag">${esc(a[lang])}</span></div>
     </div>
-    <button type="button" class="fav" data-fav="${c.id}" aria-pressed="${saved}" aria-label="${esc(s().saveA(c.titol))}">${ICON.save}</button>
+    <button type="button" class="fav" data-fav="${c.id}" aria-pressed="${saved}" aria-label="${esc(s().saveA(T_(c)))}">${ICON.save}</button>
   </li>`;
 }
 function renderList(){
@@ -518,15 +531,15 @@ function renderList(){
     return;
   }
   if (st.sort!=="fi"){ $("#list").innerHTML = `<ul class="list">${list.map(row).join("")}</ul>`; return; }
-  const order = ["week","month","later","soon","closed"], groups = {};
+  const order = ["week","month","later","soon","closed","direct"], groups = {};
   list.forEach(c => (groups[groupOf(c)] ??= []).push(c));
   $("#list").innerHTML = order.filter(g=>groups[g]).map(g =>
     `<div class="group"><h3>${s().g[g]} <span>${groups[g].length}</span></h3><ul class="list">${groups[g].map(row).join("")}</ul></div>`).join("");
 }
 function renderOrgs(){
   $("#orgs").innerHTML = Object.entries(D.ORGANISMES).map(([k,o])=>{
-    const op = D.CONVOCATORIES.filter(c=>c.organisme===k && c._st==="open").length;
-    return `<li><button type="button" data-org="${k}"><span class="dot" style="background:${o.color}" aria-hidden="true"></span><b>${esc(o.nom)}</b><small>${op?s().openN(op):s().none}</small></button></li>`;
+    const all = D.CONVOCATORIES.filter(c=>c.organisme===k), op = all.filter(c=>c._st==="open").length;
+    return `<li><button type="button" data-org="${k}"><span class="dot" style="background:${o.color}" aria-hidden="true"></span><b>${esc(o.nom)}</b><small>${op?s().openN(op):s().none} / ${all.length}</small></button></li>`;
   }).join("");
 }
 function renderAll(){ renderFilters(); renderActive(); renderList(); renderWhoState(); saveHash(); }
@@ -537,28 +550,39 @@ let lastFocus = null;
 function openModal(id){
   const c = D.CONVOCATORIES.find(x=>x.id===id); if(!c) return;
   const o = D.ORGANISMES[c.organisme], a = D.AMBITS[c.ambit], saved = favs.has(c.id);
+  const dd = (k,v) => v ? `<div><dt>${k}</dt><dd>${v}</dd></div>` : "";
+  const link = (u,l,pri) => u ? `<a class="btn${pri?" pri":""}" href="${esc(u)}" target="_blank" rel="noopener">${l}${ICON.ext}</a>` : "";
+  const fiTxt = c._fi ? fdate(c._fi) : (c.text_fi ? esc(c.text_fi) : (c._st==="direct"?"—":s().noDate));
   $("#modalBody").innerHTML = `
-    <div class="dh"><div><p class="org"><span class="dot" style="background:${o.color}" aria-hidden="true"></span>${esc(o.nom)}</p><h2 id="dlgTitle">${esc(c.titol)}</h2></div>
+    <div class="dh"><div><p class="org"><span class="dot" style="background:${o.color}" aria-hidden="true"></span>${esc(o.nom)}</p><h2 id="dlgTitle">${esc(T_(c))}</h2></div>
       <button type="button" class="x" id="mdx" aria-label="${s().close}">${ICON.x}</button></div>
     <div class="db">
       <div class="badges">${status(c)}<span class="tag">${esc(a[lang])}</span>${D.exemple?`<span class="tag">${s().ex}</span>`:""}</div>
       <dl class="kv">
-        <div><dt>${s().termini}</dt><dd>${c._fi?fdate(c._fi):s().always}</dd></div>
-        <div><dt>${s().inici}</dt><dd>${fdate(c._ini)}</dd></div>
-        <div><dt>${s().total}</dt><dd>${eur(c.import)}</dd></div>
-        <div><dt>${s().max}</dt><dd>${eur(c.maxim)}</dd></div>
-        ${c.bdns?`<div><dt>BDNS</dt><dd>${esc(c.bdns)}</dd></div>`:""}
+        ${c._st!=="direct"?dd(s().termini,fiTxt):""}
+        ${c._st!=="direct"?dd(s().inici,c._ini?fdate(c._ini):(c.text_inici?esc(c.text_inici):"")):""}
+        ${dd(s().total,c.import?eur(c.import):"")}
+        ${dd(s().max,c.maxim?eur(c.maxim):"")}
+        ${dd(s().publicada,c._pub?fdate(c._pub):"")}
+        ${dd(s().tipus,esc(c.tipus))}
+        ${dd(s().finalitat,esc(c.finalitat))}
+        ${dd("BDNS",esc(c.bdns))}
       </dl>
-      <p>${esc(c.resum)}</p>
+      ${c._st==="direct"?`<p class="note" style="margin-top:0">${s().directNote}</p>`:""}
+      ${c.resum?`<p>${esc(c.resum)}</p>`:""}
       <h3>${s().benefH}</h3><p style="margin:0">${c.beneficiaris.map(b=>esc(D.BENEFICIARIS[b][lang])).join(", ")}</p>
-      <h3>${s().req}</h3><ul>${c.requisits.map(r=>`<li>${esc(r)}</li>`).join("")}</ul>
+      ${(c.requisits||[]).length?`<h3>${s().qui}</h3><ul>${c.requisits.map(r=>`<li>${esc(r)}</li>`).join("")}</ul>`:""}
+      ${c.bdns_url && lang==="ca" && (c.resum||c.requisits?.length)?`<p class="note">${s().esText}</p>`:""}
       <div class="acts">
-        ${c.url?`<a class="btn pri" href="${c.url}" target="_blank" rel="noopener">${s().off}${ICON.ext}</a>`:""}
-        ${c._fi && c._st!=="closed"?`<button type="button" class="btn" id="icsBtn">${ICON.cal}${s().ics}</button>`:""}
+        ${link(c.url, c.bdns_url?s().boib:s().off, true)}
+        ${link(c.bdns_url, s().bdns)}
+        ${c.bases && c.bases!==c.url ? link(c.bases, s().bases) : ""}
+        ${c._st!=="direct" ? link(c.seu || o.web, s().seu) : ""}
+        ${c._fi && (c._st==="open"||c._st==="soon")?`<button type="button" class="btn" id="icsBtn">${ICON.cal}${s().ics}</button>`:""}
         <button type="button" class="btn" data-fav="${c.id}" aria-pressed="${saved}">${ICON.save}${saved?s().saved:s().save}</button>
       </div>
-      ${!c.url?`<p class="note">${s().nourl}</p>`:""}
-      ${c._fi && c._st!=="closed"?`<p class="note">${s().icsNote}</p>`:""}
+      ${!c.url && !c.bdns_url?`<p class="note">${s().nourl}</p>`:""}
+      ${c._fi && (c._st==="open"||c._st==="soon")?`<p class="note">${s().icsNote}</p>`:""}
     </div>`;
   $("#mdx").onclick = () => $("#modal").close();
   const ib = $("#icsBtn"); if (ib) ib.onclick = () => downloadIcs(c);
@@ -570,7 +594,7 @@ function downloadIcs(c){
   const ics = ["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//Subvencions Menorca//CA","BEGIN:VEVENT",
     `UID:${c.id}@subvencions-menorca`,`DTSTAMP:${new Date().toISOString().replace(/[-:]/g,"").slice(0,15)}Z`,
     `DTSTART;VALUE=DATE:${d}`,`DTEND;VALUE=DATE:${nd}`,
-    `SUMMARY:${(lang==="ca"?"Termini: ":"Plazo: ")+c.titol.replace(/[,;]/g," ")}`,`DESCRIPTION:${D.ORGANISMES[c.organisme].nom}${c.url?" - "+c.url:""}`,
+    `SUMMARY:${(lang==="ca"?"Termini: ":"Plazo: ")+T_(c).replace(/[,;]/g," ")}`,`DESCRIPTION:${D.ORGANISMES[c.organisme].nom}${c.url?" - "+c.url:""}`,
     "BEGIN:VALARM","TRIGGER:-P3D","ACTION:DISPLAY","DESCRIPTION:Subvenció","END:VALARM","END:VEVENT","END:VCALENDAR"].join("\r\n");
   const a = document.createElement("a");
   a.href = URL.createObjectURL(new Blob([ics],{type:"text/calendar"})); a.download = c.id+".ics"; a.click();
@@ -581,7 +605,7 @@ function downloadIcs(c){
 function saveHash(){
   const p = new URLSearchParams();
   if (st.q) p.set("q",st.q); if (st.estat!=="open") p.set("estat",st.estat);
-  ["orgs","ambits","benef"].forEach(k=>st[k].length&&p.set(k,st[k].join(",")));
+  ["orgs","ambits","benef","anys"].forEach(k=>st[k].length&&p.set(k,st[k].join(",")));
   if (st.sort!=="fi") p.set("sort",st.sort);
   const h = p.toString(); history.replaceState(null,"",h?"#"+h:location.pathname+location.search);
 }
@@ -589,7 +613,7 @@ function loadHash(){
   const h = location.hash.slice(1); if (!h.includes("=")) return;
   const p = new URLSearchParams(h);
   st.q = p.get("q")||""; st.estat = p.get("estat")||"open"; st.sort = p.get("sort")||"fi";
-  ["orgs","ambits","benef"].forEach(k=>st[k]=p.get(k)?p.get(k).split(",").filter(Boolean):[]);
+  ["orgs","ambits","benef","anys"].forEach(k=>st[k]=p.get(k)?p.get(k).split(",").filter(Boolean):[]);
   $("#q").value = st.q; $("#sort").value = st.sort;
 }
 
@@ -599,6 +623,8 @@ function applyLang(){
   document.querySelectorAll("[data-i]").forEach(el=>{ const k=el.dataset.i; el.innerHTML = lang==="ca" ? caTexts[k] : (T.es[k] ?? caTexts[k]); });
   const lb = $("#langBtn"); lb.querySelector(".llong").textContent = s().lang; lb.querySelector(".lshort").textContent = s().langCode.toUpperCase(); lb.setAttribute("aria-label", s().lang); lb.lang = s().langCode;
   $("#q").placeholder = s().ph;
+  const miss = Object.entries(D.ORGANISMES).filter(([k])=>!D.CONVOCATORIES.some(c=>c.organisme===k)).map(([,o])=>o.curt);
+  $("#demoText").innerHTML = D.exemple ? s().demoEx : s().demoReal(new Date(D.actualitzat+"T00:00:00").toLocaleDateString(loc(),{day:"numeric",month:"long",year:"numeric"}), D.font, miss);
   renderNow(); renderWho(); renderOrgs(); renderAll();
 }
 function applyTheme(t){ if(t) document.documentElement.dataset.theme=t; else delete document.documentElement.dataset.theme; }
@@ -624,7 +650,7 @@ $("#filters").addEventListener("change",e=>{
   const keep = t.name==="estat" ? `input[name=estat][value=${t.value}]` : t.id ? "#"+t.id : `input[data-g=${t.dataset.g}][value=${t.value}]`;
   renderAll(); $("#filters").querySelector(keep)?.focus();
 });
-function resetAll(){ Object.assign(st,{q:"",estat:"open",orgs:[],ambits:[],benef:[],fav:false}); $("#q").value=""; renderAll(); }
+function resetAll(){ Object.assign(st,{q:"",estat:"open",orgs:[],ambits:[],benef:[],anys:[],fav:false}); $("#q").value=""; renderAll(); }
 function toggleFav(id){
   favs.has(id)?favs.delete(id):favs.add(id); store.set("sm-favs",[...favs]); $("#favN").textContent=favs.size;
   renderFilters(); renderList();
@@ -651,7 +677,7 @@ $("#themeBtn").onclick = () => {
 };
 
 /* ---------- inici ---------- */
-$("#demoBanner").hidden = !D.exemple;
+$("#demoBanner").hidden = false;
 $("#favN").textContent = favs.size;
 loadHash();
 applyLang();
