@@ -48,14 +48,21 @@ AMBITS = {
 }
 def ambit_de(finalitat):
     f = (finalitat or "").lower()
-    regles = [("deport", "esports"), ("cultur", "cultura"), ("social", "social"), ("educa", "educacio"),
+    regles = [("agricult", "agricultura"), ("deport", "esports"), ("cultur", "cultura"), ("social", "social"), ("educa", "educacio"),
               ("juventud", "educacio"), ("comercio", "economia"), ("turismo", "economia"), ("industria", "economia"),
               ("agricult", "agricultura"), ("pesca", "agricultura"), ("ganad", "agricultura"), ("rural", "agricultura"),
-              ("medio ambiente", "medi"), ("vivienda", "habitatge"), ("urban", "habitatge"), ("cooperaci", "cooperacio"),
+              ("medio ambiente", "medi"), ("prestaciones", "social"), ("investigaci", "economia"), ("infraestructura", "habitatge"), ("carácter económico", "economia"), ("vivienda", "habitatge"), ("urban", "habitatge"), ("cooperaci", "cooperacio"),
               ("empleo", "ocupacio"), ("sanidad", "salut"), ("salud", "salut")]
     for clau, amb in regles:
         if clau in f: return amb
     return "altres"
+
+ESPORT = re.compile(r"\b(club|esport\w*|deport\w*|futbol|f[uú]tbol|b[aà]squet|baloncesto|nataci[oó]n?|tennis|tenis|atletisme|atletismo|handbol|balonmano|ciclisme|ciclismo|v[oò]lei|bàdminton|badminton|regata|vela)\b", re.I)
+def ambit_amb_titol(ambit, titol):
+    """La BDNS sol classificar l'esport com a «Cultura»: ho separam pel títol."""
+    if ambit in ("cultura", "altres", "educacio") and ESPORT.search(titol or ""):
+        return "esports"
+    return ambit
 
 BENEFICIARIS = {
     "entitats":    {"ca": "Entitats sense activitat econòmica", "es": "Entidades sin actividad económica"},
@@ -106,7 +113,12 @@ def retalla(t, n):
 
 def net_titol(t):
     t = re.sub(r"\s*\((exp|expte|expedient|expediente)\.?[^)]*\)\s*$", "", t or "", flags=re.I)
-    return re.sub(r"\s+", " ", t).strip()
+    t = re.sub(r"\s+", " ", t).strip()
+    # «Acord del Consell Executiu, de 5.10.2026, relatiu a la convocatòria de…» → «Convocatòria de…»
+    m = re.match(r"^(acord|acuerdo|decret|decreto|resoluci[óo]n?)\b.{0,160}?\brelati(?:u|vo|va)s? (?:a |al )?(?:la |les |los |las |el |l['’])?(.+)$", t, re.I)
+    if m and len(m.group(2)) > 25:
+        t = m.group(2)
+    return t[:1].upper() + t[1:]
 
 def converteix(clau, d):
     anunci = (d.get("anuncios") or [{}])[0]
@@ -120,7 +132,7 @@ def converteix(clau, d):
         "titol": net_titol(d.get("descripcionLeng") or d.get("descripcion")),
         "titol_es": net_titol(d.get("descripcion")),
         "organisme": clau,
-        "ambit": ambit_de(d.get("descripcionFinalidad")),
+        "ambit": ambit_amb_titol(ambit_de(d.get("descripcionFinalidad")), d.get("descripcion")),
         "finalitat": d.get("descripcionFinalidad"),
         "beneficiaris": benef,
         "import": d.get("presupuestoTotal"),
