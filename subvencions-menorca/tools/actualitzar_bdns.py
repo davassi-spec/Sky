@@ -5,7 +5,7 @@ ajuntaments de l'illa des de la BDNS (Base de Datos Nacional de
 Subvenciones, www.infosubvenciones.es) i genera ../data.js.
 
 Ús:
-    python3 tools/actualitzar_bdns.py                 # 2025 fins avui (BDNS + BOIB)
+    python3 tools/actualitzar_bdns.py                 # 2025 fins avui (BDNS + BOIB + concessions)
     python3 tools/actualitzar_bdns.py --des 2024-01-01
 
 Font: Sistema Nacional de Publicidad de Subvenciones y Ayudas Públicas.
@@ -159,6 +159,7 @@ def main():
     ap.add_argument("--des", default="2025-01-01", help="data de registre inicial (AAAA-MM-DD)")
     ap.add_argument("--fins", default=dt.date.today().isoformat())
     ap.add_argument("--sense-boib", action="store_true", help="no cerquis al BOIB")
+    ap.add_argument("--sense-concessions", action="store_true", help="no descarreguis les concessions")
     ap.add_argument("--sortida", default=os.path.join(AQUI, "..", "data.js"))
     a = ap.parse_args()
     fmt = lambda s: dt.date.fromisoformat(s).strftime("%d/%m/%Y")
@@ -203,6 +204,12 @@ def main():
         json.dump(dades, f, ensure_ascii=False, indent=1)
         f.write(";\n")
     print(f"{len(convs)} convocatòries → {os.path.normpath(a.sortida)}", file=sys.stderr)
+
+    # Subvencions ja concedides (qui les ha rebut) → concessions.js
+    if not a.sense_concessions:
+        import subprocess
+        subprocess.run([sys.executable, "-I", os.path.join(AQUI, "actualitzar_concessions.py"),
+                        "--des", a.des, "--fins", a.fins], check=True)
 
 if __name__ == "__main__":
     main()

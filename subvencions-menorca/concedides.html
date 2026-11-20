@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Subvencions concedides a Menorca</title>
+<meta name="description" content="Qui ha rebut subvencions del Consell Insular de Menorca i dels ajuntaments, segons la BDNS.">
+<meta name="theme-color" content="#0e4a6e" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#10181e" media="(prefers-color-scheme: dark)">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600&family=Schibsted+Grotesk:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   TOKENS — paleta de Menorca: mar, persiana verda, marès i calç
+   Contrastos calculats (WCAG 2.2): text ≥ 4.9:1, controls ≥ 3:1
+   ============================================================ */
+:root{
+  --bg:#f2f4f3;        /* calç a l'ombra */
+  --surface:#ffffff;   /* calç */
+  --sunk:#e9edec;
+  --ink:#15212b;       /* 16.3:1 */
+  --ink-2:#46535f;     /* 7.9:1 */
+  --ink-3:#5f6b76;     /* 5.4:1 surface · 4.9:1 bg */
+  --line:#dbe1e3;      /* separadors (decoratiu) */
+  --ctl:#8a959e;       /* vores de controls 3.06:1 */
+  --brand:#0e4a6e;     /* mar · 9.4:1 */
+  --brand-ink:#ffffff;
+  --brand-soft:#e2edf4;
+  --mares:#c9a76b;     /* pedra de marès · només decoratiu */
+  --open:#1c6440; --open-bg:#e4f2ea;       /* verd persiana · 6.2:1 */
+  --soon:#7a5200; --soon-bg:#fbf0d6;       /* 6.1:1 */
+  --urgent:#a61b12; --urgent-bg:#fde7e4;   /* 6.4:1 */
+  --closed:#55606a; --closed-bg:#eceff0;   /* 5.6:1 */
+  --focus:#0e4a6e;
+  --r-s:4px; --r-m:8px; --r-l:14px;
+  --ease-out:cubic-bezier(0.23,1,0.32,1);
+  --t-fast:140ms; --t-mid:220ms;
+  --header-h:60px;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#10181e; --surface:#18232b; --sunk:#202d36; --ink:#e6ecef; --ink-2:#c2ccd2; --ink-3:#9aa7b1;
+  --line:#2a3842; --ctl:#5f6e79; --brand:#7cc0e8; --brand-ink:#0b1a24; --brand-soft:#1d3444; --mares:#8f7646;
+  --open:#7fd3a2; --open-bg:#16302a; --soon:#f0c46a; --soon-bg:#33291a; --urgent:#ff9b8e; --urgent-bg:#3d1f1d;
+  --closed:#a9b4bc; --closed-bg:#25313a; --focus:#7cc0e8;
+}}
+:root[data-theme="dark"]{
+  --bg:#10181e; --surface:#18232b; --sunk:#202d36; --ink:#e6ecef; --ink-2:#c2ccd2; --ink-3:#9aa7b1;
+  --line:#2a3842; --ctl:#5f6e79; --brand:#7cc0e8; --brand-ink:#0b1a24; --brand-soft:#1d3444; --mares:#8f7646;
+  --open:#7fd3a2; --open-bg:#16302a; --soon:#f0c46a; --soon-bg:#33291a; --urgent:#ff9b8e; --urgent-bg:#3d1f1d;
+  --closed:#a9b4bc; --closed-bg:#25313a; --focus:#7cc0e8;
+}
+
+*{box-sizing:border-box}
+html{scroll-padding-top:calc(var(--header-h) + 16px)}
+@media (prefers-reduced-motion:no-preference){html{scroll-behavior:smooth}}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 16px/1.6 "Public Sans",system-ui,sans-serif;-webkit-font-smoothing:antialiased;font-variant-numeric:tabular-nums}
+h1,h2,h3{font-family:"Schibsted Grotesk","Public Sans",sans-serif;margin:0;line-height:1.15}
+a{color:var(--brand);text-underline-offset:3px}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--focus);outline-offset:2px;border-radius:var(--r-s)}
+.wrap{max-width:1180px;margin:0 auto;padding:0 16px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.skip{position:absolute;left:16px;top:-60px;z-index:50;background:var(--brand);color:var(--brand-ink);padding:10px 14px;border-radius:var(--r-m);font-weight:600}
+.skip:focus{top:10px}
+
+/* ---------- capçalera ---------- */
+.top{position:sticky;top:0;z-index:20;background:var(--surface);border-bottom:1px solid var(--line)}
+.top .wrap{display:flex;align-items:center;gap:12px;height:var(--header-h)}
+.brand{font-family:"Schibsted Grotesk",sans-serif;font-weight:800;font-size:18px;color:var(--ink);text-decoration:none;letter-spacing:-.01em;display:flex;align-items:center;gap:9px}
+.brand i{width:12px;height:22px;background:var(--brand);border-radius:2px;box-shadow:5px 0 0 var(--mares)}
+.brand span{font-weight:600;color:var(--ink-3)}
+.top nav{margin-left:auto;display:flex;gap:2px}
+.top nav a{color:var(--ink-2);text-decoration:none;padding:8px 12px;border-radius:var(--r-m);font-weight:500;font-size:15px}
+.tools{display:flex;gap:6px}
+.tbtn{min-height:40px;min-width:40px;padding:0 12px;border:1px solid var(--ctl);background:var(--surface);border-radius:var(--r-m);font-size:14px;font-weight:600;display:inline-flex;align-items:center;justify-content:center;gap:6px;transition:background-color var(--t-fast) ease,transform var(--t-fast) var(--ease-out)}
+.tbtn:active{transform:scale(.97)}
+.tbtn svg{width:18px;height:18px}
+@media (hover:hover) and (pointer:fine){.top nav a:hover,.tbtn:hover{background:var(--sunk)}}
+@media (max-width:860px){.top nav{display:none}.tools{margin-left:auto}}
+.lshort{display:none}
+@media (max-width:560px){.lshort{display:inline}.llong{display:none}.tbtn{padding:0 10px}.brand{font-size:16px}}
+@media (max-width:380px){.brand span{display:none}}
+
+.demo{background:var(--soon-bg);color:var(--ink);font-size:14px;border-bottom:1px solid var(--line)}
+.demo .wrap{padding:8px 16px}
+.demo strong{color:var(--soon)}
+
+/* ---------- capçal ---------- */
+.intro{padding:40px 0 28px;border-bottom:1px solid var(--line);background:var(--surface)}
+.intro h1{font-size:clamp(30px,6.2vw,54px);font-weight:800;letter-spacing:-.025em;max-width:21ch}
+.intro .now{margin:14px 0 22px;color:var(--ink-2);font-size:clamp(16px,2.2vw,19px);max-width:56ch}
+.intro .now b{color:var(--ink);font-weight:600}
+.search{display:flex;gap:8px;max-width:680px}
+.search label{flex:1;position:relative;display:block}
+.search input{width:100%;height:52px;border:1.5px solid var(--ctl);border-radius:var(--r-m);background:var(--surface);padding:0 14px 0 44px;font-size:17px}
+.search input:focus-visible{outline-offset:0;border-color:var(--brand)}
+.search svg{position:absolute;left:14px;top:16px;width:20px;height:20px;color:var(--ink-3);pointer-events:none}
+.search button{height:52px;padding:0 22px;border:0;border-radius:var(--r-m);background:var(--brand);color:var(--brand-ink);font-weight:600;transition:transform var(--t-fast) var(--ease-out)}
+.search button:active{transform:scale(.97)}
+@media (max-width:520px){.search button{display:none}}
+.who{margin-top:20px}
+.who p{margin:0 0 8px;font-weight:600;font-size:15px}
+.who div{display:flex;flex-wrap:wrap;gap:8px}
+.pill{min-height:40px;padding:0 14px;border:1px solid var(--ctl);border-radius:999px;background:var(--surface);font-size:15px;transition:background-color var(--t-fast) ease}
+.pill[aria-pressed="true"]{background:var(--brand);border-color:var(--brand);color:var(--brand-ink);font-weight:600}
+@media (hover:hover) and (pointer:fine){.pill:hover:not([aria-pressed="true"]){background:var(--sunk)}}
+
+/* ---------- llistat ---------- */
+main{padding:28px 0 40px}
+.layout{display:grid;grid-template-columns:260px minmax(0,1fr);gap:32px;align-items:start}
+@media (max-width:900px){.layout{grid-template-columns:minmax(0,1fr)}}
+.filters{position:sticky;top:calc(var(--header-h) + 16px);max-height:calc(100vh - var(--header-h) - 32px);overflow:auto;padding-right:4px}
+@media (max-width:900px){.filters{position:static;max-height:none;display:none;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-l);padding:4px 16px}.filters.show{display:block}}
+fieldset{border:0;margin:0;padding:14px 0;border-bottom:1px solid var(--line)}
+fieldset:last-of-type{border:0}
+legend{font-weight:600;font-size:15px;padding:0;margin-bottom:6px}
+.opt{display:flex;align-items:center;gap:10px;min-height:34px;font-size:15px;cursor:pointer;color:var(--ink-2)}
+.opt input{width:18px;height:18px;margin:0;accent-color:var(--brand);flex:none}
+.opt small{margin-left:auto;color:var(--ink-3);font-size:13px}
+.opt:has(input:checked){color:var(--ink);font-weight:500}
+.dot{width:8px;height:8px;border-radius:2px;flex:none}
+.linkbtn{border:0;background:none;color:var(--brand);font-weight:600;padding:6px 0;text-decoration:underline;text-underline-offset:3px}
+.ftoggle{display:none}
+@media (max-width:900px){.ftoggle{display:inline-flex}}
+
+.bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:6px}
+.bar h2{font-size:22px;letter-spacing:-.01em}
+.bar .sortw{margin-left:auto;display:flex;align-items:center;gap:8px;font-size:14px;color:var(--ink-3)}
+.bar select{min-height:40px;border:1px solid var(--ctl);border-radius:var(--r-m);background:var(--surface);padding:0 10px;color:var(--ink)}
+.active{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 4px}
+.active button{min-height:32px;border:0;background:var(--brand-soft);color:var(--ink);border-radius:var(--r-s);padding:0 10px;font-size:14px;display:inline-flex;align-items:center;gap:6px}
+.active svg{width:12px;height:12px}
+
+.group{margin-top:22px}
+.group h3{font-size:15px;font-weight:700;color:var(--ink-2);padding-bottom:8px;border-bottom:2px solid var(--ink);display:flex;gap:8px;align-items:baseline}
+.group h3 span{font-weight:600;color:var(--ink-3);font-family:"Public Sans",sans-serif;font-size:14px}
+.list{list-style:none;margin:0;padding:0}
+.row{display:grid;grid-template-columns:76px minmax(0,1fr) 44px;gap:16px;padding:16px 0;border-bottom:1px solid var(--line);position:relative}
+@media (hover:hover) and (pointer:fine){.row:hover{background:linear-gradient(90deg,transparent,var(--sunk) 12%,var(--sunk) 88%,transparent)}}
+
+/* l'element memorable: el termini com un full de calendari */
+.when{align-self:start;text-align:center;border-radius:var(--r-m);background:var(--surface);border:1px solid var(--line);overflow:hidden;line-height:1}
+.when .m{display:block;background:var(--brand);color:var(--brand-ink);font-size:12px;font-weight:600;padding:5px 0;text-transform:lowercase}
+.when .d{display:block;font-family:"Schibsted Grotesk",sans-serif;font-weight:800;font-size:30px;padding:8px 0 3px;letter-spacing:-.03em;color:var(--ink)}
+.when .y{display:block;font-size:12px;color:var(--ink-3);padding-bottom:7px}
+.when.always .d{font-size:15px;padding:12px 4px 9px;letter-spacing:0}
+.row.is-urgent .when .m{background:var(--urgent);color:#fff}
+.row.is-soon .when .m{background:var(--soon);color:#fff}
+.row.is-closed .when{opacity:.7}
+.row.is-closed .when .m,.row.is-direct .when .m{background:var(--closed);color:#fff}
+.row.is-direct .when{opacity:.7}
+
+.body{min-width:0}
+.org{margin:0;display:flex;align-items:center;gap:7px;font-size:14px;color:var(--ink-3)}
+.row h4{margin:3px 0 6px;font:600 17.5px/1.35 "Public Sans",sans-serif}
+.row h4 button{all:unset;cursor:pointer;color:var(--ink)}
+.row h4 button::after{content:"";position:absolute;inset:0}
+.row h4 button:focus-visible{outline:none}
+.row:has(h4 button:focus-visible){outline:3px solid var(--focus);outline-offset:2px;border-radius:var(--r-s)}
+@media (hover:hover) and (pointer:fine){.row h4 button:hover{text-decoration:underline;text-underline-offset:3px}}
+.facts{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:14.5px;color:var(--ink-2);margin:0 0 8px}
+.facts b{color:var(--ink);font-weight:600}
+.badges{display:flex;flex-wrap:wrap;gap:6px}
+.st,.tag{font-size:13px;border-radius:var(--r-s);padding:2px 8px;line-height:1.6}
+.tag{background:var(--sunk);color:var(--ink-2)}
+.st{font-weight:600;display:inline-flex;align-items:center;gap:5px}
+.st svg{width:12px;height:12px}
+.st.open{background:var(--open-bg);color:var(--open)}
+.st.soon{background:var(--soon-bg);color:var(--soon)}
+.st.urgent{background:var(--urgent-bg);color:var(--urgent)}
+.st.closed{background:var(--closed-bg);color:var(--closed)}
+.fav{position:relative;z-index:1;width:44px;height:44px;border:0;background:none;border-radius:var(--r-m);color:var(--ink-3);display:grid;place-items:center;transition:transform var(--t-fast) var(--ease-out)}
+.fav:active{transform:scale(.9)}
+.fav svg{width:22px;height:22px}
+.fav[aria-pressed="true"]{color:var(--brand)}
+.fav[aria-pressed="true"] svg{fill:currentColor}
+@media (max-width:520px){.row{grid-template-columns:62px minmax(0,1fr) 40px;gap:12px}.when .d{font-size:24px}.row h4{font-size:16.5px}.fav{width:40px;height:40px}}
+
+.empty{padding:28px 20px;border:1.5px dashed var(--ctl);border-radius:var(--r-l);margin-top:20px}
+.empty h3{font-size:19px;margin-bottom:6px}
+.empty p{margin:0 0 12px;color:var(--ink-2)}
+.empty div{display:flex;gap:8px;flex-wrap:wrap}
+
+/* ---------- organismes ---------- */
+.orgs-sec{border-top:1px solid var(--line);padding:36px 0;background:var(--surface)}
+.orgs-sec h2{font-size:24px;margin-bottom:4px}
+.orgs-sec > .wrap > p{margin:0 0 18px;color:var(--ink-2)}
+.orgs{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:0 28px;list-style:none;margin:0;padding:0}
+.orgs li{border-top:1px solid var(--line)}
+.orgs button{all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;gap:10px;width:100%;min-height:52px;padding:8px 0}
+.orgs button:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+.orgs b{font-weight:600}
+.orgs small{margin-left:auto;color:var(--ink-3);font-size:14px;white-space:nowrap}
+@media (hover:hover) and (pointer:fine){.orgs button:hover b{text-decoration:underline;text-underline-offset:3px}}
+
+/* ---------- sobre ---------- */
+.about{padding:36px 0}
+.about .cols{display:grid;grid-template-columns:1.3fr 1fr;gap:32px}
+@media (max-width:760px){.about .cols{grid-template-columns:1fr}}
+.about h2{font-size:22px;margin-bottom:8px}
+.about p{margin:0 0 10px;color:var(--ink-2);max-width:62ch}
+.about ul{margin:0;padding:0;list-style:none}
+.about li{border-top:1px solid var(--line)}
+.about li a{display:flex;justify-content:space-between;align-items:center;min-height:48px;text-decoration:none;font-weight:600;color:var(--ink)}
+.about li a span{font-weight:400;color:var(--ink-3);font-size:14px}
+
+footer{border-top:1px solid var(--line);padding:22px 0 32px;color:var(--ink-3);font-size:14px}
+footer .wrap{display:flex;gap:16px;flex-wrap:wrap;justify-content:space-between}
+
+/* ---------- fitxa (dialog) ---------- */
+dialog{border:0;border-radius:var(--r-l);padding:0;width:min(640px,calc(100% - 24px));max-height:calc(100dvh - 32px);background:var(--surface);color:var(--ink);box-shadow:0 24px 64px rgba(5,20,30,.28)}
+dialog::backdrop{background:rgba(8,20,28,.55)}
+@media (prefers-reduced-motion:no-preference){
+  dialog[open]{animation:dlg-in var(--t-mid) var(--ease-out)}
+  @keyframes dlg-in{from{opacity:0;transform:scale(.96)}}
+}
+.dh{display:flex;gap:12px;align-items:start;padding:20px 20px 0}
+.dh h2{font-size:24px;letter-spacing:-.015em}
+.dh .x{margin-left:auto;flex:none;width:44px;height:44px;border:0;border-radius:var(--r-m);background:var(--sunk);display:grid;place-items:center}
+.dh .x svg{width:18px;height:18px}
+.db{padding:14px 20px 20px}
+.kv{display:grid;grid-template-columns:repeat(2,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:var(--r-m);overflow:hidden;margin:14px 0 16px}
+.kv div{background:var(--surface);padding:10px 12px}
+.kv div:last-child:nth-child(odd){grid-column:1/-1}
+.kv dt{font-size:13px;color:var(--ink-3)}
+.kv dd{margin:0;font-weight:600}
+.db h3{font-size:16px;margin:14px 0 4px}
+.db ul{margin:0 0 6px;padding-left:20px}
+.db li{margin:2px 0}
+.acts{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px}
+.btn{min-height:44px;display:inline-flex;align-items:center;gap:8px;padding:0 16px;border:1px solid var(--ctl);border-radius:var(--r-m);background:var(--surface);color:var(--ink);font-weight:600;text-decoration:none;font-size:15px;transition:transform var(--t-fast) var(--ease-out)}
+.btn:active{transform:scale(.97)}
+.btn.pri{background:var(--brand);border-color:var(--brand);color:var(--brand-ink)}
+.btn svg{width:16px;height:16px}
+.note{font-size:14px;color:var(--ink-3);margin-top:12px}
+
+/* ---------- específic de la pàgina de concessions ---------- */
+.top nav a[aria-current="page"]{color:var(--ink);background:var(--sunk)}
+.intro .now b{white-space:nowrap}
+.tabs{display:inline-flex;border:1px solid var(--ctl);border-radius:var(--r-m);overflow:hidden;margin:22px 0 0}
+.tabs button{min-height:42px;padding:0 16px;border:0;background:var(--surface);font-weight:600;font-size:15px;color:var(--ink-2)}
+.tabs button+button{border-left:1px solid var(--ctl)}
+.tabs button[aria-pressed="true"]{background:var(--brand);color:var(--brand-ink)}
+.people{display:flex;gap:12px;align-items:start;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-l);padding:14px 16px;margin:12px 0 4px;font-size:15px;color:var(--ink-2)}
+.people b{color:var(--ink)}
+.people svg{flex:none;width:22px;height:22px;color:var(--ink-3);margin-top:1px}
+.rank{list-style:none;margin:8px 0 0;padding:0}
+.rank > li{border-bottom:1px solid var(--line)}
+.rk{display:grid;grid-template-columns:44px minmax(0,1fr) auto;gap:6px 14px;align-items:center;width:100%;padding:12px 0;border:0;background:none;text-align:left}
+.rk .pos{font:700 15px/1 "Schibsted Grotesk",sans-serif;color:var(--ink-3);text-align:right}
+.rk .who{min-width:0}
+.rk .who b{display:block;font-weight:600;font-size:16px;line-height:1.35;color:var(--ink);overflow-wrap:anywhere}
+.rk .who small{color:var(--ink-3);font-size:13.5px}
+.rk .amt{text-align:right;font:700 17px/1.2 "Schibsted Grotesk",sans-serif;white-space:nowrap}
+.rk .amt small{display:block;font:500 13px "Public Sans",sans-serif;color:var(--ink-3)}
+.rk .bar{grid-column:2/4;height:6px;background:var(--sunk);border-radius:3px;overflow:hidden}
+.rk .bar i{display:block;height:100%;background:var(--brand);border-radius:3px}
+.rk .bar i.p{background:var(--ctl)}
+.rk[aria-expanded="true"] .who b{color:var(--brand)}
+@media (hover:hover) and (pointer:fine){.rk:hover .who b{text-decoration:underline;text-underline-offset:3px}}
+.det{margin:0 0 14px 58px;padding:0;list-style:none;border-left:2px solid var(--line)}
+.det li{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 14px;padding:8px 0 8px 14px;font-size:14.5px}
+.det li + li{border-top:1px dashed var(--line)}
+.det .t{color:var(--ink);min-width:0;overflow-wrap:anywhere}
+.det .m{grid-column:1/2;color:var(--ink-3);font-size:13px}
+.det .v{grid-row:1/3;grid-column:2;align-self:center;font-weight:600;white-space:nowrap}
+.det a{font-size:13px}
+.det li.agg .t{color:var(--ink-2);font-style:italic}
+@media (max-width:520px){.rk{grid-template-columns:30px minmax(0,1fr) auto;gap:4px 10px}.det{margin-left:20px}.rk .amt{font-size:15px}}
+.more{margin:16px 0 0}
+.note2{font-size:14px;color:var(--ink-3);margin:14px 0 0;max-width:70ch}
+</style>
+</head>
+<body>
+<a class="skip" href="#resultats" data-i="skip">Vés al llistat</a>
+
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="index.html"><i aria-hidden="true"></i>Subvencions <span>Menorca</span></a>
+    <nav aria-label="Principal">
+      <a href="index.html" data-i="nav1">Convocatòries</a>
+      <a href="concedides.html" aria-current="page" data-i="nav2">Concedides</a>
+    </nav>
+    <div class="tools">
+      <button class="tbtn" id="langBtn" lang="es" aria-label="Castellano"><span class="llong">Castellano</span><span class="lshort" aria-hidden="true">ES</span></button>
+      <button class="tbtn" id="themeBtn" aria-label="Canvia el tema clar o fosc">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 0 0 16z" fill="currentColor"/></svg>
+      </button>
+    </div>
+  </div>
+</header>
+
+<div class="demo"><div class="wrap" id="srcText"></div></div>
+
+<section class="intro" aria-labelledby="h1">
+  <div class="wrap">
+    <h1 id="h1" data-i="h1">Qui ha rebut subvencions a Menorca</h1>
+    <p class="now" id="now"></p>
+    <form class="search" id="searchForm" role="search">
+      <label>
+        <span class="sr" data-i="qlabel">Cerca una entitat, un NIF o una convocatòria</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>
+        <input id="q" type="search" autocomplete="off" enterkeyhint="search">
+      </label>
+      <button type="submit" data-i="cerca">Cerca</button>
+    </form>
+    <div class="tabs" role="group" aria-label="Vista">
+      <button type="button" data-view="ben" aria-pressed="true" data-i="v1">Per beneficiari</button>
+      <button type="button" data-view="conv" aria-pressed="false" data-i="v2">Per convocatòria</button>
+    </div>
+  </div>
+</section>
+
+<main id="main">
+  <div class="wrap layout">
+    <aside class="filters" id="filters" aria-label="Filtres"></aside>
+    <section id="resultats" aria-labelledby="resH" tabindex="-1">
+      <div class="bar">
+        <h2 id="resH" aria-live="polite"></h2>
+        <button class="tbtn ftoggle" id="fToggle" aria-expanded="false" aria-controls="filters">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 6h16M7 12h10M10 18h4"/></svg><span data-i="filtres">Filtres</span>
+        </button>
+        <label class="sortw"><span data-i="ord">Ordena per</span>
+          <select id="sort"></select>
+        </label>
+      </div>
+      <div class="active" id="activeTags"></div>
+      <div id="people"></div>
+      <ol class="rank" id="list"></ol>
+      <div class="more" id="more"></div>
+      <p class="note2" data-i="nota">Imports tal com els publica la BDNS. Una mateixa entitat pot aparèixer amb noms lleugerament diferents si l'organisme els ha escrit de manera diferent; s'agrupen pel NIF.</p>
+    </section>
+  </div>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>Subvencions Menorca</span>
+    <span data-i="foot">Web informativa no oficial. Font: BDNS.</span>
+  </div>
+</footer>
+
+<script src="data.js"></script>
+<script src="concessions.js"></script>
+<script>
+(() => {
+const ORG = window.SM_DATA.ORGANISMES, C = window.SM_CONC;
+const $ = s => document.querySelector(s);
+const store = {
+  get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}},
+  set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
+};
+const ICON = {
+  x:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>',
+  ppl:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.6 3.4-5.5 6.5-5.5s5.7 1.9 6.5 5.5"/><circle cx="17" cy="9" r="2.6"/><path d="M16 14.6c2.7.2 4.6 2 5.3 5.4"/></svg>'
+};
+
+/* ---------- textos ---------- */
+const T = { es:{
+  skip:"Ir al listado",nav1:"Convocatorias",nav2:"Concedidas",h1:"Quién ha recibido subvenciones en Menorca",
+  qlabel:"Busca una entidad, un NIF o una convocatoria",cerca:"Buscar",v1:"Por beneficiario",v2:"Por convocatoria",
+  filtres:"Filtros",ord:"Ordenar por",foot:"Web informativa no oficial. Fuente: BDNS.",
+  nota:"Importes tal como los publica la BDNS. Una misma entidad puede aparecer con nombres ligeramente distintos si el organismo los ha escrito de forma diferente; se agrupan por el NIF."
+}};
+const S = {
+  ca:{ph:"Club, associació, empresa, NIF o convocatòria…",
+      now:(n,t,e,p)=>`Des de gener de 2025, el Consell i els ajuntaments han registrat <b>${n} ajuts concedits</b> per un total de <b>${t}</b>. <b>${e} entitats i empreses</b> n'han rebut almenys un.`,
+      src:(d,miss)=>`<strong>Dades de la BDNS</strong>, actualitzades el ${d}. ${miss.join(", ")} no hi registren les seves concessions, i per això no surten aquí.`,
+      org:"Organisme",any:"Any de concessió",tipus:"Beneficiari",ent:"Entitats i empreses",per:"Persones físiques",reset:"Treu tots els filtres",
+      sBen:[["i","Import rebut"],["c","Nombre d'ajuts"],["n","Nom"]],sConv:[["i","Import concedit"],["c","Nombre de beneficiaris"],["d","Data més recent"]],
+      resB:n=>n===1?"1 entitat o empresa":`${n} entitats i empreses`,resC:n=>n===1?"1 convocatòria":`${n} convocatòries`,
+      nA:n=>n===1?"1 ajut":`${n} ajuts`,nB:n=>n===1?"1 beneficiari":`${n} beneficiaris`,
+      people:(n,t)=>`<b>${n} ajuts a persones físiques</b> per un total de <b>${t}</b> no surten en aquesta llista: no en publicam el nom. Els trobareu sumats a la vista «Per convocatòria».`,
+      aggP:(n)=>`${n} persones físiques (sense nom)`,more:n=>`Mostra'n ${n} més`,empty:"Cap resultat amb aquesta cerca i aquests filtres.",
+      bases:"Bases",rm:l=>`Treu el filtre ${l}`,lang:"Castellano",code:"es"},
+  es:{ph:"Club, asociación, empresa, NIF o convocatoria…",
+      now:(n,t,e,p)=>`Desde enero de 2025, el Consell y los ayuntamientos han registrado <b>${n} ayudas concedidas</b> por un total de <b>${t}</b>. <b>${e} entidades y empresas</b> han recibido al menos una.`,
+      src:(d,miss)=>`<strong>Datos de la BDNS</strong>, actualizados el ${d}. ${miss.join(", ")} no registran allí sus concesiones, y por eso no aparecen.`,
+      org:"Organismo",any:"Año de concesión",tipus:"Beneficiario",ent:"Entidades y empresas",per:"Personas físicas",reset:"Quitar todos los filtros",
+      sBen:[["i","Importe recibido"],["c","Número de ayudas"],["n","Nombre"]],sConv:[["i","Importe concedido"],["c","Número de beneficiarios"],["d","Fecha más reciente"]],
+      resB:n=>n===1?"1 entidad o empresa":`${n} entidades y empresas`,resC:n=>n===1?"1 convocatoria":`${n} convocatorias`,
+      nA:n=>n===1?"1 ayuda":`${n} ayudas`,nB:n=>n===1?"1 beneficiario":`${n} beneficiarios`,
+      people:(n,t)=>`<b>${n} ayudas a personas físicas</b> por un total de <b>${t}</b> no aparecen en esta lista: no publicamos su nombre. Las encontrarás sumadas en la vista «Por convocatoria».`,
+      aggP:(n)=>`${n} personas físicas (sin nombre)`,more:n=>`Mostrar ${n} más`,empty:"Ningún resultado con esta búsqueda y estos filtros.",
+      bases:"Bases",rm:l=>`Quitar el filtro ${l}`,lang:"Català",code:"ca"}
+};
+let lang = store.get("sm-lang","ca");
+const s = () => S[lang];
+const caTexts = {};
+document.querySelectorAll("[data-i]").forEach(el => caTexts[el.dataset.i] ??= el.innerHTML);
+
+const loc = () => lang==="ca"?"ca-ES":"es-ES";
+const eur = (n,dec) => new Intl.NumberFormat(loc(),{style:"currency",currency:"EUR",maximumFractionDigits:dec?2:0,minimumFractionDigits:dec?2:0}).format(n);
+const num = n => new Intl.NumberFormat(loc()).format(n);
+const fdate = d => d ? new Date(d+"T00:00:00").toLocaleDateString(loc(),{day:"numeric",month:"short",year:"numeric"}) : "";
+const norm = t => (t||"").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"");
+const esc = t => String(t??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const convT = k => { const c = C.convocatories[k]; return c ? (lang==="es" && c.te ? c.te : c.t) : "—"; };
+
+C.concessions.forEach(x => { x._y = (x.d||"").slice(0,4); x._s = norm([x.n,x.f,C.convocatories[x.c]?.t,C.convocatories[x.c]?.te].join(" ")); });
+
+const st = { q:"", view:"ben", orgs:[], anys:[], tipus:[], sort:"i", shown:50, open:new Set() };
+
+/* ---------- filtres ---------- */
+function pass(x, ignore){
+  if (ignore!=="orgs" && st.orgs.length && !st.orgs.includes(x.o)) return false;
+  if (ignore!=="anys" && st.anys.length && !st.anys.includes(x._y)) return false;
+  if (ignore!=="tipus" && st.tipus.length && !st.tipus.includes(x.k)) return false;
+  return true;
+}
+function matchQ(x){ return !st.q || norm(st.q).split(/\s+/).every(w => x._s.includes(w)); }
+const rows = ignore => C.concessions.filter(x => pass(x, ignore) && matchQ(x));
+
+function renderFilters(){
+  const cnt = (g, fn) => rows(g).filter(fn).length;
+  const cb = (g,k,label,n,pre="") => `<label class="opt"><input type="checkbox" data-g="${g}" value="${k}" ${st[g].includes(k)?"checked":""}>${pre}${esc(label)}<small>${num(n)}</small></label>`;
+  const anys = [...new Set(C.concessions.map(x=>x._y))].filter(Boolean).sort().reverse();
+  const orgs = Object.keys(ORG).filter(k => C.concessions.some(x=>x.o===k));
+  $("#filters").innerHTML = `
+    <fieldset><legend>${s().tipus}</legend>${cb("tipus","e",s().ent,cnt("tipus",x=>x.k==="e"))}${cb("tipus","p",s().per,cnt("tipus",x=>x.k==="p"))}</fieldset>
+    <fieldset><legend>${s().org}</legend>${orgs.map(k=>cb("orgs",k,ORG[k].curt,cnt("orgs",x=>x.o===k),`<span class="dot" style="background:${ORG[k].color}" aria-hidden="true"></span>`)).join("")}</fieldset>
+    <fieldset><legend>${s().any}</legend>${anys.map(y=>cb("anys",y,y,cnt("anys",x=>x._y===y))).join("")}</fieldset>
+    <button type="button" class="linkbtn" id="resetBtn">${s().reset}</button>`;
+}
+function renderActive(){
+  const tags = [];
+  if (st.q) tags.push(["q","",`«${st.q}»`]);
+  st.tipus.forEach(k=>tags.push(["tipus",k,k==="e"?s().ent:s().per]));
+  st.orgs.forEach(k=>tags.push(["orgs",k,ORG[k].curt]));
+  st.anys.forEach(k=>tags.push(["anys",k,k]));
+  $("#activeTags").innerHTML = tags.map(([g,k,l])=>`<button type="button" data-rm="${g}" data-k="${k}" aria-label="${esc(s().rm(l))}">${esc(l)}${ICON.x}</button>`).join("");
+}
+function renderSort(){
+  const opts = st.view==="ben" ? s().sBen : s().sConv;
+  if (!opts.some(([k])=>k===st.sort)) st.sort = "i";
+  $("#sort").innerHTML = opts.map(([k,l])=>`<option value="${k}" ${k===st.sort?"selected":""}>${l}</option>`).join("");
+}
+
+/* ---------- llistat ---------- */
+function detItem(title, meta, val, link){
+  return `<li><span class="t">${title}</span><span class="m">${meta}${link?` · <a href="${esc(link)}" target="_blank" rel="noopener">${s().bases}</a>`:""}</span><span class="v">${val}</span></li>`;
+}
+function renderList(){
+  const R = rows();
+  let groups;
+  if (st.view==="ben"){
+    const m = new Map();
+    R.filter(x=>x.k==="e").forEach(x=>{
+      let g = m.get(x.f); if(!g){ g={key:x.f,name:x.n,nif:x.f,i:0,c:0,d:"",items:[],orgs:new Set()}; m.set(x.f,g); }
+      g.i+=x.i; g.c++; g.items.push(x); g.orgs.add(x.o); if((x.d||"")>g.d) g.d=x.d;
+    });
+    groups=[...m.values()];
+    const by={i:(a,b)=>b.i-a.i,c:(a,b)=>b.c-a.c||b.i-a.i,n:(a,b)=>a.name.localeCompare(b.name,loc())};
+    groups.sort(by[st.sort]);
+    const p = R.filter(x=>x.k==="p");
+    $("#people").innerHTML = p.length ? `<div class="people">${ICON.ppl}<span>${s().people(num(p.length),eur(p.reduce((t,x)=>t+x.i,0)))}</span></div>` : "";
+    $("#resH").textContent = s().resB(num(groups.length));
+  } else {
+    const m = new Map();
+    R.forEach(x=>{
+      let g = m.get(x.c); if(!g){ g={key:x.c,i:0,c:0,ents:0,pp:0,pi:0,d:"",items:[],o:x.o}; m.set(x.c,g); }
+      g.i+=x.i; g.c++; if(x.k==="e"){g.ents++; g.items.push(x);} else {g.pp++; g.pi+=x.i;} if((x.d||"")>g.d) g.d=x.d;
+    });
+    groups=[...m.values()];
+    const by={i:(a,b)=>b.i-a.i,c:(a,b)=>b.c-a.c||b.i-a.i,d:(a,b)=>b.d.localeCompare(a.d)};
+    groups.sort(by[st.sort]);
+    $("#people").innerHTML = "";
+    $("#resH").textContent = s().resC(num(groups.length));
+  }
+  if (!groups.length){ $("#list").innerHTML = `<li class="empty" style="list-style:none"><p style="margin:0">${s().empty}</p></li>`; $("#more").innerHTML=""; return; }
+  const max = Math.max(...groups.map(g=>g.i)) || 1;
+  const vis = groups.slice(0, st.shown);
+  $("#list").innerHTML = vis.map((g,idx)=>{
+    const open = st.open.has(st.view+":"+g.key);
+    let head, det = "";
+    if (st.view==="ben"){
+      const orgs = [...g.orgs].map(k=>ORG[k].curt).join(", ");
+      head = `<span class="pos">${idx+1}</span><span class="who"><b>${esc(g.name)}</b><small>${esc(g.nif)} · ${orgs}</small></span>
+        <span class="amt">${eur(g.i)}<small>${s().nA(num(g.c))}</small></span><span class="bar" aria-hidden="true"><i style="width:${Math.max(1,g.i/max*100)}%"></i></span>`;
+      if (open) det = `<ul class="det">${g.items.sort((a,b)=>(b.d||"").localeCompare(a.d||"")).map(x=>detItem(esc(convT(x.c)),`${fdate(x.d)} · ${ORG[x.o].curt}`,eur(x.i,true),C.convocatories[x.c]?.u)).join("")}</ul>`;
+    } else {
+      const o = ORG[g.o];
+      const benef = g.ents + g.pp;
+      head = `<span class="pos">${idx+1}</span><span class="who"><b>${esc(convT(g.key))}</b><small>${o.curt} · ${fdate(g.d)}</small></span>
+        <span class="amt">${eur(g.i)}<small>${s().nB(num(benef))}</small></span><span class="bar" aria-hidden="true"><i style="width:${Math.max(1,g.i/max*100)}%"></i></span>`;
+      if (open){
+        const ents = g.items.sort((a,b)=>b.i-a.i).map(x=>detItem(esc(x.n),`${esc(x.f)} · ${fdate(x.d)}`,eur(x.i,true))).join("");
+        const agg = g.pp ? `<li class="agg"><span class="t">${s().aggP(num(g.pp))}</span><span class="m"></span><span class="v">${eur(g.pi,true)}</span></li>` : "";
+        const link = C.convocatories[g.key]?.u ? `<li><span class="t"><a href="${esc(C.convocatories[g.key].u)}" target="_blank" rel="noopener">${s().bases} (BOIB)</a> · <a href="https://www.infosubvenciones.es/bdnstrans/GE/es/convocatorias/${esc(g.key)}" target="_blank" rel="noopener">BDNS ${esc(g.key)}</a></span><span class="m"></span><span class="v"></span></li>` : "";
+        det = `<ul class="det">${ents}${agg}${link}</ul>`;
+      }
+    }
+    return `<li><button type="button" class="rk" data-key="${esc(g.key)}" aria-expanded="${open}">${head}</button>${det}</li>`;
+  }).join("");
+  const rest = groups.length - vis.length;
+  $("#more").innerHTML = rest>0 ? `<button type="button" class="btn" id="moreBtn">${s().more(num(Math.min(50,rest)))}</button>` : "";
+}
+function renderNow(){
+  const all = C.concessions, e = new Set(all.filter(x=>x.k==="e").map(x=>x.f));
+  $("#now").innerHTML = s().now(num(all.length), eur(all.reduce((t,x)=>t+x.i,0)), num(e.size));
+  const miss = Object.entries(ORG).filter(([k])=>!all.some(x=>x.o===k)).map(([,o])=>o.curt);
+  $("#srcText").innerHTML = s().src(new Date(C.actualitzat+"T00:00:00").toLocaleDateString(loc(),{day:"numeric",month:"long",year:"numeric"}), miss);
+}
+function renderAll(){ renderFilters(); renderActive(); renderSort(); renderList(); }
+
+/* ---------- idioma i tema ---------- */
+function applyLang(){
+  document.documentElement.lang = lang;
+  document.querySelectorAll("[data-i]").forEach(el=>{ const k=el.dataset.i; el.innerHTML = lang==="ca" ? caTexts[k] : (T.es[k] ?? caTexts[k]); });
+  const lb=$("#langBtn"); lb.querySelector(".llong").textContent=s().lang; lb.querySelector(".lshort").textContent=s().code.toUpperCase(); lb.setAttribute("aria-label",s().lang); lb.lang=s().code;
+  $("#q").placeholder = s().ph;
+  renderNow(); renderAll();
+}
+function applyTheme(t){ if(t) document.documentElement.dataset.theme=t; else delete document.documentElement.dataset.theme; }
+applyTheme(store.get("sm-theme",null));
+
+/* ---------- esdeveniments ---------- */
+const reset = () => { st.shown = 50; st.open.clear(); };
+$("#searchForm").addEventListener("submit",e=>{e.preventDefault(); $("#q").blur(); $("#resultats").scrollIntoView({block:"start"});});
+let tq; $("#q").addEventListener("input",()=>{ clearTimeout(tq); tq=setTimeout(()=>{ st.q=$("#q").value.trim(); reset(); renderAll(); },120); });
+$("#sort").addEventListener("change",e=>{ st.sort=e.target.value; reset(); renderList(); });
+$("#fToggle").addEventListener("click",e=>{ const show=$("#filters").classList.toggle("show"); e.currentTarget.setAttribute("aria-expanded",show); });
+$("#filters").addEventListener("change",e=>{
+  const t=e.target; if(!t.dataset.g) return; const g=t.dataset.g;
+  st[g] = t.checked ? [...st[g],t.value] : st[g].filter(v=>v!==t.value); reset(); renderAll();
+  $("#filters").querySelector(`input[data-g="${g}"][value="${t.value}"]`)?.focus();
+});
+document.addEventListener("click",e=>{
+  const b = e.target.closest("button"); if(!b) return;
+  if (b.dataset.view){ st.view=b.dataset.view; st.sort="i"; reset(); document.querySelectorAll("[data-view]").forEach(x=>x.setAttribute("aria-pressed",String(x===b))); renderAll(); return; }
+  if (b.classList.contains("rk")){ const k=st.view+":"+b.dataset.key; st.open.has(k)?st.open.delete(k):st.open.add(k); renderList(); document.querySelector(`.rk[data-key="${CSS.escape(b.dataset.key)}"]`)?.focus(); return; }
+  if (b.id==="moreBtn"){ st.shown+=50; renderList(); return; }
+  if (b.id==="resetBtn"){ Object.assign(st,{q:"",orgs:[],anys:[],tipus:[]}); $("#q").value=""; reset(); renderAll(); return; }
+  if (b.dataset.rm){ const g=b.dataset.rm; if(g==="q"){st.q="";$("#q").value="";} else st[g]=st[g].filter(v=>v!==b.dataset.k); reset(); renderAll(); $("#resultats").focus({preventScroll:true}); }
+});
+$("#langBtn").onclick = () => { lang = lang==="ca"?"es":"ca"; store.set("sm-lang",lang); applyLang(); };
+$("#themeBtn").onclick = () => {
+  const dark = document.documentElement.dataset.theme ? document.documentElement.dataset.theme==="dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+  const t = dark?"light":"dark"; applyTheme(t); store.set("sm-theme",t);
+};
+applyLang();
+})();
+</script>
+</body>
+</html>
