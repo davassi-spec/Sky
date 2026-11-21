@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chollos desde Menorca</title>
+<meta name="description" content="Rastreador de vuelos baratos desde Menorca a destinos cálidos y seguros, diciembre-enero.">
+<style>
+:root{
+  --bg:#f6f3ee; --card:#fffdf9; --ink:#1d1b18; --muted:#6c665c; --line:#e5dfd4;
+  --accent:#d9480f; --accent-soft:#fff0e6; --ok:#2b8a3e; --warn:#b7791f; --bad:#c92a2a;
+  --chip:#efe9df; --shadow:0 1px 2px rgba(0,0,0,.05),0 4px 14px rgba(0,0,0,.04);
+}
+@media (prefers-color-scheme: dark){
+  :root{ --bg:#15130f; --card:#1f1c17; --ink:#f1ece4; --muted:#a39b8e; --line:#332e26;
+    --accent:#ff8a4c; --accent-soft:#3a2416; --chip:#2b2720; --shadow:none; }
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+a{color:var(--accent)}
+.wrap{max-width:1080px;margin:0 auto;padding:20px 16px 60px}
+header h1{font-size:clamp(24px,5vw,34px);margin:0 0 4px;letter-spacing:-.02em}
+header p{margin:0;color:var(--muted)}
+.meta{font-size:13px;color:var(--muted);margin-top:8px}
+.filtros{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:end;background:var(--card);border:1px solid var(--line);
+  border-radius:14px;padding:14px;margin:18px 0;box-shadow:var(--shadow)}
+.filtros label{display:flex;flex-direction:column;font-size:12px;color:var(--muted);gap:4px;min-width:130px;flex:1}
+.filtros select,.filtros input[type=range]{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:6px}
+.filtros .check{flex-direction:row;align-items:center;gap:6px;min-width:auto;flex:0;white-space:nowrap;font-size:14px;color:var(--ink)}
+.resumen{color:var(--muted);font-size:14px;margin:0 0 10px}
+.grid{display:grid;align-items:start;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:8px}
+.card.chollo{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-soft)}
+.top{display:flex;justify-content:space-between;gap:10px;align-items:start}
+.top h2{font-size:18px;margin:0}
+.top .pais{font-size:13px;color:var(--muted)}
+.precio{font-size:26px;font-weight:700;letter-spacing:-.02em;text-align:right;white-space:nowrap}
+.precio small{display:block;font-size:12px;font-weight:400;color:var(--muted)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{background:var(--chip);border-radius:99px;padding:2px 9px;font-size:12.5px}
+.chip.fuego{background:var(--accent);color:#fff;font-weight:600}
+.seg{letter-spacing:1px}
+.ruta{font-size:14px}
+.motivo{font-size:13px;color:var(--accent)}
+.nota{font-size:13px;color:var(--muted)}
+details{border-top:1px solid var(--line);padding-top:8px}
+summary{cursor:pointer;font-size:14px;color:var(--accent)}
+.op{border:1px solid var(--line);border-radius:10px;padding:8px 10px;margin-top:8px;font-size:13px}
+.op b{font-size:14px}
+.billete{display:flex;justify-content:space-between;gap:8px;padding:3px 0;border-top:1px dashed var(--line)}
+.billete:first-of-type{border-top:none}
+.billete .links a{margin-left:8px;white-space:nowrap}
+.aviso{color:var(--warn);font-size:12.5px;margin:4px 0 0;padding-left:16px}
+svg.spark{width:100%;height:36px;display:block}
+.vacio{background:var(--card);border:1px dashed var(--line);border-radius:14px;padding:24px;text-align:center;color:var(--muted)}
+.vacio code{background:var(--chip);padding:1px 5px;border-radius:5px}
+footer{margin-top:30px;font-size:12.5px;color:var(--muted)}
+.sin{opacity:.6}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>☀️ Chollos desde Menorca</h1>
+    <p>Diciembre → enero · sitios cálidos y seguros · máximo <span id="tope">1.000</span> € ida y vuelta</p>
+    <div class="meta" id="meta">Cargando…</div>
+  </header>
+
+  <div class="filtros">
+    <label>Región
+      <select id="f-region"><option value="">Todas</option></select>
+    </label>
+    <label><span>Precio máximo: <b id="v-precio"></b> €</span>
+      <input type="range" id="f-precio" min="200" max="1000" step="25" value="1000">
+    </label>
+    <label><span>Temperatura mínima: <b id="v-temp"></b> °C</span>
+      <input type="range" id="f-temp" min="20" max="32" step="1" value="26">
+    </label>
+    <label>Seguridad mínima
+      <select id="f-seg"><option value="3">3/5 o más</option><option value="4">4/5 o más</option><option value="5">5/5</option><option value="1">Cualquiera</option></select>
+    </label>
+    <label>Tipo de billete
+      <select id="f-tipo"><option value="">Lo más barato</option><option value="directo">Solo billete único (más seguro)</option></select>
+    </label>
+    <label class="check"><input type="checkbox" id="f-playa"> Con playa</label>
+    <label class="check"><input type="checkbox" id="f-chollo"> Solo chollos 🔥</label>
+    <label class="check"><input type="checkbox" id="f-sin"> Ver sin precio</label>
+  </div>
+
+  <p class="resumen" id="resumen"></p>
+  <div class="grid" id="grid"></div>
+
+  <footer>
+    <p><b>Cómo leerlo.</b> «Billete único» = la aerolínea responde de las escalas. «Vía X» = billetes separados
+      (Menorca→hub, hub⇄destino, hub→Menorca): suele ser más barato, pero si pierdes una conexión no te recolocan y
+      tienes que volver a facturar. Precios en caché de búsquedas recientes (Aviasales): confírmalos en el enlace antes de reservar.</p>
+    <p><b>Seguridad</b> 1-5 es orientativa. Antes de reservar mira las
+      <a href="https://www.exteriores.gob.es/es/ServiciosAlCiudadano/Paginas/Recomendaciones-de-viaje.aspx" target="_blank" rel="noopener">recomendaciones de viaje del Ministerio de Exteriores</a>
+      y requisitos de visado. Temperaturas: medias climáticas de diciembre-enero.</p>
+  </footer>
+</div>
+
+<script>
+const $ = s => document.querySelector(s);
+const eur = n => Math.round(n).toLocaleString('es-ES') + ' €';
+const fecha = s => new Date(s + (s.length === 10 ? 'T12:00:00' : '')).toLocaleDateString('es-ES', {day:'numeric', month:'short'});
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+let DATOS = null;
+
+const PREFS = 'vuelos-filtros';
+function guardar(){ try{ localStorage.setItem(PREFS, JSON.stringify(leer())); }catch(e){} }
+function restaurar(){
+  try{ const p = JSON.parse(localStorage.getItem(PREFS) || 'null'); if(!p) return;
+    $('#f-region').value = p.region; $('#f-precio').value = p.precio; $('#f-temp').value = p.temp;
+    $('#f-seg').value = p.seg; $('#f-tipo').value = p.tipo; $('#f-playa').checked = p.playa;
+    $('#f-chollo').checked = p.chollo; $('#f-sin').checked = p.sin;
+  }catch(e){}
+}
+function leer(){
+  return { region: $('#f-region').value, precio: +$('#f-precio').value, temp: +$('#f-temp').value,
+    seg: +$('#f-seg').value, tipo: $('#f-tipo').value, playa: $('#f-playa').checked,
+    chollo: $('#f-chollo').checked, sin: $('#f-sin').checked };
+}
+
+function spark(hist){
+  if(!hist || hist.length < 2) return '';
+  const v = hist.map(h => h.precio), min = Math.min(...v), max = Math.max(...v), r = (max - min) || 1;
+  const pts = v.map((p, i) => `${(i / (v.length - 1) * 100).toFixed(2)},${(32 - (p - min) / r * 28).toFixed(2)}`).join(' ');
+  return `<svg class="spark" viewBox="0 0 100 36" preserveAspectRatio="none" aria-label="Evolución del precio">
+    <polyline points="${pts}" fill="none" stroke="var(--accent)" stroke-width="1.6" vector-effect="non-scaling-stroke"/></svg>
+    <div class="nota">Rastreado: mín ${eur(min)} · máx ${eur(max)} · ${v.length} lecturas</div>`;
+}
+
+function opcionHTML(o){
+  const via = o.tipo === 'directo' ? 'Billete único' : `Vía ${esc(o.hub)} · billetes separados`;
+  const billetes = o.billetes.map(b => `<div class="billete"><span>${esc(b.descripcion)} · ${fecha(b.segmentos[0].salida.slice(0,10))}
+      ${b.segmentos[0].escalas ? `(${b.segmentos[0].escalas} esc.)` : '(directo)'} · <b>${eur(b.precio)}</b></span>
+      <span class="links">${b.enlace ? `<a href="${esc(b.enlace)}" target="_blank" rel="noopener">Aviasales</a>` : ''}<a href="${esc(b.google)}" target="_blank" rel="noopener">Google</a></span></div>`).join('');
+  const avisos = (o.avisos || []).length ? `<ul class="aviso">${o.avisos.map(a => `<li>${esc(a)}</li>`).join('')}</ul>` : '';
+  return `<div class="op"><b>${eur(o.total)}</b> · ${fecha(o.ida)} → ${fecha(o.vuelta)} · ${o.noches} noches · ${via}${billetes}${avisos}</div>`;
+}
+
+function pintar(){
+  if(!DATOS) return;
+  const f = leer();
+  $('#v-precio').textContent = f.precio.toLocaleString('es-ES');
+  $('#v-temp').textContent = f.temp;
+  guardar();
+  const lista = DATOS.destinos.map(d => {
+    let ops = (d.opciones || []).filter(o => o.total <= f.precio && (!f.tipo || o.tipo === f.tipo));
+    return {...d, ops};
+  }).filter(d => (!f.region || d.region === f.region) && d.temp_max >= f.temp && d.seguridad >= f.seg
+      && (!f.playa || d.playa) && (!f.chollo || (d.chollo && d.ops.length)) && (d.ops.length || f.sin))
+    .sort((a, b) => (a.ops.length ? 0 : 1) - (b.ops.length ? 0 : 1)
+      || (b.chollo && b.ops.length) - (a.chollo && a.ops.length)
+      || (a.ops[0]?.total ?? 9e9) - (b.ops[0]?.total ?? 9e9));
+
+  const conPrecio = lista.filter(d => d.ops.length);
+  $('#resumen').textContent = conPrecio.length
+    ? `${conPrecio.length} destinos por debajo de ${eur(f.precio)} · el más barato: ${conPrecio[0].ciudad} por ${eur(conPrecio[0].ops[0].total)}`
+    : 'Ningún destino cumple los filtros ahora mismo. Prueba a subir el precio o bajar la temperatura.';
+
+  $('#grid').innerHTML = lista.map(d => {
+    const m = d.ops[0];
+    const seg = '●'.repeat(d.seguridad) + '○'.repeat(5 - d.seguridad);
+    const lluvia = {seca:'☀️ seco', moderada:'🌤️ algún chubasco', humeda:'🌧️ lluvioso'}[d.lluvia] || d.lluvia;
+    const ch = d.chollo && m;
+    return `<article class="card ${ch ? 'chollo' : ''} ${m ? '' : 'sin'}">
+      <div class="top"><div><h2>${esc(d.ciudad)}</h2><div class="pais">${esc(d.pais)} · ${esc(d.region)}</div></div>
+        <div class="precio">${m ? eur(m.total) : '—'}<small>${m ? (m.tipo === 'directo' ? 'billete único' : 'vía ' + esc(m.hub)) : 'sin precio ≤ tope'}</small></div></div>
+      <div class="chips">${ch ? '<span class="chip fuego">🔥 Chollo</span>' : ''}
+        <span class="chip">🌡️ ${d.temp_max}° / ${d.temp_min}°</span><span class="chip">${lluvia}</span>
+        <span class="chip" title="Seguridad orientativa">🛡️ <span class="seg">${seg}</span></span>${d.playa ? '<span class="chip">🏖️ playa</span>' : ''}</div>
+      ${m ? `<div class="ruta">${fecha(m.ida)} → ${fecha(m.vuelta)} · ${m.noches} noches</div>` : ''}
+      ${ch && d.motivo_chollo ? `<div class="motivo">${esc(d.motivo_chollo)}</div>` : ''}
+      <div class="nota">${esc(d.nota)}</div>
+      ${spark(d.historial)}
+      ${d.ops.length ? `<details><summary>Ver ${d.ops.length > 1 ? d.ops.length + ' opciones' : 'billetes'} y enlaces</summary>${d.ops.map(opcionHTML).join('')}</details>` : ''}
+    </article>`;
+  }).join('');
+}
+
+async function iniciar(){
+  try{
+    const r = await fetch('data/resultados.json', {cache:'no-store'});
+    if(!r.ok) throw new Error(r.status);
+    DATOS = await r.json();
+  }catch(e){
+    $('#meta').textContent = '';
+    $('#grid').outerHTML = `<div class="vacio"><p><b>Todavía no hay datos.</b></p>
+      <p>El rastreador se ejecuta solo con GitHub Actions cada 6 horas en cuanto añadas el secreto
+      <code>TRAVELPAYOUTS_TOKEN</code>. Mira <a href="README.md">vuelos/README.md</a>.</p></div>`;
+    return;
+  }
+  const c = DATOS.config;
+  $('#tope').textContent = c.presupuesto_max.toLocaleString('es-ES');
+  $('#f-precio').max = c.presupuesto_max;
+  const regiones = [...new Set(DATOS.destinos.map(d => d.region))];
+  $('#f-region').insertAdjacentHTML('beforeend', regiones.map(r => `<option>${esc(r)}</option>`).join(''));
+  const hace = Math.round((Date.now() - new Date(DATOS.generado)) / 36e5);
+  $('#meta').textContent = `Actualizado ${new Date(DATOS.generado).toLocaleString('es-ES', {dateStyle:'medium', timeStyle:'short'})}`
+    + ` (hace ${hace} h) · salida ${fecha(c.ida_desde)}–${fecha(c.ida_hasta)}, vuelta ${fecha(c.vuelta_desde)}–${fecha(c.vuelta_hasta)}`
+    + ` · hubs: ${c.hubs.join(', ')}` + (DATOS.errores?.length ? ` · ${DATOS.errores.length} consultas fallidas` : '');
+  restaurar();
+  if(+$('#f-precio').value > c.presupuesto_max) $('#f-precio').value = c.presupuesto_max;
+  document.querySelectorAll('.filtros input, .filtros select').forEach(el => el.addEventListener('input', pintar));
+  pintar();
+}
+iniciar();
+</script>
+</body>
+</html>
