@@ -1,5 +1,5 @@
 {
- "generado": "2026-11-21T22:46:49+00:00",
+ "generado": "2026-11-21T22:53:30+00:00",
  "fuente": "Travelpayouts / Aviasales (precios en caché de búsquedas recientes)",
  "config": {
   "origen": "MAH",
@@ -28,12 +28,16 @@
  },
  "llamadas_api": 478,
  "errores": [],
+ "fuentes": [
+  "Aviasales"
+ ],
+ "google_flights": {},
  "diagnostico": {
-  "registros_api": 2968,
+  "registros_api": 2969,
   "consultas_con_datos": 232,
   "descartes": {
-   "hub: sin vuelo Menorca-hub que encaje": 2958,
-   "hub: sin vuelo hub-Menorca que encaje": 7
+   "hub: sin precios Menorca-hub": 2902,
+   "hub: sin precios hub-Menorca": 64
   },
   "muestras": [
    {
