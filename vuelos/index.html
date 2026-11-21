@@ -213,7 +213,8 @@ footer p{max-width:68ch;margin:0 0 10px}
   <p><b>Billete único</b>: la aerolínea responde de las escalas. <b>Vía MAD, BCN…</b>: billetes separados
     (Menorca → hub, hub ⇄ destino, hub → Menorca). Suele ser más barato, pero si pierdes una conexión
     no te recolocan y hay que volver a facturar.</p>
-  <p>Precios de la caché de búsquedas recientes de Aviasales: confírmalos en el enlace antes de reservar.
+  <p>Precios de dos fuentes: la caché de búsquedas recientes de Aviasales y Google Flights (fechas concretas, se
+    actualiza poco a poco por el límite gratuito). Confírmalos en el enlace antes de reservar.
     La seguridad (1-5) es orientativa; consulta las
     <a href="https://www.exteriores.gob.es/es/ServiciosAlCiudadano/Paginas/Recomendaciones-de-viaje.aspx" target="_blank" rel="noopener">recomendaciones de viaje de Exteriores</a>
     y los requisitos de visado. Temperaturas: medias de diciembre y enero.</p>
@@ -285,7 +286,7 @@ function grafica(hist){
 }
 
 function opcionHTML(o){
-  const via = o.tipo === 'directo' ? 'Billete único' : `Vía ${esc(o.hub)} · billetes separados`;
+  const via = (o.tipo === 'directo' ? 'Billete único' : `Vía ${esc(o.hub)} · billetes separados`) + ` · ${esc(o.fuente || 'Aviasales')}`;
   const escalas = n => n ? `${n} escala${n > 1 ? 's' : ''}` : 'directo';
   const tickets = o.billetes.map(b => {
     const s = b.segmentos[0], v = b.segmentos[1];
@@ -302,7 +303,7 @@ function filaHTML(d){
   const [ic, txt] = LLUVIA[d.lluvia] || ['cloud', d.lluvia];
   const dots = [1,2,3,4,5].map(i => `<i class="${i <= d.seguridad ? 'on' : ''}"></i>`).join('');
   const precio = m
-    ? `<span class="eur num">${eur(m.total)}</span><span class="how">${m.tipo === 'directo' ? 'billete único' : 'vía ' + esc(m.hub)}</span>`
+    ? `<span class="eur num">${eur(m.total)}</span><span class="how">${m.tipo === 'directo' ? 'billete único' : 'vía ' + esc(m.hub)} · ${esc(m.fuente || 'Aviasales')}</span>`
     : '<span class="none">sin precio</span>';
   return `<details class="flight ${deal ? 'deal' : ''}" id="d-${esc(d.iata)}">
     <summary>
@@ -419,6 +420,7 @@ async function iniciar(){
   const con = DATOS.destinos.filter(d => d.mejor);
   $('#stats').innerHTML = `<span><b>${con.length}</b> de ${DATOS.destinos.length} destinos con precio</span>
     <span><b>${con.filter(d => d.chollo).length}</b> chollos</span>
+    <span>Fuentes <b>${esc((DATOS.fuentes || ['Aviasales']).join(' + '))}</b></span>
     <span>Conexiones <b>${c.hubs.join(' · ')}</b></span>
     ${DATOS.errores?.length ? `<span><b>${DATOS.errores.length}</b> consultas fallidas</span>` : ''}`;
   restaurar(c.presupuesto_max);

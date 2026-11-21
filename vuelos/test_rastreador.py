@@ -84,11 +84,28 @@ class PruebasBuscador(unittest.TestCase):
             ("MAH", "LON", "true"): [ow("MAH", "LON", "2026-12-10T08:00:00+01:00", 30, dur=120, da="LGW")],
             ("LON", "MAH", "true"): [ow("LON", "MAH", "2027-01-16T09:00:00+00:00", 30, oa="LHR")],
         }
-        self.assertEqual(r.Buscador({**CFG, "hubs": ["LON"]}, FakeAPI(t)).autoconexiones("LON", "BKK"), [])
+        # el vuelo real no deja margen → se usa un precio estimado (no el vuelo que no encaja)
+        ops = r.Buscador({**CFG, "hubs": ["LON"]}, FakeAPI(t)).autoconexiones("LON", "BKK")
+        self.assertEqual(len(ops), 1)
+        self.assertIn("estimado", ops[0].billetes[0].descripcion)
+        self.assertTrue(any("dormir en LON" in a for a in ops[0].avisos))
         t[("MAH", "LON", "true")].append(ow("MAH", "LON", "2026-12-10T05:00:00+01:00", 50, dur=120, da="LGW"))
         ops = r.Buscador({**CFG, "hubs": ["LON"]}, FakeAPI(t)).autoconexiones("LON", "BKK")
         self.assertEqual(len(ops), 1)
         self.assertTrue(any("cambio de aeropuerto" in a for a in ops[0].avisos))
+        self.assertNotIn("estimado", ops[0].billetes[0].descripcion)
+
+    def test_estimacion_con_dias_cercanos(self):
+        t = tabla_basica()
+        # solo hay datos Menorca→Madrid de 2 días después: se estima con la mediana
+        t[("MAH", "MAD", "true")] = [ow("MAH", "MAD", "2026-12-12T09:00:00+01:00", 40),
+                                     ow("MAH", "MAD", "2026-12-13T09:00:00+01:00", 80)]
+        ops = r.Buscador({**CFG, "hubs": ["MAD"]}, FakeAPI(t)).autoconexiones("MAD", "BKK")
+        self.assertEqual(ops[0].billetes[0].precio, 80)
+        self.assertEqual(ops[0].ida, "2026-12-10")
+        # sin ningún dato en ±4 días → no se inventa nada
+        t[("MAH", "MAD", "true")] = [ow("MAH", "MAD", "2026-12-28T09:00:00+01:00", 40)]
+        self.assertEqual(r.Buscador({**CFG, "hubs": ["MAD"]}, FakeAPI(t)).autoconexiones("MAD", "BKK"), [])
 
     def test_fechas_fuera_de_ventana(self):
         t = {("MAH", "BKK", "false"): [rt("MAH", "BKK", "2026-11-28T07:00:00+01:00",
