@@ -314,7 +314,7 @@ class Buscador:
                 if not b1:
                     self._descarte("hub: sin precios Menorca-hub")
                     continue
-                avisos.append(f"Vuelo {self.origen} → {hub}: precio estimado (~{b1.precio:.0f} €) con otros días; "
+                avisos.append(f"Vuelo {self.origen} → {hub}: precio estimado (~{b1.precio:.0f} €); "
                               f"búscalo para el {dia.strftime('%d/%m')}, llegando antes de las {limite.strftime('%H:%M')}.")
                 if dia < sal_l.date():
                     avisos.append(f"Ida: probablemente toque dormir en {hub} la noche antes.")
@@ -334,7 +334,7 @@ class Buscador:
                 if not b2:
                     self._descarte("hub: sin precios hub-Menorca")
                     continue
-                avisos.append(f"Vuelo {hub} → {self.origen}: precio estimado (~{b2.precio:.0f} €) con otros días; "
+                avisos.append(f"Vuelo {hub} → {self.origen}: precio estimado (~{b2.precio:.0f} €); "
                               f"búscalo para el {dia.strftime('%d/%m')}" + (f", saliendo después de las {desde.strftime('%H:%M')}."
                                                                          if dia == desde.date() else "."))
                 if dia > desde.date():
@@ -353,15 +353,25 @@ class Buscador:
         return out
 
     def _estimado(self, vuelos: list[dict], dia: date, o: str, d: str) -> Billete | None:
-        """Precio orientativo de un vuelo corto para `dia`, a partir de los días más cercanos con datos."""
+        """Precio orientativo de un vuelo corto Menorca ⇄ hub para `dia`.
+
+        Orden: mediana de los días cercanos → mediana de toda la ventana → precio de
+        referencia del hub en config.json (precio_hub_referencia)."""
         flex = self.cfg.get("estimacion_dias", 4)
-        cerca = [v["price"] for v in vuelos if abs((parse_dt(v["departure_at"]).date() - dia).days) <= flex]
-        if not cerca:
+        cerca = sorted(v["price"] for v in vuelos if abs((parse_dt(v["departure_at"]).date() - dia).days) <= flex)
+        todos = sorted(v["price"] for v in vuelos)
+        hub = d if o == self.origen else o
+        ref = self.cfg.get("precio_hub_referencia", {})
+        if cerca:
+            precio, como = float(cerca[len(cerca) // 2]), "días cercanos"
+        elif todos:
+            precio, como = float(todos[len(todos) // 2]), "otros días del mes"
+        elif hub in ref or "_otros" in ref:
+            precio, como = float(ref.get(hub, ref.get("_otros"))), "precio de referencia"
+        else:
             return None
-        cerca.sort()
-        precio = float(cerca[len(cerca) // 2])  # mediana: ni el mejor ni el peor caso
         seg = Segmento(o, d, dia.isoformat(), "", 0, "", "")
-        return Billete(f"{o} → {d} (precio estimado)", precio, "", enlace_google(o, d, dia.isoformat()), [seg])
+        return Billete(f"{o} → {d} (precio estimado: {como})", precio, "", enlace_google(o, d, dia.isoformat()), [seg])
 
     def _encaja_antes(self, p: dict, aeropuerto_salida: str, salida: datetime, max_con: timedelta) -> bool:
         seg, _ = self._segs_rt(p)

@@ -14,6 +14,7 @@
   "conexion_cambio_aeropuerto_horas": 6,
   "conexion_max_horas": 30,
   "estimacion_dias": 4,
+  "precio_hub_referencia": {"_ayuda": "Precio orientativo de un solo trayecto Menorca-hub cuando Aviasales no tiene datos", "BCN": 60, "MAD": 80, "_otros": 150},
   "filtros": {
     "temp_max_minima": 26,
     "seguridad_minima": 3

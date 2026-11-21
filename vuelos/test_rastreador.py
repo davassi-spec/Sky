@@ -103,9 +103,17 @@ class PruebasBuscador(unittest.TestCase):
         ops = r.Buscador({**CFG, "hubs": ["MAD"]}, FakeAPI(t)).autoconexiones("MAD", "BKK")
         self.assertEqual(ops[0].billetes[0].precio, 80)
         self.assertEqual(ops[0].ida, "2026-12-10")
-        # sin ningún dato en ±4 días → no se inventa nada
+        # sin datos cercanos → mediana de toda la ventana
         t[("MAH", "MAD", "true")] = [ow("MAH", "MAD", "2026-12-28T09:00:00+01:00", 40)]
-        self.assertEqual(r.Buscador({**CFG, "hubs": ["MAD"]}, FakeAPI(t)).autoconexiones("MAD", "BKK"), [])
+        ops = r.Buscador({**CFG, "hubs": ["MAD"]}, FakeAPI(t)).autoconexiones("MAD", "BKK")
+        self.assertEqual(ops[0].billetes[0].precio, 40)
+        self.assertIn("otros días", ops[0].billetes[0].descripcion)
+        # sin ningún dato → precio de referencia del hub
+        t[("MAH", "MAD", "true")] = []
+        ops = r.Buscador({**CFG, "hubs": ["MAD"]}, FakeAPI(t)).autoconexiones("MAD", "BKK")
+        self.assertEqual(ops[0].billetes[0].precio, 80)
+        sin_ref = {**CFG, "hubs": ["MAD"], "precio_hub_referencia": {}}
+        self.assertEqual(r.Buscador(sin_ref, FakeAPI(t)).autoconexiones("MAD", "BKK"), [])
 
     def test_fechas_fuera_de_ventana(self):
         t = {("MAH", "BKK", "false"): [rt("MAH", "BKK", "2026-11-28T07:00:00+01:00",
