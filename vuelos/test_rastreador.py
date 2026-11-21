@@ -72,6 +72,11 @@ class PruebasBuscador(unittest.TestCase):
         self.assertEqual(ops[1].tipo, "directo")
         self.assertEqual(ops[1].total, 980)
 
+    def test_desde_hub(self):
+        ops = r.Buscador(CFG, FakeAPI(tabla_basica())).desde_hub("MAD", "BKK")
+        self.assertEqual(len(ops), 1)
+        self.assertEqual((ops[0].tipo, ops[0].hub, ops[0].total), ("desde_hub", "MAD", 400))
+
     def test_presupuesto(self):
         cfg = {**CFG, "presupuesto_max": 500}
         self.assertEqual(r.Buscador(cfg, FakeAPI(tabla_basica())).buscar_destino("BKK"), [])
@@ -84,11 +89,36 @@ class PruebasBuscador(unittest.TestCase):
             ("MAH", "LON", "true"): [ow("MAH", "LON", "2026-12-10T08:00:00+01:00", 30, dur=120, da="LGW")],
             ("LON", "MAH", "true"): [ow("LON", "MAH", "2027-01-16T09:00:00+00:00", 30, oa="LHR")],
         }
-        self.assertEqual(r.Buscador({**CFG, "hubs": ["LON"]}, FakeAPI(t)).autoconexiones("LON", "BKK"), [])
+        # el vuelo real no deja margen → se usa un precio estimado (no el vuelo que no encaja)
+        ops = r.Buscador({**CFG, "hubs": ["LON"]}, FakeAPI(t)).autoconexiones("LON", "BKK")
+        self.assertEqual(len(ops), 1)
+        self.assertIn("estimado", ops[0].billetes[0].descripcion)
+        self.assertTrue(any("dormir en LON" in a for a in ops[0].avisos))
         t[("MAH", "LON", "true")].append(ow("MAH", "LON", "2026-12-10T05:00:00+01:00", 50, dur=120, da="LGW"))
         ops = r.Buscador({**CFG, "hubs": ["LON"]}, FakeAPI(t)).autoconexiones("LON", "BKK")
         self.assertEqual(len(ops), 1)
         self.assertTrue(any("cambio de aeropuerto" in a for a in ops[0].avisos))
+        self.assertNotIn("estimado", ops[0].billetes[0].descripcion)
+
+    def test_estimacion_con_dias_cercanos(self):
+        t = tabla_basica()
+        # solo hay datos Menorca→Madrid de 2 días después: se estima con la mediana
+        t[("MAH", "MAD", "true")] = [ow("MAH", "MAD", "2026-12-12T09:00:00+01:00", 40),
+                                     ow("MAH", "MAD", "2026-12-13T09:00:00+01:00", 80)]
+        ops = r.Buscador({**CFG, "hubs": ["MAD"]}, FakeAPI(t)).autoconexiones("MAD", "BKK")
+        self.assertEqual(ops[0].billetes[0].precio, 80)
+        self.assertEqual(ops[0].ida, "2026-12-10")
+        # sin datos cercanos → mediana de toda la ventana
+        t[("MAH", "MAD", "true")] = [ow("MAH", "MAD", "2026-12-28T09:00:00+01:00", 40)]
+        ops = r.Buscador({**CFG, "hubs": ["MAD"]}, FakeAPI(t)).autoconexiones("MAD", "BKK")
+        self.assertEqual(ops[0].billetes[0].precio, 40)
+        self.assertIn("otros días", ops[0].billetes[0].descripcion)
+        # sin ningún dato → precio de referencia del hub
+        t[("MAH", "MAD", "true")] = []
+        ops = r.Buscador({**CFG, "hubs": ["MAD"]}, FakeAPI(t)).autoconexiones("MAD", "BKK")
+        self.assertEqual(ops[0].billetes[0].precio, 80)
+        sin_ref = {**CFG, "hubs": ["MAD"], "precio_hub_referencia": {}}
+        self.assertEqual(r.Buscador(sin_ref, FakeAPI(t)).autoconexiones("MAD", "BKK"), [])
 
     def test_fechas_fuera_de_ventana(self):
         t = {("MAH", "BKK", "false"): [rt("MAH", "BKK", "2026-11-28T07:00:00+01:00",
@@ -134,6 +164,7 @@ class PruebasEjecucion(unittest.TestCase):
             self.assertEqual(bkk["iata"], "BKK")
             self.assertTrue(bkk["chollo"])
             self.assertEqual(bkk["mejor"]["total"], 505)
+            self.assertIn("MAD", {o["desde"] for o in bkk["opciones"]})
             self.assertEqual(len(avisos), 1)
             osl = next(d for d in out["destinos"] if d["iata"] == "OSL")
             self.assertFalse(osl["apto"])

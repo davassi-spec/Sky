@@ -9,10 +9,13 @@
   "noches_max": 50,
   "presupuesto_max": 1000,
   "moneda": "eur",
+  "salidas_alternativas": ["BCN", "MAD"],
   "hubs": ["BCN", "MAD", "LON", "PAR", "AMS", "FRA", "LIS", "MIL", "IST"],
   "conexion_min_horas": 4,
   "conexion_cambio_aeropuerto_horas": 6,
   "conexion_max_horas": 30,
+  "estimacion_dias": 4,
+  "precio_hub_referencia": {"_ayuda": "Precio orientativo de un solo trayecto Menorca-hub cuando Aviasales no tiene datos", "BCN": 60, "MAD": 80, "_otros": 150},
   "filtros": {
     "temp_max_minima": 26,
     "seguridad_minima": 3
@@ -22,6 +25,15 @@
     "factor_historial": 0.85,
     "historial_minimo": 4,
     "bajada_para_reavisar": 0.05
+  },
+  "google_flights": {
+    "_ayuda": "Segunda fuente (SerpApi). Plan gratis ~100 búsquedas/mes: se reparten a lo largo del mes y rotan por destinos y pares de fechas.",
+    "activo": true,
+    "max_busquedas_mes": 95,
+    "max_por_ejecucion": 3,
+    "caducidad_dias": 10,
+    "fechas": [["2026-12-12", "2027-01-10"], ["2026-12-19", "2027-01-08"], ["2026-12-05", "2027-01-15"]],
+    "destinos_prioritarios": ["BKK", "KUL", "CMB", "PUJ", "CUN", "PTY", "HKT", "SGN", "CTG", "LIR"]
   },
   "pausa_entre_llamadas_seg": 0.35,
   "opciones_por_destino": 5

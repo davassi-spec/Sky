@@ -28,6 +28,18 @@ seguridad, playa y tipo de billete, y enlaces a Aviasales y Google Flights para 
 4. *Actions → Rastreador de vuelos desde Menorca → Run workflow* para la primera búsqueda.
 5. Abre el panel: `https://<tu-usuario>.github.io/Sky/vuelos/` (si tienes GitHub Pages activo).
 
+### Segunda fuente: Google Flights (SerpApi)
+
+Mientras Travelpayouts revisa tu proyecto (puede tardar días), o como complemento:
+
+1. Crea una cuenta gratis en [serpapi.com](https://serpapi.com) y copia tu **API key** del panel.
+2. Añade el secreto `SERPAPI_KEY` en GitHub (mismo sitio que el token de Travelpayouts).
+
+El plan gratis da unas 100 búsquedas al mes. El rastreador las reparte a lo largo del mes (máx. 3 por
+ejecución), empezando por los destinos de `destinos_prioritarios` y rotando por los pares de fechas de
+`config.json → google_flights.fechas`. Cada búsqueda es MAH ⇄ destino en un solo billete, y si Google
+dice que el precio es «bajo» se marca como chollo.
+
 ### Avisos por Telegram (opcional)
 
 1. Habla con [@BotFather](https://t.me/BotFather) → `/newbot` → copia el token.
