@@ -1,5 +1,5 @@
 {
- "generado": "2026-11-21T22:37:21+00:00",
+ "generado": "2026-11-21T22:46:49+00:00",
  "fuente": "Travelpayouts / Aviasales (precios en caché de búsquedas recientes)",
  "config": {
   "origen": "MAH",
@@ -28,6 +28,95 @@
  },
  "llamadas_api": 478,
  "errores": [],
+ "diagnostico": {
+  "registros_api": 2968,
+  "consultas_con_datos": 232,
+  "descartes": {
+   "hub: sin vuelo Menorca-hub que encaje": 2958,
+   "hub: sin vuelo hub-Menorca que encaje": 7
+  },
+  "muestras": [
+   {
+    "consulta": {
+     "origin": "BCN",
+     "destination": "BKK",
+     "departure_at": "2026-12",
+     "return_at": "2027-01",
+     "one_way": "false"
+    },
+    "registro": {
+     "flight_number": "6040",
+     "link": "/search/BCN3012BKK14011?t=MU17986164001798765800002130BCNMXPXIYNKGBKK17999337001800031500001990BKKPVGMXPBCN_32a6f31c137815d1ec16219081c2de10_53453&search_date=18112026&expected_price_uuid=01a1f077-e63b-8030-2e1a-57ce3bcd16c8&static_fare_key=TY%7CP1%7CH0%7CL0%7CCH0%7CR0%7CTBC0&itinerary_key=FSEJKMCiK3uzXS0UXAyB_g&expected_price_source=share&expected_price_currency=eur&expected_price=591",
+     "origin_airport": "BCN",
+     "destination_airport": "BKK",
+     "departure_at": "2026-12-30T07:40:00+01:00",
+     "airline": "VY",
+     "destination": "BKK",
+     "return_at": "2027-01-14T13:35:00+07:00",
+     "origin": "BCN",
+     "price": 591,
+     "gate": "Gotogate",
+     "return_transfers": 2,
+     "duration": 4120,
+     "duration_to": 1085,
+     "duration_back": 1115,
+     "transfers": 3
+    }
+   },
+   {
+    "consulta": {
+     "origin": "MAH",
+     "destination": "BCN",
+     "departure_at": "2026-12",
+     "one_way": "true"
+    },
+    "registro": {
+     "flight_number": "3605",
+     "link": "/search/MAH2212BCN1?t=VY17979423001797945600000055MAHBCN_2d3c09bfe7e11c9cd490b7ecd2e864a6_6407&search_date=19112026&expected_price_uuid=01a1f552-713a-8040-6230-9a3b91d63499&static_fare_key=TY%7CP0%7CH0%7CL0%7CCH0%7CR0%7CTBC0&itinerary_key=Zk08qD7pjSnUxPNlM_ywIA&expected_price_source=share&expected_price_currency=eur&expected_price=71",
+     "origin_airport": "MAH",
+     "destination_airport": "BCN",
+     "departure_at": "2026-12-22T12:25:00+01:00",
+     "airline": "VY",
+     "destination": "BCN",
+     "origin": "MAH",
+     "price": 71,
+     "gate": "Farera",
+     "return_transfers": 0,
+     "duration": 55,
+     "duration_to": 55,
+     "duration_back": 0,
+     "transfers": 0
+    }
+   },
+   {
+    "consulta": {
+     "origin": "MAD",
+     "destination": "BKK",
+     "departure_at": "2026-12",
+     "return_at": "2027-01",
+     "one_way": "false"
+    },
+    "registro": {
+     "flight_number": "6136",
+     "link": "/search/MAD1412BKK13011?t=QR17972865001797362700000910MADDOHBKK17998725001799934600001395BKKDOHMAD_519d01466edd2ac767a777d52e51c4da_63579&search_date=17112026&expected_price_uuid=01a1e82a-73af-8030-287e-0f452fe2b816&static_fare_key=TY%7CP0%7CH1%7CL1_1_23%7CCH0%7CR0%7CTBC1&itinerary_key=d6pt46kBOCcw0uGKkYCIiQ&expected_price_source=share&expected_price_currency=eur&expected_price=699",
+     "origin_airport": "MAD",
+     "destination_airport": "BKK",
+     "departure_at": "2026-12-14T22:15:00+01:00",
+     "airline": "QR",
+     "destination": "BKK",
+     "return_at": "2027-01-13T20:35:00+07:00",
+     "origin": "MAD",
+     "price": 699,
+     "gate": "Trip.com",
+     "return_transfers": 1,
+     "duration": 2305,
+     "duration_to": 760,
+     "duration_back": 890,
+     "transfers": 1
+    }
+   }
+  ]
+ },
  "destinos": [
   {
    "iata": "BKK",
