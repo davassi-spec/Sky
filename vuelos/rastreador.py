@@ -170,6 +170,10 @@ class Buscador:
         self.cache: dict[tuple, list[dict]] = {}
         self.errores: list[str] = []
         self.llamadas = 0
+        self.diag = {"registros_api": 0, "consultas_con_datos": 0, "descartes": {}, "muestras": []}
+
+    def _descarte(self, motivo: str) -> None:
+        self.diag["descartes"][motivo] = self.diag["descartes"].get(motivo, 0) + 1
 
     # ---- llamadas cacheadas -------------------------------------------------
     def _get(self, **params) -> list[dict]:
@@ -178,6 +182,13 @@ class Buscador:
             self.llamadas += 1
             try:
                 self.cache[clave] = self.fetch(params)
+                n = len(self.cache[clave])
+                self.diag["registros_api"] += n
+                if n:
+                    self.diag["consultas_con_datos"] += 1
+                    if len(self.diag["muestras"]) < 3:
+                        self.diag["muestras"].append({"consulta": {k: v for k, v in params.items() if k != "token"},
+                                                      "registro": self.cache[clave][0]})
             except Exception as e:  # noqa: BLE001 — un fallo no debe tumbar la ejecución
                 self.errores.append(f"{params.get('origin')}→{params.get('destination')}: {e}")
                 self.cache[clave] = []
@@ -241,11 +252,13 @@ class Buscador:
         out = []
         for r in self.ida_y_vuelta(self.origen, dest):
             if not r.get("return_at"):
+                self._descarte("directo: sin fecha de vuelta")
                 continue
             ida, vuelta = self._segs_rt(r)
             s = parse_dt(ida.salida).date()
             ll = (parse_dt(vuelta.llegada) if vuelta.llegada else parse_dt(vuelta.salida)).date()
             if not self._fechas_ok(s, ll):
+                self._descarte("directo: fechas fuera de ventana")
                 continue
             b = self._billete_rt(r, f"{self.origen} ⇄ {dest} (billete único)")
             out.append(Opcion("directo", dest, b.precio, s.isoformat(), ll.isoformat(),
@@ -274,18 +287,21 @@ class Buscador:
             ida_l, vta_l = self._segs_rt(L)
             sal_l = parse_dt(ida_l.salida)
             if not vta_l.llegada:
+                self._descarte("hub: vuelta sin duración")
                 continue
             lleg_l = parse_dt(vta_l.llegada)
 
             p1 = next((p for p in pos_ida if self._encaja_antes(p, ida_l.de, sal_l, max_con)), None)
             p2 = next((p for p in pos_vta if self._encaja_despues(p, vta_l.a, lleg_l, max_con)), None)
             if not p1 or not p2:
+                self._descarte("hub: sin vuelo Menorca-hub que encaje" if not p1 else "hub: sin vuelo hub-Menorca que encaje")
                 continue
             seg1, _ = self._segs_rt(p1)
             seg2, _ = self._segs_rt(p2)
             s = parse_dt(seg1.salida).date()
             ll = parse_dt(seg2.llegada or seg2.salida).date()
             if not self._fechas_ok(s, ll):
+                self._descarte("hub: fechas fuera de ventana")
                 continue
 
             avisos = ["Billetes separados: si un vuelo se retrasa y pierdes el siguiente, no te recolocan."]
@@ -330,6 +346,9 @@ class Buscador:
             if hub != dest:
                 opciones += self.autoconexiones(hub, dest)
         tope = self.cfg["presupuesto_max"]
+        caros = sum(o.total > tope for o in opciones)
+        if caros:
+            self.diag["descartes"]["por encima del presupuesto"] = self.diag["descartes"].get("por encima del presupuesto", 0) + caros
         opciones = [o for o in opciones if o.total <= tope]
         opciones.sort(key=lambda o: (o.total, o.tipo != "directo"))
         # quita duplicados (mismas fechas y mismo tipo/hub)
@@ -438,6 +457,7 @@ def ejecutar(cfg: dict, catalogo: list[dict], fetch: Fetch, dir_datos: Path,
                                        "presupuesto_max", "hubs", "filtros")},
         "llamadas_api": buscador.llamadas,
         "errores": buscador.errores[:50],
+        "diagnostico": buscador.diag,
         "destinos": resultados,
     }
     guardar_json(dir_datos / "resultados.json", salida)
@@ -464,6 +484,7 @@ def main(argv: list[str] | None = None) -> int:
     salida = ejecutar(cfg, catalogo, fetch, a.datos, solo=a.solo.split(",") if a.solo else None)
 
     con_precio = [d for d in salida["destinos"] if d["mejor"]]
+    print("Diagnóstico:", json.dumps({k: v for k, v in salida["diagnostico"].items() if k != "muestras"}, ensure_ascii=False))
     print(f"{salida['llamadas_api']} llamadas · {len(con_precio)} destinos con precio ≤ "
           f"{cfg['presupuesto_max']} € · {sum(d['chollo'] for d in con_precio)} chollos")
     for d in con_precio[:15]:
