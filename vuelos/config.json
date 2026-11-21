@@ -8,6 +8,7 @@
   "noches_min": 7,
   "noches_max": 50,
   "presupuesto_max": 1000,
+  "precio_max_mostrar": 2000,
   "moneda": "eur",
   "salidas_alternativas": ["BCN", "MAD"],
   "hubs": ["BCN", "MAD", "LON", "PAR", "AMS", "FRA", "LIS", "MIL", "IST"],
