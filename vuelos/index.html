@@ -175,7 +175,7 @@ footer p{max-width:68ch;margin:0 0 10px}
     <div class="board-top">
       <div>
         <div class="eyebrow"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5z"/></svg>Salidas · Departures</div>
-        <h1><span class="code">MAH</span> → Al sol</h1>
+        <h1><span class="code" id="h-code">MAH</span> → Al sol</h1>
         <p class="sub" id="sub">Menorca · diciembre a enero · destinos cálidos y seguros · máx. 1.000 €</p>
       </div>
       <div class="clock num" id="clock"><b>--:--</b>Sin datos aún</div>
@@ -192,6 +192,8 @@ footer p{max-width:68ch;margin:0 0 10px}
   <div class="wrap">
     <div class="regions" id="regions" role="group" aria-label="Región"></div>
     <div class="knobs">
+      <label class="knob" for="f-desde">Salgo desde
+        <select id="f-desde"><option value="MAH">Menorca</option><option value="BCN">Barcelona</option><option value="MAD">Madrid</option></select></label>
       <label class="knob" for="f-precio">Hasta <b id="v-precio" class="num">1.000 €</b><input type="range" id="f-precio" min="200" max="1000" step="25" value="1000"></label>
       <label class="knob" for="f-temp">Mín. <b id="v-temp" class="num">26 °C</b><input type="range" id="f-temp" min="20" max="32" step="1" value="26"></label>
       <label class="knob" for="f-seg">Seguridad
@@ -233,19 +235,21 @@ const ICON = {
   cloud:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M7 18a5 5 0 1 1 9.6-2H17a3 3 0 0 1 0 6H7"/><path d="M12 3v2M5.6 5.6l1.4 1.4M3 12h2"/></svg>',
   wave:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M2 16c2 0 2-2 4-2s2 2 4 2 2-2 4-2 2 2 4 2 2-2 4-2M2 20c2 0 2-2 4-2s2 2 4 2 2-2 4-2 2 2 4 2 2-2 4-2"/></svg>',
 };
+const como = o => o.tipo === 'directo' ? 'billete único' : o.tipo === 'desde_hub' ? 'desde ' + esc(o.hub) : 'vía ' + esc(o.hub);
 const LLUVIA = {seca:['sun','Seco'], moderada:['cloud','Algún chubasco'], humeda:['rain','Lluvioso']};
 
 let DATOS = null, REGION = '';
 const PREFS = 'vuelos-filtros-v2';
 
 function leer(){
-  return {precio:+$('#f-precio').value, temp:+$('#f-temp').value, seg:+$('#f-seg').value,
+  return {desde:$('#f-desde').value, precio:+$('#f-precio').value, temp:+$('#f-temp').value, seg:+$('#f-seg').value,
     unico:$('#f-unico').checked, playa:$('#f-playa').checked, chollo:$('#f-chollo').checked, sin:$('#f-sin').checked, region:REGION};
 }
 function guardar(){ try{ localStorage.setItem(PREFS, JSON.stringify(leer())); }catch(e){} }
 function restaurar(max){
   try{
     const p = JSON.parse(localStorage.getItem(PREFS) || 'null'); if(!p) return;
+    if(p.desde) $('#f-desde').value = p.desde;
     $('#f-precio').value = Math.min(p.precio, max); $('#f-temp').value = p.temp; $('#f-seg').value = p.seg;
     $('#f-unico').checked = p.unico; $('#f-playa').checked = p.playa; $('#f-chollo').checked = p.chollo; $('#f-sin').checked = p.sin;
     REGION = p.region || '';
@@ -286,7 +290,7 @@ function grafica(hist){
 }
 
 function opcionHTML(o){
-  const via = (o.tipo === 'directo' ? 'Billete único' : `Vía ${esc(o.hub)} · billetes separados`) + ` · ${esc(o.fuente || 'Aviasales')}`;
+  const via = (o.tipo === 'directo' ? 'Billete único' : o.tipo === 'desde_hub' ? `Sale de ${esc(o.hub)}` : `Vía ${esc(o.hub)} · billetes separados`) + ` · ${esc(o.fuente || 'Aviasales')}`;
   const escalas = n => n ? `${n} escala${n > 1 ? 's' : ''}` : 'directo';
   const tickets = o.billetes.map(b => {
     const s = b.segmentos[0], v = b.segmentos[1];
@@ -299,11 +303,11 @@ function opcionHTML(o){
 }
 
 function filaHTML(d){
-  const m = d.ops[0], deal = d.chollo && m;
+  const m = d.ops[0], deal = d.deal && m;
   const [ic, txt] = LLUVIA[d.lluvia] || ['cloud', d.lluvia];
   const dots = [1,2,3,4,5].map(i => `<i class="${i <= d.seguridad ? 'on' : ''}"></i>`).join('');
   const precio = m
-    ? `<span class="eur num">${eur(m.total)}</span><span class="how">${m.tipo === 'directo' ? 'billete único' : 'vía ' + esc(m.hub)} · ${esc(m.fuente || 'Aviasales')}</span>`
+    ? `<span class="eur num">${eur(m.total)}</span><span class="how">${como(m)} · ${esc(m.fuente || 'Aviasales')}</span>`
     : '<span class="none">sin precio</span>';
   return `<details class="flight ${deal ? 'deal' : ''}" id="d-${esc(d.iata)}">
     <summary>
@@ -323,12 +327,12 @@ function filaHTML(d){
     </summary>
     <div class="detail">
       <div>
-        ${deal && d.motivo_chollo ? `<p class="why">${esc(d.motivo_chollo)}</p>` : ''}
+        ${deal && d.motivo ? `<p class="why">${esc(d.motivo)}</p>` : ''}
         <p class="note">${esc(d.nota)}</p>
         ${d.ops.length ? d.ops.map(opcionHTML).join('') : '<p class="note">Ahora mismo no hay ninguna combinación por debajo del tope con estos filtros.</p>'}
       </div>
       <div class="side">
-        <h4>Mejor precio rastreado</h4>
+        <h4>Mejor precio desde Menorca</h4>
         <div class="chart">${grafica(d.historial)}</div>
         <dl class="climate">
           <dt>Máx / mín</dt><dd class="num">${d.temp_max} °C / ${d.temp_min} °C</dd>
@@ -352,9 +356,9 @@ function pintarPanel(lista){
   }
   $('#fids').innerHTML = HEAD() + top.map(d => {
     const m = d.ops[0];
-    const estado = d.chollo ? '<span class="fids-status blink">Chollo</span>' : `<span class="fids-status">${m.tipo === 'directo' ? 'Billete único' : 'Vía ' + esc(m.hub)}</span>`;
+    const estado = d.deal ? '<span class="fids-status blink">Chollo</span>' : `<span class="fids-status">${como(m)}</span>`;
     return `<button class="fids-row" type="button" data-go="${esc(d.iata)}">
-      <span class="flaps-cell">${flaps(d.iata, d.chollo ? 'sign' : '')}</span>
+      <span class="flaps-cell">${flaps(d.iata, d.deal ? 'sign' : '')}</span>
       <span class="fids-date num">${dia(m.ida)}</span>
       <span class="fids-city">${esc(d.ciudad)}<small>${esc(d.pais)} · ${m.noches} noches</small></span>
       ${estado}
@@ -371,16 +375,25 @@ function pintar(){
   guardar();
   if(!DATOS) return;
 
-  const lista = DATOS.destinos.map(d => ({...d, ops:(d.opciones || []).filter(o => o.total <= f.precio && (!f.unico || o.tipo === 'directo'))}))
-    .filter(d => (!REGION || d.region === REGION) && d.temp_max >= f.temp && d.seguridad >= f.seg && (!f.playa || d.playa)
-      && (!f.chollo || (d.chollo && d.ops.length)) && (d.ops.length || f.sin))
-    .sort((a, b) => (b.ops.length > 0) - (a.ops.length > 0) || (b.chollo && b.ops.length > 0) - (a.chollo && a.ops.length > 0)
+  const origen = DATOS.config.origen || 'MAH';
+  const lista = DATOS.destinos.map(d => {
+    const ops = (d.opciones || []).filter(o => (o.desde || origen) === f.desde && o.total <= f.precio
+      && (!f.unico || o.tipo !== 'autoconexion'));
+    // desde Menorca: chollo calculado por el rastreador (con historial); desde un hub: ≥20 % bajo lo habitual
+    const deal = ops.length > 0 && (f.desde === origen ? d.chollo : ops[0].total <= d.ref * 0.8);
+    const motivo = !deal ? '' : f.desde === origen ? d.motivo_chollo
+      : `${Math.round((1 - ops[0].total / d.ref) * 100)} % por debajo del precio habitual (~${eur(d.ref)})`;
+    return {...d, ops, deal, motivo};
+  }).filter(d => (!REGION || d.region === REGION) && d.temp_max >= f.temp && d.seguridad >= f.seg && (!f.playa || d.playa)
+      && (!f.chollo || d.deal) && (d.ops.length || f.sin))
+    .sort((a, b) => (b.ops.length > 0) - (a.ops.length > 0) || b.deal - a.deal
       || (a.ops[0]?.total ?? 9e9) - (b.ops[0]?.total ?? 9e9));
 
+  $('#h-code').textContent = f.desde;
   pintarPanel(lista);
   const con = lista.filter(d => d.ops.length);
   $('#sum-title').textContent = REGION || 'Todos los destinos';
-  $('#sum-text').textContent = con.length ? `${con.length} con precio hasta ${eur(f.precio)} · ${con.filter(d => d.chollo).length} chollos` : '';
+  $('#sum-text').textContent = con.length ? `${con.length} con precio hasta ${eur(f.precio)} saliendo de ${$('#f-desde').selectedOptions[0].text} · ${con.filter(d => d.deal).length} chollos` : '';
   $('#list').innerHTML = lista.length ? lista.map(filaHTML).join('')
     : `<div class="empty"><b>Nada por aquí</b>${DATOS.destinos.some(d => d.mejor)
         ? 'Ningún destino cumple los filtros ahora mismo. Prueba a subir el precio o bajar la temperatura.'

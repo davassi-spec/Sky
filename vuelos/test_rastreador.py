@@ -72,6 +72,11 @@ class PruebasBuscador(unittest.TestCase):
         self.assertEqual(ops[1].tipo, "directo")
         self.assertEqual(ops[1].total, 980)
 
+    def test_desde_hub(self):
+        ops = r.Buscador(CFG, FakeAPI(tabla_basica())).desde_hub("MAD", "BKK")
+        self.assertEqual(len(ops), 1)
+        self.assertEqual((ops[0].tipo, ops[0].hub, ops[0].total), ("desde_hub", "MAD", 400))
+
     def test_presupuesto(self):
         cfg = {**CFG, "presupuesto_max": 500}
         self.assertEqual(r.Buscador(cfg, FakeAPI(tabla_basica())).buscar_destino("BKK"), [])
@@ -159,6 +164,7 @@ class PruebasEjecucion(unittest.TestCase):
             self.assertEqual(bkk["iata"], "BKK")
             self.assertTrue(bkk["chollo"])
             self.assertEqual(bkk["mejor"]["total"], 505)
+            self.assertIn("MAD", {o["desde"] for o in bkk["opciones"]})
             self.assertEqual(len(avisos), 1)
             osl = next(d for d in out["destinos"] if d["iata"] == "OSL")
             self.assertFalse(osl["apto"])

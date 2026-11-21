@@ -406,6 +406,26 @@ class Buscador:
                 unicas.append(o)
         return unicas
 
+    # ---- estrategia 3: salir directamente desde un hub ----------------------
+    def desde_hub(self, hub: str, dest: str) -> list[Opcion]:
+        """Ida y vuelta hub ⇄ destino, para quien ya está en Barcelona/Madrid (sin el tramo de Menorca)."""
+        out, vistos = [], set()
+        for r in sorted(self.ida_y_vuelta(hub, dest), key=lambda x: x["price"]):
+            if not r.get("return_at") or r["price"] > self.cfg["presupuesto_max"]:
+                continue
+            ida, vuelta = self._segs_rt(r)
+            s = parse_dt(ida.salida).date()
+            ll = (parse_dt(vuelta.llegada) if vuelta.llegada else parse_dt(vuelta.salida)).date()
+            noches = (ll - s).days
+            if not (self.ida_desde <= s <= self.ida_hasta and self.vuelta_desde <= ll <= self.vuelta_hasta
+                    and self.cfg["noches_min"] <= noches <= self.cfg["noches_max"]) or (s, ll) in vistos:
+                continue
+            vistos.add((s, ll))
+            b = self._billete_rt(r, f"{hub} ⇄ {dest}")
+            out.append(Opcion("desde_hub", dest, b.precio, s.isoformat(), ll.isoformat(), noches, hub, [b],
+                              [f"Sale de {hub}: el viaje desde Menorca hasta {hub} va aparte."]))
+        return out
+
 
 # --------------------------------------------------------------------------
 # Chollos e historial
@@ -482,6 +502,12 @@ def ejecutar(cfg: dict, catalogo: list[dict], fetch: Fetch | None, dir_datos: Pa
         if apto or solo:
             opciones += [o for o in google_flights.opciones_de(gf, d["iata"]) if o["total"] <= tope]
         opciones.sort(key=lambda o: o["total"])
+        for o in opciones:
+            o["desde"] = cfg["origen"]
+        desde_hubs = []
+        if fetch and (apto or solo):
+            for h in cfg.get("salidas_alternativas", []):
+                desde_hubs += [{**asdict(o), "desde": h} for o in buscador.desde_hub(h, d["iata"])[:n_opc]]
         mejor = opciones[0] if opciones else None
         hist = historial.setdefault(d["iata"], [])
         previos = [h["precio"] for h in hist]
@@ -503,7 +529,7 @@ def ejecutar(cfg: dict, catalogo: list[dict], fetch: Fetch | None, dir_datos: Pa
             **d,
             "apto": apto,
             "mejor": mejor,
-            "opciones": opciones[:n_opc],
+            "opciones": opciones[:n_opc] + desde_hubs,
             "chollo": chollo,
             "motivo_chollo": motivo,
             "historial": hist[-120:],
