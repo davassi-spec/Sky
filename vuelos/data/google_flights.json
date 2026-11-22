@@ -1,8 +1,8 @@
 {
  "estado": {
   "mes": "2026-11",
-  "usadas_mes": 3,
-  "siguiente": 3
+  "usadas_mes": 6,
+  "siguiente": 6
  },
  "resultados": {
   "BKK|2026-12-12|2027-01-10": {
@@ -133,6 +133,138 @@
      "typical_price_range": [
       950,
       1400
+     ]
+    }
+   }
+  },
+  "PUJ|2026-12-12|2027-01-10": {
+   "fecha": "2026-11-22T06:59:39+00:00",
+   "opcion": {
+    "tipo": "directo",
+    "fuente": "Google Flights",
+    "destino": "PUJ",
+    "total": 1781.0,
+    "ida": "2026-12-12",
+    "vuelta": "2027-01-10",
+    "noches": 29,
+    "hub": null,
+    "billetes": [
+     {
+      "descripcion": "MAH ⇄ PUJ (Google Flights)",
+      "precio": 1781.0,
+      "enlace": "",
+      "google": "https://www.google.com/travel/flights?hl=es&gl=es&curr=EUR&tfs=CBwQAhoeEgoyMDI2LTEyLTEyagcIARIDTUFIcgcIARIDUFVKGh4SCjIwMjctMDEtMTBqBwgBEgNQVUpyBwgBEgNNQUhAAUgBcAGYAQE&tfu=EgIIAQ",
+      "segmentos": [
+       {
+        "de": "MAH",
+        "a": "PUJ",
+        "salida": "2026-12-12T21:15:00",
+        "llegada": "2026-12-13T18:35:00",
+        "escalas": 2,
+        "aerolinea": "British Airways / Iberia",
+        "vuelo": "IB 1044"
+       }
+      ]
+     }
+    ],
+    "avisos": [
+     "Escalas a la ida: MAD (10 h), LGW (2 h). Mismo billete: si pierdes una conexión te recolocan.",
+     "Precio de Google Flights para estas fechas exactas; la vuelta se elige al reservar."
+    ],
+    "insights": {
+     "lowest_price": 1781,
+     "price_level": "typical",
+     "typical_price_range": [
+      1300,
+      2800
+     ]
+    }
+   }
+  },
+  "CUN|2026-12-12|2027-01-10": {
+   "fecha": "2026-11-22T06:59:39+00:00",
+   "opcion": {
+    "tipo": "directo",
+    "fuente": "Google Flights",
+    "destino": "CUN",
+    "total": 1510.0,
+    "ida": "2026-12-12",
+    "vuelta": "2027-01-10",
+    "noches": 29,
+    "hub": null,
+    "billetes": [
+     {
+      "descripcion": "MAH ⇄ CUN (Google Flights)",
+      "precio": 1510.0,
+      "enlace": "",
+      "google": "https://www.google.com/travel/flights?hl=es&gl=es&curr=EUR&tfs=CBwQAhoeEgoyMDI2LTEyLTEyagcIARIDTUFIcgcIARIDQ1VOGh4SCjIwMjctMDEtMTBqBwgBEgNDVU5yBwgBEgNNQUhAAUgBcAGYAQE&tfu=EgIIAQ",
+      "segmentos": [
+       {
+        "de": "MAH",
+        "a": "CUN",
+        "salida": "2026-12-12T07:00:00",
+        "llegada": "2026-12-13T10:46:00",
+        "escalas": 2,
+        "aerolinea": "American / Iberia",
+        "vuelo": "IB 1042"
+       }
+      ]
+     }
+    ],
+    "avisos": [
+     "Escalas a la ida: MAD (4 h), MIA (15 h). Mismo billete: si pierdes una conexión te recolocan.",
+     "Precio de Google Flights para estas fechas exactas; la vuelta se elige al reservar."
+    ],
+    "insights": {
+     "lowest_price": 1510,
+     "price_level": "typical",
+     "typical_price_range": [
+      1050,
+      2150
+     ]
+    }
+   }
+  },
+  "PTY|2026-12-12|2027-01-10": {
+   "fecha": "2026-11-22T06:59:39+00:00",
+   "opcion": {
+    "tipo": "directo",
+    "fuente": "Google Flights",
+    "destino": "PTY",
+    "total": 2637.0,
+    "ida": "2026-12-12",
+    "vuelta": "2027-01-10",
+    "noches": 29,
+    "hub": null,
+    "billetes": [
+     {
+      "descripcion": "MAH ⇄ PTY (Google Flights)",
+      "precio": 2637.0,
+      "enlace": "",
+      "google": "https://www.google.com/travel/flights?hl=es&gl=es&curr=EUR&tfs=CBwQAhoeEgoyMDI2LTEyLTEyagcIARIDTUFIcgcIARIDUFRZGh4SCjIwMjctMDEtMTBqBwgBEgNQVFlyBwgBEgNNQUhAAUgBcAGYAQE&tfu=EgIIAQ",
+      "segmentos": [
+       {
+        "de": "MAH",
+        "a": "PTY",
+        "salida": "2026-12-12T19:10:00",
+        "llegada": "2026-12-13T17:05:00",
+        "escalas": 2,
+        "aerolinea": "Iberia",
+        "vuelo": "IB 2501"
+       }
+      ]
+     }
+    ],
+    "avisos": [
+     "Escalas a la ida: PMI (10 h), MAD (4 h). Mismo billete: si pierdes una conexión te recolocan.",
+     "Precio de Google Flights para estas fechas exactas; la vuelta se elige al reservar."
+    ],
+    "insights": {
+     "lowest_price": 2637,
+     "price_level": "high",
+     "typical_price_range": [
+      1000,
+      2150
      ]
     }
    }
