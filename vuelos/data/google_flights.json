@@ -1,8 +1,8 @@
 {
  "estado": {
   "mes": "2026-11",
-  "usadas_mes": 6,
-  "siguiente": 6
+  "usadas_mes": 9,
+  "siguiente": 9
  },
  "resultados": {
   "BKK|2026-12-12|2027-01-10": {
@@ -265,6 +265,138 @@
      "typical_price_range": [
       1000,
       2150
+     ]
+    }
+   }
+  },
+  "HKT|2026-12-12|2027-01-10": {
+   "fecha": "2026-11-22T19:47:56+00:00",
+   "opcion": {
+    "tipo": "directo",
+    "fuente": "Google Flights",
+    "destino": "HKT",
+    "total": 1850.0,
+    "ida": "2026-12-12",
+    "vuelta": "2027-01-10",
+    "noches": 29,
+    "hub": null,
+    "billetes": [
+     {
+      "descripcion": "MAH ⇄ HKT (Google Flights)",
+      "precio": 1850.0,
+      "enlace": "",
+      "google": "https://www.google.com/travel/flights?hl=es&gl=es&curr=EUR&tfs=CBwQAhoeEgoyMDI2LTEyLTEyagcIARIDTUFIcgcIARIDSEtUGh4SCjIwMjctMDEtMTBqBwgBEgNIS1RyBwgBEgNNQUhAAUgBcAGYAQE&tfu=EgIIAQ",
+      "segmentos": [
+       {
+        "de": "MAH",
+        "a": "HKT",
+        "salida": "2026-12-12T08:15:00",
+        "llegada": "2026-12-13T12:55:00",
+        "escalas": 2,
+        "aerolinea": "Qatar Airways / Vueling",
+        "vuelo": "VY 3601"
+       }
+      ]
+     }
+    ],
+    "avisos": [
+     "Escalas a la ida: BCN (6 h), DOH (2 h). Mismo billete: si pierdes una conexión te recolocan.",
+     "Precio de Google Flights para estas fechas exactas; la vuelta se elige al reservar."
+    ],
+    "insights": {
+     "lowest_price": 1850,
+     "price_level": "high",
+     "typical_price_range": [
+      950,
+      1500
+     ]
+    }
+   }
+  },
+  "SGN|2026-12-12|2027-01-10": {
+   "fecha": "2026-11-22T19:47:56+00:00",
+   "opcion": {
+    "tipo": "directo",
+    "fuente": "Google Flights",
+    "destino": "SGN",
+    "total": 1703.0,
+    "ida": "2026-12-12",
+    "vuelta": "2027-01-10",
+    "noches": 29,
+    "hub": null,
+    "billetes": [
+     {
+      "descripcion": "MAH ⇄ SGN (Google Flights)",
+      "precio": 1703.0,
+      "enlace": "",
+      "google": "https://www.google.com/travel/flights?hl=es&gl=es&curr=EUR&tfs=CBwQAhoeEgoyMDI2LTEyLTEyagcIARIDTUFIcgcIARIDU0dOGh4SCjIwMjctMDEtMTBqBwgBEgNTR05yBwgBEgNNQUhAAUgBcAGYAQE&tfu=EgIIAQ",
+      "segmentos": [
+       {
+        "de": "MAH",
+        "a": "SGN",
+        "salida": "2026-12-12T08:15:00",
+        "llegada": "2026-12-13T13:05:00",
+        "escalas": 2,
+        "aerolinea": "Qatar Airways / Vueling",
+        "vuelo": "VY 3601"
+       }
+      ]
+     }
+    ],
+    "avisos": [
+     "Escalas a la ida: BCN (6 h), DOH (2 h). Mismo billete: si pierdes una conexión te recolocan.",
+     "Precio de Google Flights para estas fechas exactas; la vuelta se elige al reservar."
+    ],
+    "insights": {
+     "lowest_price": 1703,
+     "price_level": "high",
+     "typical_price_range": [
+      1000,
+      1650
+     ]
+    }
+   }
+  },
+  "CTG|2026-12-12|2027-01-10": {
+   "fecha": "2026-11-22T19:47:56+00:00",
+   "opcion": {
+    "tipo": "directo",
+    "fuente": "Google Flights",
+    "destino": "CTG",
+    "total": 1639.0,
+    "ida": "2026-12-12",
+    "vuelta": "2027-01-10",
+    "noches": 29,
+    "hub": null,
+    "billetes": [
+     {
+      "descripcion": "MAH ⇄ CTG (Google Flights)",
+      "precio": 1639.0,
+      "enlace": "",
+      "google": "https://www.google.com/travel/flights?hl=es&gl=es&curr=EUR&tfs=CBwQAhoeEgoyMDI2LTEyLTEyagcIARIDTUFIcgcIARIDQ1RHGh4SCjIwMjctMDEtMTBqBwgBEgNDVEdyBwgBEgNNQUhAAUgBcAGYAQE&tfu=EgIIAQ",
+      "segmentos": [
+       {
+        "de": "MAH",
+        "a": "CTG",
+        "salida": "2026-12-12T07:00:00",
+        "llegada": "2026-12-13T13:36:00",
+        "escalas": 2,
+        "aerolinea": "American / Iberia",
+        "vuelo": "IB 1042"
+       }
+      ]
+     }
+    ],
+    "avisos": [
+     "Escalas a la ida: MAD (4 h), MIA (17 h). Mismo billete: si pierdes una conexión te recolocan.",
+     "Precio de Google Flights para estas fechas exactas; la vuelta se elige al reservar."
+    ],
+    "insights": {
+     "lowest_price": 1639,
+     "price_level": "typical",
+     "typical_price_range": [
+      1250,
+      2300
      ]
     }
    }
