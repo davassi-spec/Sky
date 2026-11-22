@@ -78,8 +78,21 @@ class PruebasBuscador(unittest.TestCase):
         self.assertEqual((ops[0].tipo, ops[0].hub, ops[0].total), ("desde_hub", "MAD", 400))
 
     def test_presupuesto(self):
-        cfg = {**CFG, "presupuesto_max": 500}
+        # se guardan opciones hasta precio_max_mostrar aunque pasen del presupuesto…
+        cfg = {**CFG, "presupuesto_max": 500, "precio_max_mostrar": 600}
+        ops = r.Buscador(cfg, FakeAPI(tabla_basica())).buscar_destino("BKK")
+        self.assertEqual([o.total for o in ops], [505])
+        # …y nada por encima de ese límite
+        cfg = {**CFG, "presupuesto_max": 500, "precio_max_mostrar": 500}
         self.assertEqual(r.Buscador(cfg, FakeAPI(tabla_basica())).buscar_destino("BKK"), [])
+
+    def test_caro_no_es_chollo(self):
+        cfg = {**CFG, "presupuesto_max": 500, "precio_max_mostrar": 2000}
+        with tempfile.TemporaryDirectory() as tmp:
+            out = r.ejecutar(cfg, [BKK], FakeAPI(tabla_basica()), Path(tmp), avisar=lambda s: None)
+            self.assertEqual(out["destinos"][0]["mejor"]["total"], 505)
+            self.assertFalse(out["destinos"][0]["chollo"])
+            self.assertEqual(out["config"]["precio_max_mostrar"], 2000)
 
     def test_cambio_de_aeropuerto_exige_mas_margen(self):
         t = {

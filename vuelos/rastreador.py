@@ -391,7 +391,7 @@ class Buscador:
         for hub in self.cfg["hubs"]:
             if hub != dest:
                 opciones += self.autoconexiones(hub, dest)
-        tope = self.cfg["presupuesto_max"]
+        tope = self.cfg.get("precio_max_mostrar", self.cfg["presupuesto_max"])
         caros = sum(o.total > tope for o in opciones)
         if caros:
             self.diag["descartes"]["por encima del presupuesto"] = self.diag["descartes"].get("por encima del presupuesto", 0) + caros
@@ -411,7 +411,7 @@ class Buscador:
         """Ida y vuelta hub ⇄ destino, para quien ya está en Barcelona/Madrid (sin el tramo de Menorca)."""
         out, vistos = [], set()
         for r in sorted(self.ida_y_vuelta(hub, dest), key=lambda x: x["price"]):
-            if not r.get("return_at") or r["price"] > self.cfg["presupuesto_max"]:
+            if not r.get("return_at") or r["price"] > self.cfg.get("precio_max_mostrar", self.cfg["presupuesto_max"]):
                 continue
             ida, vuelta = self._segs_rt(r)
             s = parse_dt(ida.salida).date()
@@ -485,7 +485,7 @@ def ejecutar(cfg: dict, catalogo: list[dict], fetch: Fetch | None, dir_datos: Pa
     alertados = cargar_json(dir_datos / "alertas.json", {})
     buscador = Buscador(cfg, fetch or (lambda p: []))
     n_opc = cfg.get("opciones_por_destino", 5)
-    tope = cfg["presupuesto_max"]
+    tope = cfg.get("precio_max_mostrar", cfg["presupuesto_max"])  # se guardan también algo más caros
 
     gf = cargar_json(dir_datos / "google_flights.json", {})
     errores_google = []
@@ -511,8 +511,9 @@ def ejecutar(cfg: dict, catalogo: list[dict], fetch: Fetch | None, dir_datos: Pa
         mejor = opciones[0] if opciones else None
         hist = historial.setdefault(d["iata"], [])
         previos = [h["precio"] for h in hist]
-        chollo, motivo = (evaluar_chollo(mejor["total"], d["ref"], previos, cfg) if mejor else (False, ""))
-        if mejor and (mejor.get("insights") or {}).get("price_level") == "low":
+        en_presupuesto = bool(mejor) and mejor["total"] <= cfg["presupuesto_max"]
+        chollo, motivo = (evaluar_chollo(mejor["total"], d["ref"], previos, cfg) if en_presupuesto else (False, ""))
+        if en_presupuesto and (mejor.get("insights") or {}).get("price_level") == "low":
             rango = mejor["insights"].get("typical_price_range") or []
             extra = "Google Flights lo marca como precio bajo" + (f" (lo habitual: {rango[0]}–{rango[1]} €)" if len(rango) == 2 else "")
             chollo, motivo = True, "; ".join(x for x in (motivo, extra) if x)
@@ -542,7 +543,7 @@ def ejecutar(cfg: dict, catalogo: list[dict], fetch: Fetch | None, dir_datos: Pa
         "fuente": "Travelpayouts / Aviasales (precios en caché de búsquedas recientes)",
         "config": {k: cfg[k] for k in ("origen", "ida_desde", "ida_hasta", "vuelta_desde",
                                        "vuelta_hasta", "noches_min", "noches_max",
-                                       "presupuesto_max", "hubs", "filtros")},
+                                       "presupuesto_max", "hubs", "filtros")} | {"precio_max_mostrar": tope},
         "llamadas_api": buscador.llamadas,
         "errores": (buscador.errores + errores_google)[:50],
         "fuentes": [x for x, activa in (("Aviasales", bool(fetch)), ("Google Flights", bool(fetch_google))) if activa],

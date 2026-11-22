@@ -103,6 +103,7 @@ main{padding-block:18px 40px}
 .who{min-width:0}
 .who h3{margin:0;font:600 21px/1.05 var(--display);text-transform:uppercase;letter-spacing:.02em;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .tag{font:700 10.5px/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;background:var(--sign);color:var(--sign-ink);padding:4px 6px;border-radius:4px}
+.tag.over{background:var(--soft);color:var(--muted)}
 .who .where{color:var(--muted);font-size:13px}
 .facts{display:flex;flex-wrap:wrap;gap:4px 14px;margin-top:7px;font-size:13px;color:var(--muted)}
 .facts span{display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
@@ -194,7 +195,7 @@ footer p{max-width:68ch;margin:0 0 10px}
     <div class="knobs">
       <label class="knob" for="f-desde">Salgo desde
         <select id="f-desde"><option value="MAH">Menorca</option><option value="BCN">Barcelona</option><option value="MAD">Madrid</option></select></label>
-      <label class="knob" for="f-precio">Hasta <b id="v-precio" class="num">1.000 €</b><input type="range" id="f-precio" min="200" max="1000" step="25" value="1000"></label>
+      <label class="knob" for="f-precio">Hasta <b id="v-precio" class="num">1.000 €</b><input type="range" id="f-precio" min="200" max="2000" step="25" value="1000"></label>
       <label class="knob" for="f-temp">Mín. <b id="v-temp" class="num">26 °C</b><input type="range" id="f-temp" min="20" max="32" step="1" value="26"></label>
       <label class="knob" for="f-seg">Seguridad
         <select id="f-seg"><option value="3">3/5 o más</option><option value="4">4/5 o más</option><option value="5">5/5</option><option value="1">Cualquiera</option></select></label>
@@ -313,7 +314,7 @@ function filaHTML(d){
     <summary>
       <span class="iata">${esc(d.iata)}</span>
       <div class="who">
-        <h3>${esc(d.ciudad)}${deal ? '<span class="tag">Chollo</span>' : ''}</h3>
+        <h3>${esc(d.ciudad)}${deal ? '<span class="tag">Chollo</span>' : ''}${m && m.total > DATOS.config.presupuesto_max ? '<span class="tag over">Más de ' + eur(DATOS.config.presupuesto_max) + '</span>' : ''}</h3>
         <div class="where">${esc(d.pais)} · ${esc(d.region)}</div>
         <div class="facts">
           <span>${ICON.temp}${d.temp_max}° / ${d.temp_min}°</span>
@@ -426,7 +427,9 @@ async function iniciar(){
     return;
   }
   const c = DATOS.config, g = new Date(DATOS.generado);
-  $('#f-precio').max = c.presupuesto_max;
+  const maxMostrar = c.precio_max_mostrar || c.presupuesto_max;
+  $('#f-precio').max = maxMostrar;
+  $('#f-precio').value = c.presupuesto_max;
   $('#sub').textContent = `Menorca · salida ${dia(c.ida_desde)}–${dia(c.ida_hasta)}, vuelta ${dia(c.vuelta_desde)}–${dia(c.vuelta_hasta)} · máx. ${eur(c.presupuesto_max)}`;
   const horas = Math.max(0, Math.round((Date.now() - g) / 36e5));
   $('#clock').innerHTML = `<b>${g.toLocaleTimeString('es-ES', {hour:'2-digit', minute:'2-digit'})}</b>Actualizado ${g.toLocaleDateString('es-ES', {weekday:'short', day:'numeric', month:'short'})} · hace ${horas} h`;
@@ -436,7 +439,7 @@ async function iniciar(){
     <span>Fuentes <b>${esc((DATOS.fuentes || ['Aviasales']).join(' + '))}</b></span>
     <span>Conexiones <b>${c.hubs.join(' · ')}</b></span>
     ${DATOS.errores?.length ? `<span><b>${DATOS.errores.length}</b> consultas fallidas</span>` : ''}`;
-  restaurar(c.presupuesto_max);
+  restaurar(maxMostrar);
   iniciarFiltros();
   pintar();
 }
