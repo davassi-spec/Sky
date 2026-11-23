@@ -1,8 +1,8 @@
 {
  "estado": {
   "mes": "2026-11",
-  "usadas_mes": 9,
-  "siguiente": 9
+  "usadas_mes": 12,
+  "siguiente": 12
  },
  "resultados": {
   "BKK|2026-12-12|2027-01-10": {
@@ -397,6 +397,94 @@
      "typical_price_range": [
       1250,
       2300
+     ]
+    }
+   }
+  },
+  "LIR|2026-12-12|2027-01-10": {
+   "fecha": "2026-11-23T07:49:51+00:00",
+   "opcion": {
+    "tipo": "directo",
+    "fuente": "Google Flights",
+    "destino": "LIR",
+    "total": 2511.0,
+    "ida": "2026-12-12",
+    "vuelta": "2027-01-10",
+    "noches": 29,
+    "hub": null,
+    "billetes": [
+     {
+      "descripcion": "MAH ⇄ LIR (Google Flights)",
+      "precio": 2511.0,
+      "enlace": "",
+      "google": "https://www.google.com/travel/flights?hl=es&gl=es&curr=EUR&tfs=CBwQAhoeEgoyMDI2LTEyLTEyagcIARIDTUFIcgcIARIDTElSGh4SCjIwMjctMDEtMTBqBwgBEgNMSVJyBwgBEgNNQUhAAUgBcAGYAQE&tfu=EgIIAQ",
+      "segmentos": [
+       {
+        "de": "MAH",
+        "a": "LIR",
+        "salida": "2026-12-12T07:00:00",
+        "llegada": "2026-12-13T12:35:00",
+        "escalas": 2,
+        "aerolinea": "American / Iberia",
+        "vuelo": "IB 1042"
+       }
+      ]
+     }
+    ],
+    "avisos": [
+     "Escalas a la ida: MAD (4 h), MIA (17 h). Mismo billete: si pierdes una conexión te recolocan.",
+     "Precio de Google Flights para estas fechas exactas; la vuelta se elige al reservar."
+    ],
+    "insights": {
+     "lowest_price": 2511,
+     "price_level": "typical",
+     "typical_price_range": [
+      1450,
+      4150
+     ]
+    }
+   }
+  },
+  "SDQ|2026-12-12|2027-01-10": {
+   "fecha": "2026-11-23T07:49:51+00:00",
+   "opcion": {
+    "tipo": "directo",
+    "fuente": "Google Flights",
+    "destino": "SDQ",
+    "total": 2300.0,
+    "ida": "2026-12-12",
+    "vuelta": "2027-01-10",
+    "noches": 29,
+    "hub": null,
+    "billetes": [
+     {
+      "descripcion": "MAH ⇄ SDQ (Google Flights)",
+      "precio": 2300.0,
+      "enlace": "",
+      "google": "https://www.google.com/travel/flights?hl=es&gl=es&curr=EUR&tfs=CBwQAhoeEgoyMDI2LTEyLTEyagcIARIDTUFIcgcIARIDU0RRGh4SCjIwMjctMDEtMTBqBwgBEgNTRFFyBwgBEgNNQUhAAUgBcAGYAQE&tfu=EgIIAQ",
+      "segmentos": [
+       {
+        "de": "MAH",
+        "a": "SDQ",
+        "salida": "2026-12-12T07:00:00",
+        "llegada": "2026-12-13T10:05:00",
+        "escalas": 2,
+        "aerolinea": "American / Iberia",
+        "vuelo": "IB 1042"
+       }
+      ]
+     }
+    ],
+    "avisos": [
+     "Escalas a la ida: MAD (4 h), MIA (13 h). Mismo billete: si pierdes una conexión te recolocan.",
+     "Precio de Google Flights para estas fechas exactas; la vuelta se elige al reservar."
+    ],
+    "insights": {
+     "lowest_price": 2300,
+     "price_level": "high",
+     "typical_price_range": [
+      920,
+      1600
      ]
     }
    }
