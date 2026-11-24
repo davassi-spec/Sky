@@ -1,8 +1,8 @@
 {
  "estado": {
   "mes": "2026-11",
-  "usadas_mes": 12,
-  "siguiente": 12
+  "usadas_mes": 15,
+  "siguiente": 15
  },
  "resultados": {
   "BKK|2026-12-12|2027-01-10": {
@@ -485,6 +485,138 @@
      "typical_price_range": [
       920,
       1600
+     ]
+    }
+   }
+  },
+  "HAV|2026-12-12|2027-01-10": {
+   "fecha": "2026-11-23T23:59:29+00:00",
+   "opcion": {
+    "tipo": "directo",
+    "fuente": "Google Flights",
+    "destino": "HAV",
+    "total": 3853.0,
+    "ida": "2026-12-12",
+    "vuelta": "2027-01-10",
+    "noches": 29,
+    "hub": null,
+    "billetes": [
+     {
+      "descripcion": "MAH ⇄ HAV (Google Flights)",
+      "precio": 3853.0,
+      "enlace": "",
+      "google": "https://www.google.com/travel/flights?hl=es&gl=es&curr=EUR&tfs=CBwQAhoeEgoyMDI2LTEyLTEyagcIARIDTUFIcgcIARIDSEFWGh4SCjIwMjctMDEtMTBqBwgBEgNIQVZyBwgBEgNNQUhAAUgBcAGYAQE&tfu=EgIIAQ",
+      "segmentos": [
+       {
+        "de": "MAH",
+        "a": "HAV",
+        "salida": "2026-12-12T21:15:00",
+        "llegada": "2026-12-14T03:06:00",
+        "escalas": 2,
+        "aerolinea": "COPA / Iberia",
+        "vuelo": "IB 1044"
+       }
+      ]
+     }
+    ],
+    "avisos": [
+     "Escalas a la ida: MAD (13 h), PTY (6 h). Mismo billete: si pierdes una conexión te recolocan.",
+     "Precio de Google Flights para estas fechas exactas; la vuelta se elige al reservar."
+    ],
+    "insights": {
+     "lowest_price": 3853,
+     "price_level": "typical",
+     "typical_price_range": [
+      1200,
+      9000
+     ]
+    }
+   }
+  },
+  "SIN|2026-12-12|2027-01-10": {
+   "fecha": "2026-11-23T23:59:29+00:00",
+   "opcion": {
+    "tipo": "directo",
+    "fuente": "Google Flights",
+    "destino": "SIN",
+    "total": 1552.0,
+    "ida": "2026-12-12",
+    "vuelta": "2027-01-10",
+    "noches": 29,
+    "hub": null,
+    "billetes": [
+     {
+      "descripcion": "MAH ⇄ SIN (Google Flights)",
+      "precio": 1552.0,
+      "enlace": "",
+      "google": "https://www.google.com/travel/flights?hl=es&gl=es&curr=EUR&tfs=CBwQAhoeEgoyMDI2LTEyLTEyagcIARIDTUFIcgcIARIDU0lOGh4SCjIwMjctMDEtMTBqBwgBEgNTSU5yBwgBEgNNQUhAAUgBcAGYAQE&tfu=EgIIAQ",
+      "segmentos": [
+       {
+        "de": "MAH",
+        "a": "SIN",
+        "salida": "2026-12-12T08:15:00",
+        "llegada": "2026-12-13T14:55:00",
+        "escalas": 2,
+        "aerolinea": "Qatar Airways / Vueling",
+        "vuelo": "VY 3601"
+       }
+      ]
+     }
+    ],
+    "avisos": [
+     "Escalas a la ida: BCN (6 h), DOH (2 h). Mismo billete: si pierdes una conexión te recolocan.",
+     "Precio de Google Flights para estas fechas exactas; la vuelta se elige al reservar."
+    ],
+    "insights": {
+     "lowest_price": 1552,
+     "price_level": "high",
+     "typical_price_range": [
+      880,
+      1450
+     ]
+    }
+   }
+  },
+  "PEN|2026-12-12|2027-01-10": {
+   "fecha": "2026-11-23T23:59:29+00:00",
+   "opcion": {
+    "tipo": "directo",
+    "fuente": "Google Flights",
+    "destino": "PEN",
+    "total": 1391.0,
+    "ida": "2026-12-12",
+    "vuelta": "2027-01-10",
+    "noches": 29,
+    "hub": null,
+    "billetes": [
+     {
+      "descripcion": "MAH ⇄ PEN (Google Flights)",
+      "precio": 1391.0,
+      "enlace": "",
+      "google": "https://www.google.com/travel/flights?hl=es&gl=es&curr=EUR&tfs=CBwQAhoeEgoyMDI2LTEyLTEyagcIARIDTUFIcgcIARIDUEVOGh4SCjIwMjctMDEtMTBqBwgBEgNQRU5yBwgBEgNNQUhAAUgBcAGYAQE&tfu=EgIIAQ",
+      "segmentos": [
+       {
+        "de": "MAH",
+        "a": "PEN",
+        "salida": "2026-12-12T08:15:00",
+        "llegada": "2026-12-14T18:00:00",
+        "escalas": 3,
+        "aerolinea": "Qatar Airways / Vueling",
+        "vuelo": "VY 3601"
+       }
+      ]
+     }
+    ],
+    "avisos": [
+     "Escalas a la ida: BCN (23 h), DOH (9 h), HKT (3 h). Mismo billete: si pierdes una conexión te recolocan.",
+     "Precio de Google Flights para estas fechas exactas; la vuelta se elige al reservar."
+    ],
+    "insights": {
+     "lowest_price": 1391,
+     "price_level": "typical",
+     "typical_price_range": [
+      1050,
+      1800
      ]
     }
    }
