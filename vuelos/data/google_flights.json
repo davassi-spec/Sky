@@ -1,8 +1,8 @@
 {
  "estado": {
   "mes": "2026-11",
-  "usadas_mes": 15,
-  "siguiente": 15
+  "usadas_mes": 18,
+  "siguiente": 18
  },
  "resultados": {
   "BKK|2026-12-12|2027-01-10": {
@@ -617,6 +617,138 @@
      "typical_price_range": [
       1050,
       1800
+     ]
+    }
+   }
+  },
+  "SJU|2026-12-12|2027-01-10": {
+   "fecha": "2026-11-24T10:00:46+00:00",
+   "opcion": {
+    "tipo": "directo",
+    "fuente": "Google Flights",
+    "destino": "SJU",
+    "total": 1044.0,
+    "ida": "2026-12-12",
+    "vuelta": "2027-01-10",
+    "noches": 29,
+    "hub": null,
+    "billetes": [
+     {
+      "descripcion": "MAH ⇄ SJU (Google Flights)",
+      "precio": 1044.0,
+      "enlace": "",
+      "google": "https://www.google.com/travel/flights?hl=es&gl=es&curr=EUR&tfs=CBwQAhoeEgoyMDI2LTEyLTEyagcIARIDTUFIcgcIARIDU0pVGh4SCjIwMjctMDEtMTBqBwgBEgNTSlVyBwgBEgNNQUhAAUgBcAGYAQE&tfu=EgIIAQ",
+      "segmentos": [
+       {
+        "de": "MAH",
+        "a": "SJU",
+        "salida": "2026-12-12T07:00:00",
+        "llegada": "2026-12-12T16:40:00",
+        "escalas": 1,
+        "aerolinea": "Iberia",
+        "vuelo": "IB 1042"
+       }
+      ]
+     }
+    ],
+    "avisos": [
+     "Escalas a la ida: MAD (4 h). Mismo billete: si pierdes una conexión te recolocan.",
+     "Precio de Google Flights para estas fechas exactas; la vuelta se elige al reservar."
+    ],
+    "insights": {
+     "lowest_price": 1044,
+     "price_level": "typical",
+     "typical_price_range": [
+      710,
+      1700
+     ]
+    }
+   }
+  },
+  "SJO|2026-12-12|2027-01-10": {
+   "fecha": "2026-11-24T10:00:46+00:00",
+   "opcion": {
+    "tipo": "directo",
+    "fuente": "Google Flights",
+    "destino": "SJO",
+    "total": 1613.0,
+    "ida": "2026-12-12",
+    "vuelta": "2027-01-10",
+    "noches": 29,
+    "hub": null,
+    "billetes": [
+     {
+      "descripcion": "MAH ⇄ SJO (Google Flights)",
+      "precio": 1613.0,
+      "enlace": "",
+      "google": "https://www.google.com/travel/flights?hl=es&gl=es&curr=EUR&tfs=CBwQAhoeEgoyMDI2LTEyLTEyagcIARIDTUFIcgcIARIDU0pPGh4SCjIwMjctMDEtMTBqBwgBEgNTSk9yBwgBEgNNQUhAAUgBcAGYAQE&tfu=EgIIAQ",
+      "segmentos": [
+       {
+        "de": "MAH",
+        "a": "SJO",
+        "salida": "2026-12-12T08:15:00",
+        "llegada": "2026-12-12T20:51:00",
+        "escalas": 2,
+        "aerolinea": "American / Vueling",
+        "vuelo": "VY 3601"
+       }
+      ]
+     }
+    ],
+    "avisos": [
+     "Escalas a la ida: BCN (1 h), MIA (3 h). Mismo billete: si pierdes una conexión te recolocan.",
+     "Precio de Google Flights para estas fechas exactas; la vuelta se elige al reservar."
+    ],
+    "insights": {
+     "lowest_price": 1613,
+     "price_level": "typical",
+     "typical_price_range": [
+      1050,
+      1750
+     ]
+    }
+   }
+  },
+  "LIM|2026-12-12|2027-01-10": {
+   "fecha": "2026-11-24T10:00:46+00:00",
+   "opcion": {
+    "tipo": "directo",
+    "fuente": "Google Flights",
+    "destino": "LIM",
+    "total": 2478.0,
+    "ida": "2026-12-12",
+    "vuelta": "2027-01-10",
+    "noches": 29,
+    "hub": null,
+    "billetes": [
+     {
+      "descripcion": "MAH ⇄ LIM (Google Flights)",
+      "precio": 2478.0,
+      "enlace": "",
+      "google": "https://www.google.com/travel/flights?hl=es&gl=es&curr=EUR&tfs=CBwQAhoeEgoyMDI2LTEyLTEyagcIARIDTUFIcgcIARIDTElNGh4SCjIwMjctMDEtMTBqBwgBEgNMSU1yBwgBEgNNQUhAAUgBcAGYAQE&tfu=EgIIAQ",
+      "segmentos": [
+       {
+        "de": "MAH",
+        "a": "LIM",
+        "salida": "2026-12-12T14:20:00",
+        "llegada": "2026-12-13T06:35:00",
+        "escalas": 2,
+        "aerolinea": "Iberia / LATAM",
+        "vuelo": "IB 2499"
+       }
+      ]
+     }
+    ],
+    "avisos": [
+     "Escalas a la ida: PMI (2 h), MAD (5 h). Mismo billete: si pierdes una conexión te recolocan.",
+     "Precio de Google Flights para estas fechas exactas; la vuelta se elige al reservar."
+    ],
+    "insights": {
+     "lowest_price": 2478,
+     "price_level": "typical",
+     "typical_price_range": [
+      1450,
+      2800
      ]
     }
    }
