@@ -1,8 +1,8 @@
 {
  "estado": {
   "mes": "2026-11",
-  "usadas_mes": 24,
-  "siguiente": 24
+  "usadas_mes": 27,
+  "siguiente": 27
  },
  "resultados": {
   "BKK|2026-12-12|2027-01-10": {
@@ -1015,6 +1015,131 @@
       1800
      ]
     }
+   }
+  },
+  "GIG|2026-12-12|2027-01-10": {
+   "fecha": "2026-11-25T21:47:17+00:00",
+   "opcion": {
+    "tipo": "directo",
+    "fuente": "Google Flights",
+    "destino": "GIG",
+    "total": 2731.0,
+    "ida": "2026-12-12",
+    "vuelta": "2027-01-10",
+    "noches": 29,
+    "hub": null,
+    "billetes": [
+     {
+      "descripcion": "MAH ⇄ GIG (Google Flights)",
+      "precio": 2731.0,
+      "enlace": "",
+      "google": "https://www.google.com/travel/flights?hl=es&gl=es&curr=EUR&tfs=CBwQAhoeEgoyMDI2LTEyLTEyagcIARIDTUFIcgcIARIDR0lHGh4SCjIwMjctMDEtMTBqBwgBEgNHSUdyBwgBEgNNQUhAAUgBcAGYAQE&tfu=EgIIAQ",
+      "segmentos": [
+       {
+        "de": "MAH",
+        "a": "GIG",
+        "salida": "2026-12-12T21:15:00",
+        "llegada": "2026-12-13T18:50:00",
+        "escalas": 1,
+        "aerolinea": "Iberia",
+        "vuelo": "IB 1044"
+       }
+      ]
+     }
+    ],
+    "avisos": [
+     "Escalas a la ida: MAD (13 h). Mismo billete: si pierdes una conexión te recolocan.",
+     "Precio de Google Flights para estas fechas exactas; la vuelta se elige al reservar."
+    ],
+    "insights": {
+     "lowest_price": 2731,
+     "price_level": "high",
+     "typical_price_range": [
+      1200,
+      1800
+     ]
+    }
+   }
+  },
+  "REC|2026-12-12|2027-01-10": {
+   "fecha": "2026-11-25T21:47:17+00:00",
+   "opcion": {
+    "tipo": "directo",
+    "fuente": "Google Flights",
+    "destino": "REC",
+    "total": 1632.0,
+    "ida": "2026-12-12",
+    "vuelta": "2027-01-10",
+    "noches": 29,
+    "hub": null,
+    "billetes": [
+     {
+      "descripcion": "MAH ⇄ REC (Google Flights)",
+      "precio": 1632.0,
+      "enlace": "",
+      "google": "https://www.google.com/travel/flights?hl=es&gl=es&curr=EUR&tfs=CBwQAhoeEgoyMDI2LTEyLTEyagcIARIDTUFIcgcIARIDUkVDGh4SCjIwMjctMDEtMTBqBwgBEgNSRUNyBwgBEgNNQUhAAUgBcAGYAQE&tfu=EgIIAQ",
+      "segmentos": [
+       {
+        "de": "MAH",
+        "a": "REC",
+        "salida": "2026-12-12T07:00:00",
+        "llegada": "2026-12-12T16:45:00",
+        "escalas": 1,
+        "aerolinea": "Iberia",
+        "vuelo": "IB 1042"
+       }
+      ]
+     }
+    ],
+    "avisos": [
+     "Escalas a la ida: MAD (3 h). Mismo billete: si pierdes una conexión te recolocan.",
+     "Precio de Google Flights para estas fechas exactas; la vuelta se elige al reservar."
+    ],
+    "insights": {
+     "lowest_price": 1632,
+     "price_level": "typical",
+     "typical_price_range": [
+      1150,
+      1950
+     ]
+    }
+   }
+  },
+  "PQC|2026-12-12|2027-01-10": {
+   "fecha": "2026-11-25T21:47:17+00:00",
+   "opcion": {
+    "tipo": "directo",
+    "fuente": "Google Flights",
+    "destino": "PQC",
+    "total": 2772.0,
+    "ida": "2026-12-12",
+    "vuelta": "2027-01-10",
+    "noches": 29,
+    "hub": null,
+    "billetes": [
+     {
+      "descripcion": "MAH ⇄ PQC (Google Flights)",
+      "precio": 2772.0,
+      "enlace": "",
+      "google": "https://www.google.com/travel/flights?hl=es&gl=es&curr=EUR&tfs=CBwQAhoeEgoyMDI2LTEyLTEyagcIARIDTUFIcgcIARIDUFFDGh4SCjIwMjctMDEtMTBqBwgBEgNQUUNyBwgBEgNNQUhAAUgBcAGYAQE&tfu=EgIIAQ",
+      "segmentos": [
+       {
+        "de": "MAH",
+        "a": "PQC",
+        "salida": "2026-12-12T21:15:00",
+        "llegada": "2026-12-14T13:30:00",
+        "escalas": 3,
+        "aerolinea": "Iberia / Qatar Airways / Vietnam Airlines",
+        "vuelo": "IB 1044"
+       }
+      ]
+     }
+    ],
+    "avisos": [
+     "Escalas a la ida: MAD (9 h), DOH (3 h), HAN (4 h). Mismo billete: si pierdes una conexión te recolocan.",
+     "Precio de Google Flights para estas fechas exactas; la vuelta se elige al reservar."
+    ],
+    "insights": {}
    }
   }
  }
