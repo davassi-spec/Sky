@@ -1,5 +1,5 @@
 {
- "generado": "2026-11-24T22:32:34+00:00",
+ "generado": "2026-11-25T08:44:58+00:00",
  "fuente": "Travelpayouts / Aviasales (precios en caché de búsquedas recientes)",
  "config": {
   "origen": "MAH",
@@ -34,14 +34,14 @@
  ],
  "google_flights": {
   "mes": "2026-11",
-  "usadas_mes": 21
+  "usadas_mes": 24
  },
  "diagnostico": {
-  "registros_api": 2910,
-  "consultas_con_datos": 224,
+  "registros_api": 2900,
+  "consultas_con_datos": 223,
   "descartes": {
-   "hub: fechas fuera de ventana": 86,
-   "por encima del presupuesto": 2481
+   "hub: fechas fuera de ventana": 82,
+   "por encima del presupuesto": 2470
   },
   "muestras": [
    {
@@ -462,86 +462,6 @@
     {
      "tipo": "autoconexion",
      "destino": "BKK",
-     "total": 831.0,
-     "ida": "2026-12-13",
-     "vuelta": "2027-01-13",
-     "noches": 31,
-     "hub": "BCN",
-     "billetes": [
-      {
-       "descripcion": "MAH → BCN (precio estimado: otros días del mes)",
-       "precio": 71.0,
-       "enlace": "",
-       "google": "https://www.google.com/travel/flights?q=Flights%20from%20MAH%20to%20BCN%20on%202026-12-13%20one%20way",
-       "segmentos": [
-        {
-         "de": "MAH",
-         "a": "BCN",
-         "salida": "2026-12-13",
-         "llegada": "",
-         "escalas": 0,
-         "aerolinea": "",
-         "vuelo": ""
-        }
-       ]
-      },
-      {
-       "descripcion": "BCN ⇄ BKK",
-       "precio": 700.0,
-       "enlace": "https://www.aviasales.com/search/BCN1412BKK12011?t=CA17972304001797365400001890BCNGVAPVGKMGBKK17997786001799971800003580DMKHANPVGLGWBCN_b949eff1206c689ede5a8056805fb378_63168&search_date=17112026&expected_price_uuid=01a1ebb7-009a-8040-2a0a-d37559a37e29&static_fare_key=TY%7CP0%7CH0%7CL0%7CCH0%7CR0%7CTBC0&itinerary_key=K_LliUXke9XuLm41g7pLpw&expected_price_source=share&expected_price_currency=eur&expected_price=700",
-       "google": "https://www.google.com/travel/flights?q=Flights%20from%20BCN%20to%20BKK%20on%202026-12-14%20through%202027-01-12",
-       "segmentos": [
-        {
-         "de": "BCN",
-         "a": "BKK",
-         "salida": "2026-12-14T06:40:00+01:00",
-         "llegada": "2026-12-15T02:10:00+01:00",
-         "escalas": 3,
-         "aerolinea": "VY",
-         "vuelo": "1122"
-        },
-        {
-         "de": "BKK",
-         "a": "BCN",
-         "salida": "2027-01-12T18:30:00+07:00",
-         "llegada": "2027-01-13T14:10:00+07:00",
-         "escalas": 3,
-         "aerolinea": "VY",
-         "vuelo": ""
-        }
-       ]
-      },
-      {
-       "descripcion": "BCN → MAH (precio estimado: precio de referencia)",
-       "precio": 60.0,
-       "enlace": "",
-       "google": "https://www.google.com/travel/flights?q=Flights%20from%20BCN%20to%20MAH%20on%202027-01-13%20one%20way",
-       "segmentos": [
-        {
-         "de": "BCN",
-         "a": "MAH",
-         "salida": "2027-01-13",
-         "llegada": "",
-         "escalas": 0,
-         "aerolinea": "",
-         "vuelo": ""
-        }
-       ]
-      }
-     ],
-     "avisos": [
-      "Billetes separados: si un vuelo se retrasa y pierdes el siguiente, no te recolocan.",
-      "Vuelo MAH → BCN: precio estimado (~71 €); búscalo para el 13/12, llegando antes de las 02:40.",
-      "Ida: probablemente toque dormir en BCN la noche antes.",
-      "Vuelo BCN → MAH: precio estimado (~60 €); búscalo para el 13/01, saliendo después de las 12:10.",
-      "Recoge y vuelve a facturar el equipaje en el hub."
-     ],
-     "fuente": "Aviasales",
-     "desde": "MAH"
-    },
-    {
-     "tipo": "autoconexion",
-     "destino": "BKK",
      "total": 839.0,
      "ida": "2026-12-14",
      "vuelta": "2027-01-15",
@@ -620,6 +540,86 @@
      "desde": "MAH"
     },
     {
+     "tipo": "autoconexion",
+     "destino": "BKK",
+     "total": 850.0,
+     "ida": "2026-12-10",
+     "vuelta": "2027-01-01",
+     "noches": 22,
+     "hub": "BCN",
+     "billetes": [
+      {
+       "descripcion": "MAH → BCN (precio estimado: otros días del mes)",
+       "precio": 71.0,
+       "enlace": "",
+       "google": "https://www.google.com/travel/flights?q=Flights%20from%20MAH%20to%20BCN%20on%202026-12-10%20one%20way",
+       "segmentos": [
+        {
+         "de": "MAH",
+         "a": "BCN",
+         "salida": "2026-12-10",
+         "llegada": "",
+         "escalas": 0,
+         "aerolinea": "",
+         "vuelo": ""
+        }
+       ]
+      },
+      {
+       "descripcion": "BCN ⇄ BKK",
+       "precio": 719.0,
+       "enlace": "https://www.aviasales.com/search/BCN1112BKK01011?t=CA17969889001797095100001410BCNSZXBKK17987706001798874700002095BKKPVGBCN_31602423bdb5162585ec57123f4d92e6_64504&search_date=25112026&expected_price_uuid=01a211c5-417a-8031-6c9b-fe0bbc41c742&static_fare_key=TY%7CP1%7CH0%7CL1_1_23%7CCH0%7CR0%7CTBC1&itinerary_key=Xpjl5WzxBAn3MpDhv0mpgg&expected_price_source=share&expected_price_currency=eur&expected_price=719",
+       "google": "https://www.google.com/travel/flights?q=Flights%20from%20BCN%20to%20BKK%20on%202026-12-11%20through%202027-01-01",
+       "segmentos": [
+        {
+         "de": "BCN",
+         "a": "BKK",
+         "salida": "2026-12-11T11:35:00+01:00",
+         "llegada": "2026-12-12T03:10:00+01:00",
+         "escalas": 1,
+         "aerolinea": "ZH",
+         "vuelo": "866"
+        },
+        {
+         "de": "BKK",
+         "a": "BCN",
+         "salida": "2027-01-01T02:30:00+07:00",
+         "llegada": "2027-01-01T20:30:00+07:00",
+         "escalas": 1,
+         "aerolinea": "ZH",
+         "vuelo": ""
+        }
+       ]
+      },
+      {
+       "descripcion": "BCN → MAH (precio estimado: precio de referencia)",
+       "precio": 60.0,
+       "enlace": "",
+       "google": "https://www.google.com/travel/flights?q=Flights%20from%20BCN%20to%20MAH%20on%202027-01-01%20one%20way",
+       "segmentos": [
+        {
+         "de": "BCN",
+         "a": "MAH",
+         "salida": "2027-01-01",
+         "llegada": "",
+         "escalas": 0,
+         "aerolinea": "",
+         "vuelo": ""
+        }
+       ]
+      }
+     ],
+     "avisos": [
+      "Billetes separados: si un vuelo se retrasa y pierdes el siguiente, no te recolocan.",
+      "Vuelo MAH → BCN: precio estimado (~71 €); búscalo para el 10/12, llegando antes de las 07:35.",
+      "Ida: probablemente toque dormir en BCN la noche antes.",
+      "Vuelo BCN → MAH: precio estimado (~60 €); búscalo para el 01/01, saliendo después de las 18:30.",
+      "Recoge y vuelve a facturar el equipaje en el hub."
+     ],
+     "fuente": "Aviasales",
+     "desde": "MAH"
+    },
+    {
      "tipo": "desde_hub",
      "destino": "BKK",
      "total": 591.0,
@@ -664,48 +664,6 @@
     {
      "tipo": "desde_hub",
      "destino": "BKK",
-     "total": 700.0,
-     "ida": "2026-12-14",
-     "vuelta": "2027-01-13",
-     "noches": 30,
-     "hub": "BCN",
-     "billetes": [
-      {
-       "descripcion": "BCN ⇄ BKK",
-       "precio": 700.0,
-       "enlace": "https://www.aviasales.com/search/BCN1412BKK12011?t=CA17972304001797365400001890BCNGVAPVGKMGBKK17997786001799971800003580DMKHANPVGLGWBCN_b949eff1206c689ede5a8056805fb378_63168&search_date=17112026&expected_price_uuid=01a1ebb7-009a-8040-2a0a-d37559a37e29&static_fare_key=TY%7CP0%7CH0%7CL0%7CCH0%7CR0%7CTBC0&itinerary_key=K_LliUXke9XuLm41g7pLpw&expected_price_source=share&expected_price_currency=eur&expected_price=700",
-       "google": "https://www.google.com/travel/flights?q=Flights%20from%20BCN%20to%20BKK%20on%202026-12-14%20through%202027-01-12",
-       "segmentos": [
-        {
-         "de": "BCN",
-         "a": "BKK",
-         "salida": "2026-12-14T06:40:00+01:00",
-         "llegada": "2026-12-15T02:10:00+01:00",
-         "escalas": 3,
-         "aerolinea": "VY",
-         "vuelo": "1122"
-        },
-        {
-         "de": "BKK",
-         "a": "BCN",
-         "salida": "2027-01-12T18:30:00+07:00",
-         "llegada": "2027-01-13T14:10:00+07:00",
-         "escalas": 3,
-         "aerolinea": "VY",
-         "vuelo": ""
-        }
-       ]
-      }
-     ],
-     "avisos": [
-      "Sale de BCN: el viaje desde Menorca hasta BCN va aparte."
-     ],
-     "fuente": "Aviasales",
-     "desde": "BCN"
-    },
-    {
-     "tipo": "desde_hub",
-     "destino": "BKK",
      "total": 708.0,
      "ida": "2026-12-14",
      "vuelta": "2027-01-15",
@@ -734,6 +692,48 @@
          "llegada": "2027-01-15T00:10:00+07:00",
          "escalas": 1,
          "aerolinea": "QR",
+         "vuelo": ""
+        }
+       ]
+      }
+     ],
+     "avisos": [
+      "Sale de BCN: el viaje desde Menorca hasta BCN va aparte."
+     ],
+     "fuente": "Aviasales",
+     "desde": "BCN"
+    },
+    {
+     "tipo": "desde_hub",
+     "destino": "BKK",
+     "total": 719.0,
+     "ida": "2026-12-11",
+     "vuelta": "2027-01-01",
+     "noches": 21,
+     "hub": "BCN",
+     "billetes": [
+      {
+       "descripcion": "BCN ⇄ BKK",
+       "precio": 719.0,
+       "enlace": "https://www.aviasales.com/search/BCN1112BKK01011?t=CA17969889001797095100001410BCNSZXBKK17987706001798874700002095BKKPVGBCN_31602423bdb5162585ec57123f4d92e6_64504&search_date=25112026&expected_price_uuid=01a211c5-417a-8031-6c9b-fe0bbc41c742&static_fare_key=TY%7CP1%7CH0%7CL1_1_23%7CCH0%7CR0%7CTBC1&itinerary_key=Xpjl5WzxBAn3MpDhv0mpgg&expected_price_source=share&expected_price_currency=eur&expected_price=719",
+       "google": "https://www.google.com/travel/flights?q=Flights%20from%20BCN%20to%20BKK%20on%202026-12-11%20through%202027-01-01",
+       "segmentos": [
+        {
+         "de": "BCN",
+         "a": "BKK",
+         "salida": "2026-12-11T11:35:00+01:00",
+         "llegada": "2026-12-12T03:10:00+01:00",
+         "escalas": 1,
+         "aerolinea": "ZH",
+         "vuelo": "866"
+        },
+        {
+         "de": "BKK",
+         "a": "BCN",
+         "salida": "2027-01-01T02:30:00+07:00",
+         "llegada": "2027-01-01T20:30:00+07:00",
+         "escalas": 1,
+         "aerolinea": "ZH",
          "vuelo": ""
         }
        ]
@@ -1069,6 +1069,10 @@
     },
     {
      "fecha": "2026-11-24T22:32:34+00:00",
+     "precio": 722.0
+    },
+    {
+     "fecha": "2026-11-25T08:44:58+00:00",
      "precio": 722.0
     }
    ]
@@ -1676,6 +1680,10 @@
     {
      "fecha": "2026-11-24T22:32:34+00:00",
      "precio": 756.0
+    },
+    {
+     "fecha": "2026-11-25T08:44:58+00:00",
+     "precio": 756.0
     }
    ]
   },
@@ -2093,22 +2101,22 @@
     {
      "tipo": "autoconexion",
      "destino": "CMB",
-     "total": 880.0,
-     "ida": "2026-12-30",
-     "vuelta": "2027-01-14",
-     "noches": 15,
+     "total": 888.0,
+     "ida": "2026-12-22",
+     "vuelta": "2027-01-07",
+     "noches": 16,
      "hub": "IST",
      "billetes": [
       {
        "descripcion": "MAH → IST (precio estimado: precio de referencia)",
        "precio": 150.0,
        "enlace": "",
-       "google": "https://www.google.com/travel/flights?q=Flights%20from%20MAH%20to%20IST%20on%202026-12-30%20one%20way",
+       "google": "https://www.google.com/travel/flights?q=Flights%20from%20MAH%20to%20IST%20on%202026-12-22%20one%20way",
        "segmentos": [
         {
          "de": "MAH",
          "a": "IST",
-         "salida": "2026-12-30",
+         "salida": "2026-12-22",
          "llegada": "",
          "escalas": 0,
          "aerolinea": "",
@@ -2118,15 +2126,15 @@
       },
       {
        "descripcion": "IST ⇄ CMB",
-       "precio": 580.0,
-       "enlace": "https://www.aviasales.com/search/IST3012CMB14011?t=WY17986554001798775400001850ISTMCTCMB17999079001799948400000825CMBMCTIST_22cda81e9e1e537f307b4b869f278a01_52245&search_date=22112026&expected_price_uuid=01a201fd-9088-8030-ae2b-e07e8f3ad13e&static_fare_key=TY%7CP1%7CH0%7CL1_1_30%7CCH1%7CR1%7CTBC1&itinerary_key=pbCSNETNPfakNbHHwYYiRg&expected_price_source=share&expected_price_currency=eur&expected_price=580",
-       "google": "https://www.google.com/travel/flights?q=Flights%20from%20IST%20to%20CMB%20on%202026-12-30%20through%202027-01-14",
+       "precio": 588.0,
+       "enlace": "https://www.aviasales.com/search/IST2212CMB07011?t=WY17979642001798089900001945ISTMCTCMB17993031001799343600000825CMBMCTIST_001d268780a13ea9970a204ecb457c12_52921&search_date=19112026&expected_price_uuid=01a1f4b6-889b-8030-a7ed-507b7e742a18&static_fare_key=TY%7CP1%7CH0%7CL1_1_30%7CCH1%7CR1%7CTBC1&itinerary_key=yg6CPAPV6h8tFdolLs9qzw&expected_price_source=share&expected_price_currency=eur&expected_price=588",
+       "google": "https://www.google.com/travel/flights?q=Flights%20from%20IST%20to%20CMB%20on%202026-12-22%20through%202027-01-07",
        "segmentos": [
         {
          "de": "IST",
          "a": "CMB",
-         "salida": "2026-12-30T18:30:00+03:00",
-         "llegada": "2026-12-31T03:25:00+03:00",
+         "salida": "2026-12-22T18:30:00+03:00",
+         "llegada": "2026-12-23T03:25:00+03:00",
          "escalas": 1,
          "aerolinea": "WY",
          "vuelo": "166"
@@ -2134,8 +2142,8 @@
         {
          "de": "CMB",
          "a": "IST",
-         "salida": "2027-01-14T06:25:00+05:30",
-         "llegada": "2027-01-14T16:15:00+05:30",
+         "salida": "2027-01-07T06:25:00+05:30",
+         "llegada": "2027-01-07T16:15:00+05:30",
          "escalas": 1,
          "aerolinea": "WY",
          "vuelo": ""
@@ -2146,12 +2154,12 @@
        "descripcion": "IST → MAH (precio estimado: precio de referencia)",
        "precio": 150.0,
        "enlace": "",
-       "google": "https://www.google.com/travel/flights?q=Flights%20from%20IST%20to%20MAH%20on%202027-01-14%20one%20way",
+       "google": "https://www.google.com/travel/flights?q=Flights%20from%20IST%20to%20MAH%20on%202027-01-07%20one%20way",
        "segmentos": [
         {
          "de": "IST",
          "a": "MAH",
-         "salida": "2027-01-14",
+         "salida": "2027-01-07",
          "llegada": "",
          "escalas": 0,
          "aerolinea": "",
@@ -2162,8 +2170,8 @@
      ],
      "avisos": [
       "Billetes separados: si un vuelo se retrasa y pierdes el siguiente, no te recolocan.",
-      "Vuelo MAH → IST: precio estimado (~150 €); búscalo para el 30/12, llegando antes de las 14:30.",
-      "Vuelo IST → MAH: precio estimado (~150 €); búscalo para el 14/01, saliendo después de las 17:45.",
+      "Vuelo MAH → IST: precio estimado (~150 €); búscalo para el 22/12, llegando antes de las 14:30.",
+      "Vuelo IST → MAH: precio estimado (~150 €); búscalo para el 07/01, saliendo después de las 17:45.",
       "Recoge y vuelve a facturar el equipaje en el hub."
      ],
      "fuente": "Aviasales",
@@ -2273,6 +2281,48 @@
          "a": "CMB",
          "salida": "2026-12-29T12:45:00+01:00",
          "llegada": "2026-12-30T01:05:00+01:00",
+         "escalas": 2,
+         "aerolinea": "PC",
+         "vuelo": "1092"
+        },
+        {
+         "de": "CMB",
+         "a": "BCN",
+         "salida": "2027-01-10T18:15:00+05:30",
+         "llegada": "2027-01-11T07:20:00+05:30",
+         "escalas": 2,
+         "aerolinea": "PC",
+         "vuelo": ""
+        }
+       ]
+      }
+     ],
+     "avisos": [
+      "Sale de BCN: el viaje desde Menorca hasta BCN va aparte."
+     ],
+     "fuente": "Aviasales",
+     "desde": "BCN"
+    },
+    {
+     "tipo": "desde_hub",
+     "destino": "CMB",
+     "total": 957.0,
+     "ida": "2026-12-27",
+     "vuelta": "2027-01-11",
+     "noches": 15,
+     "hub": "BCN",
+     "billetes": [
+      {
+       "descripcion": "BCN ⇄ CMB",
+       "precio": 957.0,
+       "enlace": "https://www.aviasales.com/search/BCN2712CMB10011?t=UL17983755001798528800002285BCNSAWKWICMB17996049001799754300002760CMBKWISAWBCN_c1c947c422ea917da4129588ec194e03_85926&search_date=25112026&expected_price_uuid=01a2113c-04a6-8030-ab52-06895025ae25&static_fare_key=TY%7CP1%7CH0%7CL0%7CCH0%7CR0%7CTBC0&itinerary_key=vIxhZ4vbJiUI20XhD6ufIg&expected_price_source=share&expected_price_currency=eur&expected_price=957",
+       "google": "https://www.google.com/travel/flights?q=Flights%20from%20BCN%20to%20CMB%20on%202026-12-27%20through%202027-01-10",
+       "segmentos": [
+        {
+         "de": "BCN",
+         "a": "CMB",
+         "salida": "2026-12-27T12:45:00+01:00",
+         "llegada": "2026-12-28T01:05:00+01:00",
          "escalas": 2,
          "aerolinea": "PC",
          "vuelo": "1092"
@@ -2493,6 +2543,10 @@
     },
     {
      "fecha": "2026-11-24T22:32:34+00:00",
+     "precio": 811.0
+    },
+    {
+     "fecha": "2026-11-25T08:44:58+00:00",
      "precio": 811.0
     }
    ]
@@ -3032,6 +3086,48 @@
     {
      "tipo": "desde_hub",
      "destino": "HKT",
+     "total": 747.0,
+     "ida": "2026-12-25",
+     "vuelta": "2027-01-31",
+     "noches": 37,
+     "hub": "BCN",
+     "billetes": [
+      {
+       "descripcion": "BCN ⇄ HKT",
+       "precio": 747.0,
+       "enlace": "https://www.aviasales.com/search/BCN2512HKT31011?t=EY17981931001798309200001575BCNAUHHKT18013866001801464900001665HKTAUHBCN_800dc60ae5250e10466dc878e59eaa76_67086&search_date=25112026&expected_price_uuid=01a211c8-3245-8030-275a-15e4ad692609&static_fare_key=TY%7CP0%7CH1%7CL0%7CCH0%7CR0%7CTBC0&itinerary_key=OYCfVLYYjoXwb6l3kZkWuw&expected_price_source=share&expected_price_currency=eur&expected_price=747",
+       "google": "https://www.google.com/travel/flights?q=Flights%20from%20BCN%20to%20HKT%20on%202026-12-25%20through%202027-01-31",
+       "segmentos": [
+        {
+         "de": "BCN",
+         "a": "HKT",
+         "salida": "2026-12-25T10:05:00+01:00",
+         "llegada": "2026-12-25T22:50:00+01:00",
+         "escalas": 1,
+         "aerolinea": "EY",
+         "vuelo": "112"
+        },
+        {
+         "de": "HKT",
+         "a": "BCN",
+         "salida": "2027-01-31T09:10:00+07:00",
+         "llegada": "2027-01-31T23:05:00+07:00",
+         "escalas": 1,
+         "aerolinea": "EY",
+         "vuelo": ""
+        }
+       ]
+      }
+     ],
+     "avisos": [
+      "Sale de BCN: el viaje desde Menorca hasta BCN va aparte."
+     ],
+     "fuente": "Aviasales",
+     "desde": "BCN"
+    },
+    {
+     "tipo": "desde_hub",
+     "destino": "HKT",
      "total": 766.0,
      "ida": "2026-12-15",
      "vuelta": "2027-01-15",
@@ -3227,6 +3323,10 @@
     },
     {
      "fecha": "2026-11-24T22:32:34+00:00",
+     "precio": 820.0
+    },
+    {
+     "fecha": "2026-11-25T08:44:58+00:00",
      "precio": 820.0
     }
    ]
@@ -3569,85 +3669,6 @@
     {
      "tipo": "autoconexion",
      "destino": "SGN",
-     "total": 885.0,
-     "ida": "2026-12-30",
-     "vuelta": "2027-01-10",
-     "noches": 11,
-     "hub": "IST",
-     "billetes": [
-      {
-       "descripcion": "MAH → IST (precio estimado: precio de referencia)",
-       "precio": 150.0,
-       "enlace": "",
-       "google": "https://www.google.com/travel/flights?q=Flights%20from%20MAH%20to%20IST%20on%202026-12-30%20one%20way",
-       "segmentos": [
-        {
-         "de": "MAH",
-         "a": "IST",
-         "salida": "2026-12-30",
-         "llegada": "",
-         "escalas": 0,
-         "aerolinea": "",
-         "vuelo": ""
-        }
-       ]
-      },
-      {
-       "descripcion": "IST ⇄ SGN",
-       "precio": 585.0,
-       "enlace": "https://www.aviasales.com/search/IST3012SGN09011?t=MU17986398001798774200002000ISTPVGSGN17995137001799655000002595SGNKMGPVGIST_225d0709288dcd74fb984fb4c7493e73_52869&search_date=18112026&expected_price_uuid=01a1eff0-4990-8030-2c5f-447b5e2987ad&static_fare_key=TY%7CP0%7CH1%7CL1_2_0%7CCH1%7CR0%7CTBC1&itinerary_key=2LXfc8h0cW0S_m05M_kRXg&expected_price_source=share&expected_price_currency=eur&expected_price=585",
-       "google": "https://www.google.com/travel/flights?q=Flights%20from%20IST%20to%20SGN%20on%202026-12-30%20through%202027-01-09",
-       "segmentos": [
-        {
-         "de": "IST",
-         "a": "SGN",
-         "salida": "2026-12-30T14:10:00+03:00",
-         "llegada": "2026-12-31T05:05:00+03:00",
-         "escalas": 1,
-         "aerolinea": "MU",
-         "vuelo": "704"
-        },
-        {
-         "de": "SGN",
-         "a": "IST",
-         "salida": "2027-01-09T16:55:00+07:00",
-         "llegada": "2027-01-10T11:15:00+07:00",
-         "escalas": 2,
-         "aerolinea": "MU",
-         "vuelo": ""
-        }
-       ]
-      },
-      {
-       "descripcion": "IST → MAH (precio estimado: precio de referencia)",
-       "precio": 150.0,
-       "enlace": "",
-       "google": "https://www.google.com/travel/flights?q=Flights%20from%20IST%20to%20MAH%20on%202027-01-10%20one%20way",
-       "segmentos": [
-        {
-         "de": "IST",
-         "a": "MAH",
-         "salida": "2027-01-10",
-         "llegada": "",
-         "escalas": 0,
-         "aerolinea": "",
-         "vuelo": ""
-        }
-       ]
-      }
-     ],
-     "avisos": [
-      "Billetes separados: si un vuelo se retrasa y pierdes el siguiente, no te recolocan.",
-      "Vuelo MAH → IST: precio estimado (~150 €); búscalo para el 30/12, llegando antes de las 10:10.",
-      "Vuelo IST → MAH: precio estimado (~150 €); búscalo para el 10/01, saliendo después de las 11:15.",
-      "Recoge y vuelve a facturar el equipaje en el hub."
-     ],
-     "fuente": "Aviasales",
-     "desde": "MAH"
-    },
-    {
-     "tipo": "autoconexion",
-     "destino": "SGN",
      "total": 902.0,
      "ida": "2026-12-15",
      "vuelta": "2027-01-20",
@@ -3726,6 +3747,85 @@
      "desde": "MAH"
     },
     {
+     "tipo": "autoconexion",
+     "destino": "SGN",
+     "total": 921.0,
+     "ida": "2026-12-14",
+     "vuelta": "2027-01-22",
+     "noches": 39,
+     "hub": "AMS",
+     "billetes": [
+      {
+       "descripcion": "MAH → AMS (precio estimado: precio de referencia)",
+       "precio": 150.0,
+       "enlace": "",
+       "google": "https://www.google.com/travel/flights?q=Flights%20from%20MAH%20to%20AMS%20on%202026-12-14%20one%20way",
+       "segmentos": [
+        {
+         "de": "MAH",
+         "a": "AMS",
+         "salida": "2026-12-14",
+         "llegada": "",
+         "escalas": 0,
+         "aerolinea": "",
+         "vuelo": ""
+        }
+       ]
+      },
+      {
+       "descripcion": "AMS ⇄ SGN",
+       "precio": 621.0,
+       "enlace": "https://www.aviasales.com/search/AMS1412SGN21011?t=CZ17972844001797372600001110AMSCANSGN18005478001800644100001965SGNCANAMS_b67f6bb178b2eeb7f3fe481b42c4f15f_55917&search_date=21112026&expected_price_uuid=01a1ffa7-c4cc-8031-6d04-24f42a179f76&static_fare_key=TY%7CP0%7CH1%7CL1_1_23%7CCH1%7CR0%7CTBC1&itinerary_key=nIYS2kR0umiiuAqOtdSZTQ&expected_price_source=share&expected_price_currency=eur&expected_price=621",
+       "google": "https://www.google.com/travel/flights?q=Flights%20from%20AMS%20to%20SGN%20on%202026-12-14%20through%202027-01-21",
+       "segmentos": [
+        {
+         "de": "AMS",
+         "a": "SGN",
+         "salida": "2026-12-14T21:40:00+01:00",
+         "llegada": "2026-12-15T11:55:00+01:00",
+         "escalas": 1,
+         "aerolinea": "CZ",
+         "vuelo": "308"
+        },
+        {
+         "de": "SGN",
+         "a": "AMS",
+         "salida": "2027-01-21T16:10:00+07:00",
+         "llegada": "2027-01-22T07:30:00+07:00",
+         "escalas": 1,
+         "aerolinea": "CZ",
+         "vuelo": ""
+        }
+       ]
+      },
+      {
+       "descripcion": "AMS → MAH (precio estimado: precio de referencia)",
+       "precio": 150.0,
+       "enlace": "",
+       "google": "https://www.google.com/travel/flights?q=Flights%20from%20AMS%20to%20MAH%20on%202027-01-22%20one%20way",
+       "segmentos": [
+        {
+         "de": "AMS",
+         "a": "MAH",
+         "salida": "2027-01-22",
+         "llegada": "",
+         "escalas": 0,
+         "aerolinea": "",
+         "vuelo": ""
+        }
+       ]
+      }
+     ],
+     "avisos": [
+      "Billetes separados: si un vuelo se retrasa y pierdes el siguiente, no te recolocan.",
+      "Vuelo MAH → AMS: precio estimado (~150 €); búscalo para el 14/12, llegando antes de las 17:40.",
+      "Vuelo AMS → MAH: precio estimado (~150 €); búscalo para el 22/01, saliendo después de las 05:30.",
+      "Recoge y vuelve a facturar el equipaje en el hub."
+     ],
+     "fuente": "Aviasales",
+     "desde": "MAH"
+    },
+    {
      "tipo": "desde_hub",
      "destino": "SGN",
      "total": 829.0,
@@ -3797,6 +3897,10 @@
     },
     {
      "fecha": "2026-11-24T22:32:34+00:00",
+     "precio": 848.0
+    },
+    {
+     "fecha": "2026-11-25T08:44:58+00:00",
      "precio": 848.0
     }
    ]
@@ -4045,6 +4149,10 @@
     },
     {
      "fecha": "2026-11-24T22:32:34+00:00",
+     "precio": 858.0
+    },
+    {
+     "fecha": "2026-11-25T08:44:58+00:00",
      "precio": 858.0
     }
    ]
@@ -4408,7 +4516,7 @@
       {
        "descripcion": "IST ⇄ KUL",
        "precio": 610.0,
-       "enlace": "https://www.aviasales.com/search/IST3012KUL13011?t=D717986512001798706700000625SAWKUL17998320001799856300000705KULSAW_7186303376d5ae4f75ba6d775b40c1a5_54495&search_date=22112026&expected_price_uuid=01a204f0-e9d9-8031-201b-07565bfca67a&static_fare_key=TY%7CP1_JW%7CH1%7CL0%7CCH0%7CR0%7CTBC0&itinerary_key=cpayR_A4sFmKEQENORA89A&expected_price_source=share&expected_price_currency=eur&expected_price=610",
+       "enlace": "https://www.aviasales.com/search/IST3012KUL13011?t=D717986512001798706700000625SAWKUL17998320001799856300000705KULSAW_7186303376d5ae4f75ba6d775b40c1a5_54903&search_date=25112026&expected_price_uuid=01a211d4-f6f7-8030-ee0d-14de06e72f98&static_fare_key=TY%7CP1_JW%7CH0%7CL0%7CCH0%7CR0%7CTBC0&itinerary_key=cpayR_A4sFmKEQENORA89A&expected_price_source=share&expected_price_currency=eur&expected_price=610",
        "google": "https://www.google.com/travel/flights?q=Flights%20from%20IST%20to%20KUL%20on%202026-12-30%20through%202027-01-13",
        "segmentos": [
         {
@@ -4695,6 +4803,584 @@
     {
      "fecha": "2026-11-24T22:32:34+00:00",
      "precio": 863.0
+    },
+    {
+     "fecha": "2026-11-25T08:44:58+00:00",
+     "precio": 863.0
+    }
+   ]
+  },
+  {
+   "iata": "MLE",
+   "ciudad": "Malé",
+   "pais": "Maldivas",
+   "region": "Sur de Asia",
+   "temp_max": 30,
+   "temp_min": 26,
+   "lluvia": "seca",
+   "seguridad": 5,
+   "playa": true,
+   "ref": 900,
+   "nota": "El vuelo puede salir bien; el alojamiento no suele.",
+   "apto": true,
+   "mejor": {
+    "tipo": "autoconexion",
+    "destino": "MLE",
+    "total": 905.0,
+    "ida": "2026-12-08",
+    "vuelta": "2027-01-18",
+    "noches": 41,
+    "hub": "IST",
+    "billetes": [
+     {
+      "descripcion": "MAH → IST (precio estimado: precio de referencia)",
+      "precio": 150.0,
+      "enlace": "",
+      "google": "https://www.google.com/travel/flights?q=Flights%20from%20MAH%20to%20IST%20on%202026-12-08%20one%20way",
+      "segmentos": [
+       {
+        "de": "MAH",
+        "a": "IST",
+        "salida": "2026-12-08",
+        "llegada": "",
+        "escalas": 0,
+        "aerolinea": "",
+        "vuelo": ""
+       }
+      ]
+     },
+     {
+      "descripcion": "IST ⇄ MLE",
+      "precio": 605.0,
+      "enlace": "https://www.aviasales.com/search/IST0812MLE17011?t=J217967687001796895900002000ISTGYDMLE18001863001800220500000690MLEJEDIST_f5bba1ef10f785085595229e9dde004d_54470&search_date=24112026&expected_price_uuid=01a20dc3-6745-8030-a7e1-4ab8c9b83389&static_fare_key=TY%7CP0%7CH1%7CL0%7CCH0%7CR0%7CTBC0&itinerary_key=a93d1uniDQUw55-FNyghVQ&expected_price_source=share&expected_price_currency=eur&expected_price=605",
+      "google": "https://www.google.com/travel/flights?q=Flights%20from%20IST%20to%20MLE%20on%202026-12-08%20through%202027-01-17",
+      "segmentos": [
+       {
+        "de": "IST",
+        "a": "MLE",
+        "salida": "2026-12-08T22:25:00+03:00",
+        "llegada": "2026-12-09T08:20:00+03:00",
+        "escalas": 1,
+        "aerolinea": "J2",
+        "vuelo": "78"
+       },
+       {
+        "de": "MLE",
+        "a": "IST",
+        "salida": "2027-01-17T11:45:00+05:00",
+        "llegada": "2027-01-17T21:45:00+05:00",
+        "escalas": 1,
+        "aerolinea": "J2",
+        "vuelo": ""
+       }
+      ]
+     },
+     {
+      "descripcion": "IST → MAH (precio estimado: precio de referencia)",
+      "precio": 150.0,
+      "enlace": "",
+      "google": "https://www.google.com/travel/flights?q=Flights%20from%20IST%20to%20MAH%20on%202027-01-18%20one%20way",
+      "segmentos": [
+       {
+        "de": "IST",
+        "a": "MAH",
+        "salida": "2027-01-18",
+        "llegada": "",
+        "escalas": 0,
+        "aerolinea": "",
+        "vuelo": ""
+       }
+      ]
+     }
+    ],
+    "avisos": [
+     "Billetes separados: si un vuelo se retrasa y pierdes el siguiente, no te recolocan.",
+     "Vuelo MAH → IST: precio estimado (~150 €); búscalo para el 08/12, llegando antes de las 18:25.",
+     "Vuelo IST → MAH: precio estimado (~150 €); búscalo para el 18/01.",
+     "Vuelta: probablemente toque dormir en IST antes de volver.",
+     "Recoge y vuelve a facturar el equipaje en el hub."
+    ],
+    "fuente": "Aviasales",
+    "desde": "MAH"
+   },
+   "opciones": [
+    {
+     "tipo": "autoconexion",
+     "destino": "MLE",
+     "total": 905.0,
+     "ida": "2026-12-08",
+     "vuelta": "2027-01-18",
+     "noches": 41,
+     "hub": "IST",
+     "billetes": [
+      {
+       "descripcion": "MAH → IST (precio estimado: precio de referencia)",
+       "precio": 150.0,
+       "enlace": "",
+       "google": "https://www.google.com/travel/flights?q=Flights%20from%20MAH%20to%20IST%20on%202026-12-08%20one%20way",
+       "segmentos": [
+        {
+         "de": "MAH",
+         "a": "IST",
+         "salida": "2026-12-08",
+         "llegada": "",
+         "escalas": 0,
+         "aerolinea": "",
+         "vuelo": ""
+        }
+       ]
+      },
+      {
+       "descripcion": "IST ⇄ MLE",
+       "precio": 605.0,
+       "enlace": "https://www.aviasales.com/search/IST0812MLE17011?t=J217967687001796895900002000ISTGYDMLE18001863001800220500000690MLEJEDIST_f5bba1ef10f785085595229e9dde004d_54470&search_date=24112026&expected_price_uuid=01a20dc3-6745-8030-a7e1-4ab8c9b83389&static_fare_key=TY%7CP0%7CH1%7CL0%7CCH0%7CR0%7CTBC0&itinerary_key=a93d1uniDQUw55-FNyghVQ&expected_price_source=share&expected_price_currency=eur&expected_price=605",
+       "google": "https://www.google.com/travel/flights?q=Flights%20from%20IST%20to%20MLE%20on%202026-12-08%20through%202027-01-17",
+       "segmentos": [
+        {
+         "de": "IST",
+         "a": "MLE",
+         "salida": "2026-12-08T22:25:00+03:00",
+         "llegada": "2026-12-09T08:20:00+03:00",
+         "escalas": 1,
+         "aerolinea": "J2",
+         "vuelo": "78"
+        },
+        {
+         "de": "MLE",
+         "a": "IST",
+         "salida": "2027-01-17T11:45:00+05:00",
+         "llegada": "2027-01-17T21:45:00+05:00",
+         "escalas": 1,
+         "aerolinea": "J2",
+         "vuelo": ""
+        }
+       ]
+      },
+      {
+       "descripcion": "IST → MAH (precio estimado: precio de referencia)",
+       "precio": 150.0,
+       "enlace": "",
+       "google": "https://www.google.com/travel/flights?q=Flights%20from%20IST%20to%20MAH%20on%202027-01-18%20one%20way",
+       "segmentos": [
+        {
+         "de": "IST",
+         "a": "MAH",
+         "salida": "2027-01-18",
+         "llegada": "",
+         "escalas": 0,
+         "aerolinea": "",
+         "vuelo": ""
+        }
+       ]
+      }
+     ],
+     "avisos": [
+      "Billetes separados: si un vuelo se retrasa y pierdes el siguiente, no te recolocan.",
+      "Vuelo MAH → IST: precio estimado (~150 €); búscalo para el 08/12, llegando antes de las 18:25.",
+      "Vuelo IST → MAH: precio estimado (~150 €); búscalo para el 18/01.",
+      "Vuelta: probablemente toque dormir en IST antes de volver.",
+      "Recoge y vuelve a facturar el equipaje en el hub."
+     ],
+     "fuente": "Aviasales",
+     "desde": "MAH"
+    },
+    {
+     "tipo": "autoconexion",
+     "destino": "MLE",
+     "total": 910.0,
+     "ida": "2026-12-19",
+     "vuelta": "2027-01-22",
+     "noches": 34,
+     "hub": "IST",
+     "billetes": [
+      {
+       "descripcion": "MAH → IST (precio estimado: precio de referencia)",
+       "precio": 150.0,
+       "enlace": "",
+       "google": "https://www.google.com/travel/flights?q=Flights%20from%20MAH%20to%20IST%20on%202026-12-19%20one%20way",
+       "segmentos": [
+        {
+         "de": "MAH",
+         "a": "IST",
+         "salida": "2026-12-19",
+         "llegada": "",
+         "escalas": 0,
+         "aerolinea": "",
+         "vuelo": ""
+        }
+       ]
+      },
+      {
+       "descripcion": "IST ⇄ MLE",
+       "precio": 610.0,
+       "enlace": "https://www.aviasales.com/search/IST2012MLE21011?t=J217977638001797846300001255SAWGYDMLE18005298001800566700000735MLEGYDIST_b65a3f6b60571a335d2c125965fa9c69_54762&search_date=25112026&expected_price_uuid=01a21061-9802-8031-615a-474460ecc2a1&static_fare_key=TY%7CP0%7CH1%7CL0%7CCH0%7CR0%7CTBC0&itinerary_key=FsOjI2BJHfeefykvFOShgQ&expected_price_source=share&expected_price_currency=eur&expected_price=610",
+       "google": "https://www.google.com/travel/flights?q=Flights%20from%20IST%20to%20MLE%20on%202026-12-20%20through%202027-01-21",
+       "segmentos": [
+        {
+         "de": "SAW",
+         "a": "MLE",
+         "salida": "2026-12-20T10:50:00+03:00",
+         "llegada": "2026-12-20T20:45:00+03:00",
+         "escalas": 1,
+         "aerolinea": "J2",
+         "vuelo": "8104"
+        },
+        {
+         "de": "MLE",
+         "a": "SAW",
+         "salida": "2027-01-21T11:10:00+05:00",
+         "llegada": "2027-01-21T21:50:00+05:00",
+         "escalas": 1,
+         "aerolinea": "J2",
+         "vuelo": ""
+        }
+       ]
+      },
+      {
+       "descripcion": "IST → MAH (precio estimado: precio de referencia)",
+       "precio": 150.0,
+       "enlace": "",
+       "google": "https://www.google.com/travel/flights?q=Flights%20from%20IST%20to%20MAH%20on%202027-01-22%20one%20way",
+       "segmentos": [
+        {
+         "de": "IST",
+         "a": "MAH",
+         "salida": "2027-01-22",
+         "llegada": "",
+         "escalas": 0,
+         "aerolinea": "",
+         "vuelo": ""
+        }
+       ]
+      }
+     ],
+     "avisos": [
+      "Billetes separados: si un vuelo se retrasa y pierdes el siguiente, no te recolocan.",
+      "Vuelo MAH → IST: precio estimado (~150 €); búscalo para el 19/12, llegando antes de las 04:50.",
+      "Ida: probablemente toque dormir en IST la noche antes.",
+      "Vuelo IST → MAH: precio estimado (~150 €); búscalo para el 22/01, saliendo después de las 01:50.",
+      "Recoge y vuelve a facturar el equipaje en el hub."
+     ],
+     "fuente": "Aviasales",
+     "desde": "MAH"
+    },
+    {
+     "tipo": "autoconexion",
+     "destino": "MLE",
+     "total": 913.0,
+     "ida": "2026-12-19",
+     "vuelta": "2027-01-19",
+     "noches": 31,
+     "hub": "IST",
+     "billetes": [
+      {
+       "descripcion": "MAH → IST (precio estimado: precio de referencia)",
+       "precio": 150.0,
+       "enlace": "",
+       "google": "https://www.google.com/travel/flights?q=Flights%20from%20MAH%20to%20IST%20on%202026-12-19%20one%20way",
+       "segmentos": [
+        {
+         "de": "MAH",
+         "a": "IST",
+         "salida": "2026-12-19",
+         "llegada": "",
+         "escalas": 0,
+         "aerolinea": "",
+         "vuelo": ""
+        }
+       ]
+      },
+      {
+       "descripcion": "IST ⇄ MLE",
+       "precio": 613.0,
+       "enlace": "https://www.aviasales.com/search/IST2012MLE18011?t=J217977638001797846300001255SAWGYDMLE18002706001800307500000735MLEGYDIST_a9677aaf6b86c0a953da3f0c0911b451_55069&search_date=25112026&expected_price_uuid=01a21061-954b-8031-2d98-ac500a3f26b8&static_fare_key=TY%7CP0%7CH1%7CL0%7CCH0%7CR0%7CTBC0&itinerary_key=GmGVhHY3GcGjuTF4UDWR6g&expected_price_source=share&expected_price_currency=eur&expected_price=613",
+       "google": "https://www.google.com/travel/flights?q=Flights%20from%20IST%20to%20MLE%20on%202026-12-20%20through%202027-01-18",
+       "segmentos": [
+        {
+         "de": "SAW",
+         "a": "MLE",
+         "salida": "2026-12-20T10:50:00+03:00",
+         "llegada": "2026-12-20T20:45:00+03:00",
+         "escalas": 1,
+         "aerolinea": "J2",
+         "vuelo": "8104"
+        },
+        {
+         "de": "MLE",
+         "a": "SAW",
+         "salida": "2027-01-18T11:10:00+05:00",
+         "llegada": "2027-01-18T21:50:00+05:00",
+         "escalas": 1,
+         "aerolinea": "J2",
+         "vuelo": ""
+        }
+       ]
+      },
+      {
+       "descripcion": "IST → MAH (precio estimado: precio de referencia)",
+       "precio": 150.0,
+       "enlace": "",
+       "google": "https://www.google.com/travel/flights?q=Flights%20from%20IST%20to%20MAH%20on%202027-01-19%20one%20way",
+       "segmentos": [
+        {
+         "de": "IST",
+         "a": "MAH",
+         "salida": "2027-01-19",
+         "llegada": "",
+         "escalas": 0,
+         "aerolinea": "",
+         "vuelo": ""
+        }
+       ]
+      }
+     ],
+     "avisos": [
+      "Billetes separados: si un vuelo se retrasa y pierdes el siguiente, no te recolocan.",
+      "Vuelo MAH → IST: precio estimado (~150 €); búscalo para el 19/12, llegando antes de las 04:50.",
+      "Ida: probablemente toque dormir en IST la noche antes.",
+      "Vuelo IST → MAH: precio estimado (~150 €); búscalo para el 19/01, saliendo después de las 01:50.",
+      "Recoge y vuelve a facturar el equipaje en el hub."
+     ],
+     "fuente": "Aviasales",
+     "desde": "MAH"
+    },
+    {
+     "tipo": "autoconexion",
+     "destino": "MLE",
+     "total": 930.0,
+     "ida": "2026-12-22",
+     "vuelta": "2027-01-14",
+     "noches": 23,
+     "hub": "IST",
+     "billetes": [
+      {
+       "descripcion": "MAH → IST (precio estimado: precio de referencia)",
+       "precio": 150.0,
+       "enlace": "",
+       "google": "https://www.google.com/travel/flights?q=Flights%20from%20MAH%20to%20IST%20on%202026-12-22%20one%20way",
+       "segmentos": [
+        {
+         "de": "MAH",
+         "a": "IST",
+         "salida": "2026-12-22",
+         "llegada": "",
+         "escalas": 0,
+         "aerolinea": "",
+         "vuelo": ""
+        }
+       ]
+      },
+      {
+       "descripcion": "IST ⇄ MLE",
+       "precio": 630.0,
+       "enlace": "https://www.aviasales.com/search/IST2312MLE13011?t=FZ17980356001798121700001315SAWDXBMLE17998461001799892600000895MLEDXBSAW_fa465ef79d5e847e2d8fec951882fe23_56781&search_date=20112026&expected_price_uuid=01a1f72e-37aa-8030-2bd0-92bfb0f6903f&static_fare_key=TY%7CP0%7CH1%7CL0%7CCH0%7CR0%7CTBC0&itinerary_key=0_BLF_LamAWwUdBE-pLiOQ&expected_price_source=share&expected_price_currency=eur&expected_price=630",
+       "google": "https://www.google.com/travel/flights?q=Flights%20from%20IST%20to%20MLE%20on%202026-12-23%20through%202027-01-13",
+       "segmentos": [
+        {
+         "de": "SAW",
+         "a": "MLE",
+         "salida": "2026-12-23T14:20:00+03:00",
+         "llegada": "2026-12-23T23:05:00+03:00",
+         "escalas": 1,
+         "aerolinea": "FZ",
+         "vuelo": "752"
+        },
+        {
+         "de": "MLE",
+         "a": "SAW",
+         "salida": "2027-01-13T13:15:00+05:00",
+         "llegada": "2027-01-13T23:00:00+05:00",
+         "escalas": 1,
+         "aerolinea": "FZ",
+         "vuelo": ""
+        }
+       ]
+      },
+      {
+       "descripcion": "IST → MAH (precio estimado: precio de referencia)",
+       "precio": 150.0,
+       "enlace": "",
+       "google": "https://www.google.com/travel/flights?q=Flights%20from%20IST%20to%20MAH%20on%202027-01-14%20one%20way",
+       "segmentos": [
+        {
+         "de": "IST",
+         "a": "MAH",
+         "salida": "2027-01-14",
+         "llegada": "",
+         "escalas": 0,
+         "aerolinea": "",
+         "vuelo": ""
+        }
+       ]
+      }
+     ],
+     "avisos": [
+      "Billetes separados: si un vuelo se retrasa y pierdes el siguiente, no te recolocan.",
+      "Vuelo MAH → IST: precio estimado (~150 €); búscalo para el 22/12, llegando antes de las 08:20.",
+      "Ida: probablemente toque dormir en IST la noche antes.",
+      "Vuelo IST → MAH: precio estimado (~150 €); búscalo para el 14/01, saliendo después de las 03:00.",
+      "Recoge y vuelve a facturar el equipaje en el hub."
+     ],
+     "fuente": "Aviasales",
+     "desde": "MAH"
+    },
+    {
+     "tipo": "autoconexion",
+     "destino": "MLE",
+     "total": 930.0,
+     "ida": "2026-12-23",
+     "vuelta": "2027-01-14",
+     "noches": 22,
+     "hub": "IST",
+     "billetes": [
+      {
+       "descripcion": "MAH → IST (precio estimado: precio de referencia)",
+       "precio": 150.0,
+       "enlace": "",
+       "google": "https://www.google.com/travel/flights?q=Flights%20from%20MAH%20to%20IST%20on%202026-12-23%20one%20way",
+       "segmentos": [
+        {
+         "de": "MAH",
+         "a": "IST",
+         "salida": "2026-12-23",
+         "llegada": "",
+         "escalas": 0,
+         "aerolinea": "",
+         "vuelo": ""
+        }
+       ]
+      },
+      {
+       "descripcion": "IST ⇄ MLE",
+       "precio": 630.0,
+       "enlace": "https://www.aviasales.com/search/IST2412MLE13011?t=FZ17981220001798208100001315SAWDXBMLE17998461001799892600000895MLEDXBSAW_2f8b04aa5efafe9bafadcbb66cacc684_56781&search_date=20112026&expected_price_uuid=01a1f72e-40e9-8030-6dc7-bee58d706681&static_fare_key=TY%7CP0%7CH1%7CL0%7CCH0%7CR0%7CTBC0&itinerary_key=8zb8dYSyekRBAvmIPp4ygw&expected_price_source=share&expected_price_currency=eur&expected_price=630",
+       "google": "https://www.google.com/travel/flights?q=Flights%20from%20IST%20to%20MLE%20on%202026-12-24%20through%202027-01-13",
+       "segmentos": [
+        {
+         "de": "SAW",
+         "a": "MLE",
+         "salida": "2026-12-24T14:20:00+03:00",
+         "llegada": "2026-12-24T23:05:00+03:00",
+         "escalas": 1,
+         "aerolinea": "FZ",
+         "vuelo": "752"
+        },
+        {
+         "de": "MLE",
+         "a": "SAW",
+         "salida": "2027-01-13T13:15:00+05:00",
+         "llegada": "2027-01-13T23:00:00+05:00",
+         "escalas": 1,
+         "aerolinea": "FZ",
+         "vuelo": ""
+        }
+       ]
+      },
+      {
+       "descripcion": "IST → MAH (precio estimado: precio de referencia)",
+       "precio": 150.0,
+       "enlace": "",
+       "google": "https://www.google.com/travel/flights?q=Flights%20from%20IST%20to%20MAH%20on%202027-01-14%20one%20way",
+       "segmentos": [
+        {
+         "de": "IST",
+         "a": "MAH",
+         "salida": "2027-01-14",
+         "llegada": "",
+         "escalas": 0,
+         "aerolinea": "",
+         "vuelo": ""
+        }
+       ]
+      }
+     ],
+     "avisos": [
+      "Billetes separados: si un vuelo se retrasa y pierdes el siguiente, no te recolocan.",
+      "Vuelo MAH → IST: precio estimado (~150 €); búscalo para el 23/12, llegando antes de las 08:20.",
+      "Ida: probablemente toque dormir en IST la noche antes.",
+      "Vuelo IST → MAH: precio estimado (~150 €); búscalo para el 14/01, saliendo después de las 03:00.",
+      "Recoge y vuelve a facturar el equipaje en el hub."
+     ],
+     "fuente": "Aviasales",
+     "desde": "MAH"
+    },
+    {
+     "tipo": "desde_hub",
+     "destino": "MLE",
+     "total": 883.0,
+     "ida": "2026-12-30",
+     "vuelta": "2027-01-07",
+     "noches": 8,
+     "hub": "MAD",
+     "billetes": [
+      {
+       "descripcion": "MAD ⇄ MLE",
+       "precio": 883.0,
+       "enlace": "https://www.aviasales.com/search/MAD3012MLE06011?t=BA17986185001798728600001595MADDOHMLE17992284001799319600001760MLEDOHLHRMAD_2eb339a7ce40a999d6ddce843bae55ab_78853&search_date=23112026&expected_price_uuid=01a209af-c86f-8030-2563-3182e0c43492&static_fare_key=TY%7CP1%7CH1%7CL1_1_0%7CCH0%7CR0%7CTBC1&itinerary_key=xJK897wYnGJ_-UJAvlfm-Q&expected_price_source=share&expected_price_currency=eur&expected_price=883",
+       "google": "https://www.google.com/travel/flights?q=Flights%20from%20MAD%20to%20MLE%20on%202026-12-30%20through%202027-01-06",
+       "segmentos": [
+        {
+         "de": "MAD",
+         "a": "MLE",
+         "salida": "2026-12-30T08:15:00+01:00",
+         "llegada": "2026-12-30T19:20:00+01:00",
+         "escalas": 1,
+         "aerolinea": "QR",
+         "vuelo": "148"
+        },
+        {
+         "de": "MLE",
+         "a": "MAD",
+         "salida": "2027-01-06T09:40:00+05:00",
+         "llegada": "2027-01-07T00:30:00+05:00",
+         "escalas": 2,
+         "aerolinea": "QR",
+         "vuelo": ""
+        }
+       ]
+      }
+     ],
+     "avisos": [
+      "Sale de MAD: el viaje desde Menorca hasta MAD va aparte."
+     ],
+     "fuente": "Aviasales",
+     "desde": "MAD"
+    }
+   ],
+   "chollo": false,
+   "motivo_chollo": "",
+   "historial": [
+    {
+     "fecha": "2026-11-21T23:02:12+00:00",
+     "precio": 927.0
+    },
+    {
+     "fecha": "2026-11-22T06:59:39+00:00",
+     "precio": 927.0
+    },
+    {
+     "fecha": "2026-11-22T19:47:56+00:00",
+     "precio": 927.0
+    },
+    {
+     "fecha": "2026-11-23T07:49:51+00:00",
+     "precio": 930.0
+    },
+    {
+     "fecha": "2026-11-23T23:59:29+00:00",
+     "precio": 930.0
+    },
+    {
+     "fecha": "2026-11-24T10:00:46+00:00",
+     "precio": 930.0
+    },
+    {
+     "fecha": "2026-11-24T22:32:34+00:00",
+     "precio": 905.0
+    },
+    {
+     "fecha": "2026-11-25T08:44:58+00:00",
+     "precio": 905.0
     }
    ]
   },
@@ -4714,7 +5400,7 @@
    "mejor": {
     "tipo": "autoconexion",
     "destino": "SIN",
-    "total": 878.0,
+    "total": 925.0,
     "ida": "2026-12-04",
     "vuelta": "2027-01-15",
     "noches": 42,
@@ -4739,8 +5425,8 @@
      },
      {
       "descripcion": "IST ⇄ SIN",
-      "precio": 578.0,
-      "enlace": "https://www.aviasales.com/search/IST0412SIN14011?t=D717964048001796470500000795SAWKULSIN17999598001800034800001550SINMCTIST_8e596296924cf8cfaca02ca1cb30cf58_51649&search_date=22112026&expected_price_uuid=01a203d5-8e3d-8040-ad9a-dfe23ba5928d&static_fare_key=TY%7CP0%7CH0%7CL0%7CCH0%7CR0%7CTBC0&itinerary_key=3lsKD6AEvek3Sae4b4361w&expected_price_source=share&expected_price_currency=eur&expected_price=578",
+      "precio": 625.0,
+      "enlace": "https://www.aviasales.com/search/IST0412SIN14011?t=D717964048001796478000000920SAWKULSIN17999691001800029100001300SINKULSAW_1f8db2618623c93a9892e3d7d849796a_56070&search_date=25112026&expected_price_uuid=01a21167-86f8-8030-6091-524d7c5cee29&static_fare_key=TY%7CP0%7CH1%7CL0%7CCH1%7CR0%7CTBC0&itinerary_key=3Py9jT9a90kyKiCYWVsLqg&expected_price_source=share&expected_price_currency=eur&expected_price=625",
       "google": "https://www.google.com/travel/flights?q=Flights%20from%20IST%20to%20SIN%20on%202026-12-04%20through%202027-01-14",
       "segmentos": [
        {
@@ -4755,8 +5441,8 @@
        {
         "de": "SIN",
         "a": "SAW",
-        "salida": "2027-01-14T20:50:00+08:00",
-        "llegada": "2027-01-15T09:50:00+08:00",
+        "salida": "2027-01-14T23:25:00+08:00",
+        "llegada": "2027-01-15T12:15:00+08:00",
         "escalas": 1,
         "aerolinea": "D7",
         "vuelo": ""
@@ -4784,7 +5470,7 @@
     "avisos": [
      "Billetes separados: si un vuelo se retrasa y pierdes el siguiente, no te recolocan.",
      "Vuelo MAH → IST: precio estimado (~150 €); búscalo para el 04/12, llegando antes de las 11:20.",
-     "Vuelo IST → MAH: precio estimado (~150 €); búscalo para el 15/01, saliendo después de las 10:50.",
+     "Vuelo IST → MAH: precio estimado (~150 €); búscalo para el 15/01, saliendo después de las 13:15.",
      "Recoge y vuelve a facturar el equipaje en el hub."
     ],
     "fuente": "Aviasales",
@@ -4794,7 +5480,7 @@
     {
      "tipo": "autoconexion",
      "destino": "SIN",
-     "total": 878.0,
+     "total": 925.0,
      "ida": "2026-12-04",
      "vuelta": "2027-01-15",
      "noches": 42,
@@ -4819,8 +5505,8 @@
       },
       {
        "descripcion": "IST ⇄ SIN",
-       "precio": 578.0,
-       "enlace": "https://www.aviasales.com/search/IST0412SIN14011?t=D717964048001796470500000795SAWKULSIN17999598001800034800001550SINMCTIST_8e596296924cf8cfaca02ca1cb30cf58_51649&search_date=22112026&expected_price_uuid=01a203d5-8e3d-8040-ad9a-dfe23ba5928d&static_fare_key=TY%7CP0%7CH0%7CL0%7CCH0%7CR0%7CTBC0&itinerary_key=3lsKD6AEvek3Sae4b4361w&expected_price_source=share&expected_price_currency=eur&expected_price=578",
+       "precio": 625.0,
+       "enlace": "https://www.aviasales.com/search/IST0412SIN14011?t=D717964048001796478000000920SAWKULSIN17999691001800029100001300SINKULSAW_1f8db2618623c93a9892e3d7d849796a_56070&search_date=25112026&expected_price_uuid=01a21167-86f8-8030-6091-524d7c5cee29&static_fare_key=TY%7CP0%7CH1%7CL0%7CCH1%7CR0%7CTBC0&itinerary_key=3Py9jT9a90kyKiCYWVsLqg&expected_price_source=share&expected_price_currency=eur&expected_price=625",
        "google": "https://www.google.com/travel/flights?q=Flights%20from%20IST%20to%20SIN%20on%202026-12-04%20through%202027-01-14",
        "segmentos": [
         {
@@ -4835,8 +5521,8 @@
         {
          "de": "SIN",
          "a": "SAW",
-         "salida": "2027-01-14T20:50:00+08:00",
-         "llegada": "2027-01-15T09:50:00+08:00",
+         "salida": "2027-01-14T23:25:00+08:00",
+         "llegada": "2027-01-15T12:15:00+08:00",
          "escalas": 1,
          "aerolinea": "D7",
          "vuelo": ""
@@ -4864,7 +5550,7 @@
      "avisos": [
       "Billetes separados: si un vuelo se retrasa y pierdes el siguiente, no te recolocan.",
       "Vuelo MAH → IST: precio estimado (~150 €); búscalo para el 04/12, llegando antes de las 11:20.",
-      "Vuelo IST → MAH: precio estimado (~150 €); búscalo para el 15/01, saliendo después de las 10:50.",
+      "Vuelo IST → MAH: precio estimado (~150 €); búscalo para el 15/01, saliendo después de las 13:15.",
       "Recoge y vuelve a facturar el equipaje en el hub."
      ],
      "fuente": "Aviasales",
@@ -5344,577 +6030,10 @@
     {
      "fecha": "2026-11-24T22:32:34+00:00",
      "precio": 878.0
-    }
-   ]
-  },
-  {
-   "iata": "MLE",
-   "ciudad": "Malé",
-   "pais": "Maldivas",
-   "region": "Sur de Asia",
-   "temp_max": 30,
-   "temp_min": 26,
-   "lluvia": "seca",
-   "seguridad": 5,
-   "playa": true,
-   "ref": 900,
-   "nota": "El vuelo puede salir bien; el alojamiento no suele.",
-   "apto": true,
-   "mejor": {
-    "tipo": "autoconexion",
-    "destino": "MLE",
-    "total": 905.0,
-    "ida": "2026-12-08",
-    "vuelta": "2027-01-18",
-    "noches": 41,
-    "hub": "IST",
-    "billetes": [
-     {
-      "descripcion": "MAH → IST (precio estimado: precio de referencia)",
-      "precio": 150.0,
-      "enlace": "",
-      "google": "https://www.google.com/travel/flights?q=Flights%20from%20MAH%20to%20IST%20on%202026-12-08%20one%20way",
-      "segmentos": [
-       {
-        "de": "MAH",
-        "a": "IST",
-        "salida": "2026-12-08",
-        "llegada": "",
-        "escalas": 0,
-        "aerolinea": "",
-        "vuelo": ""
-       }
-      ]
-     },
-     {
-      "descripcion": "IST ⇄ MLE",
-      "precio": 605.0,
-      "enlace": "https://www.aviasales.com/search/IST0812MLE17011?t=J217967687001796895900002000ISTGYDMLE18001863001800220500000690MLEJEDIST_f5bba1ef10f785085595229e9dde004d_54470&search_date=24112026&expected_price_uuid=01a20dc3-6745-8030-a7e1-4ab8c9b83389&static_fare_key=TY%7CP0%7CH1%7CL0%7CCH0%7CR0%7CTBC0&itinerary_key=a93d1uniDQUw55-FNyghVQ&expected_price_source=share&expected_price_currency=eur&expected_price=605",
-      "google": "https://www.google.com/travel/flights?q=Flights%20from%20IST%20to%20MLE%20on%202026-12-08%20through%202027-01-17",
-      "segmentos": [
-       {
-        "de": "IST",
-        "a": "MLE",
-        "salida": "2026-12-08T22:25:00+03:00",
-        "llegada": "2026-12-09T08:20:00+03:00",
-        "escalas": 1,
-        "aerolinea": "J2",
-        "vuelo": "78"
-       },
-       {
-        "de": "MLE",
-        "a": "IST",
-        "salida": "2027-01-17T11:45:00+05:00",
-        "llegada": "2027-01-17T21:45:00+05:00",
-        "escalas": 1,
-        "aerolinea": "J2",
-        "vuelo": ""
-       }
-      ]
-     },
-     {
-      "descripcion": "IST → MAH (precio estimado: precio de referencia)",
-      "precio": 150.0,
-      "enlace": "",
-      "google": "https://www.google.com/travel/flights?q=Flights%20from%20IST%20to%20MAH%20on%202027-01-18%20one%20way",
-      "segmentos": [
-       {
-        "de": "IST",
-        "a": "MAH",
-        "salida": "2027-01-18",
-        "llegada": "",
-        "escalas": 0,
-        "aerolinea": "",
-        "vuelo": ""
-       }
-      ]
-     }
-    ],
-    "avisos": [
-     "Billetes separados: si un vuelo se retrasa y pierdes el siguiente, no te recolocan.",
-     "Vuelo MAH → IST: precio estimado (~150 €); búscalo para el 08/12, llegando antes de las 18:25.",
-     "Vuelo IST → MAH: precio estimado (~150 €); búscalo para el 18/01.",
-     "Vuelta: probablemente toque dormir en IST antes de volver.",
-     "Recoge y vuelve a facturar el equipaje en el hub."
-    ],
-    "fuente": "Aviasales",
-    "desde": "MAH"
-   },
-   "opciones": [
-    {
-     "tipo": "autoconexion",
-     "destino": "MLE",
-     "total": 905.0,
-     "ida": "2026-12-08",
-     "vuelta": "2027-01-18",
-     "noches": 41,
-     "hub": "IST",
-     "billetes": [
-      {
-       "descripcion": "MAH → IST (precio estimado: precio de referencia)",
-       "precio": 150.0,
-       "enlace": "",
-       "google": "https://www.google.com/travel/flights?q=Flights%20from%20MAH%20to%20IST%20on%202026-12-08%20one%20way",
-       "segmentos": [
-        {
-         "de": "MAH",
-         "a": "IST",
-         "salida": "2026-12-08",
-         "llegada": "",
-         "escalas": 0,
-         "aerolinea": "",
-         "vuelo": ""
-        }
-       ]
-      },
-      {
-       "descripcion": "IST ⇄ MLE",
-       "precio": 605.0,
-       "enlace": "https://www.aviasales.com/search/IST0812MLE17011?t=J217967687001796895900002000ISTGYDMLE18001863001800220500000690MLEJEDIST_f5bba1ef10f785085595229e9dde004d_54470&search_date=24112026&expected_price_uuid=01a20dc3-6745-8030-a7e1-4ab8c9b83389&static_fare_key=TY%7CP0%7CH1%7CL0%7CCH0%7CR0%7CTBC0&itinerary_key=a93d1uniDQUw55-FNyghVQ&expected_price_source=share&expected_price_currency=eur&expected_price=605",
-       "google": "https://www.google.com/travel/flights?q=Flights%20from%20IST%20to%20MLE%20on%202026-12-08%20through%202027-01-17",
-       "segmentos": [
-        {
-         "de": "IST",
-         "a": "MLE",
-         "salida": "2026-12-08T22:25:00+03:00",
-         "llegada": "2026-12-09T08:20:00+03:00",
-         "escalas": 1,
-         "aerolinea": "J2",
-         "vuelo": "78"
-        },
-        {
-         "de": "MLE",
-         "a": "IST",
-         "salida": "2027-01-17T11:45:00+05:00",
-         "llegada": "2027-01-17T21:45:00+05:00",
-         "escalas": 1,
-         "aerolinea": "J2",
-         "vuelo": ""
-        }
-       ]
-      },
-      {
-       "descripcion": "IST → MAH (precio estimado: precio de referencia)",
-       "precio": 150.0,
-       "enlace": "",
-       "google": "https://www.google.com/travel/flights?q=Flights%20from%20IST%20to%20MAH%20on%202027-01-18%20one%20way",
-       "segmentos": [
-        {
-         "de": "IST",
-         "a": "MAH",
-         "salida": "2027-01-18",
-         "llegada": "",
-         "escalas": 0,
-         "aerolinea": "",
-         "vuelo": ""
-        }
-       ]
-      }
-     ],
-     "avisos": [
-      "Billetes separados: si un vuelo se retrasa y pierdes el siguiente, no te recolocan.",
-      "Vuelo MAH → IST: precio estimado (~150 €); búscalo para el 08/12, llegando antes de las 18:25.",
-      "Vuelo IST → MAH: precio estimado (~150 €); búscalo para el 18/01.",
-      "Vuelta: probablemente toque dormir en IST antes de volver.",
-      "Recoge y vuelve a facturar el equipaje en el hub."
-     ],
-     "fuente": "Aviasales",
-     "desde": "MAH"
     },
     {
-     "tipo": "autoconexion",
-     "destino": "MLE",
-     "total": 930.0,
-     "ida": "2026-12-21",
-     "vuelta": "2027-01-12",
-     "noches": 22,
-     "hub": "IST",
-     "billetes": [
-      {
-       "descripcion": "MAH → IST (precio estimado: precio de referencia)",
-       "precio": 150.0,
-       "enlace": "",
-       "google": "https://www.google.com/travel/flights?q=Flights%20from%20MAH%20to%20IST%20on%202026-12-21%20one%20way",
-       "segmentos": [
-        {
-         "de": "MAH",
-         "a": "IST",
-         "salida": "2026-12-21",
-         "llegada": "",
-         "escalas": 0,
-         "aerolinea": "",
-         "vuelo": ""
-        }
-       ]
-      },
-      {
-       "descripcion": "IST ⇄ MLE",
-       "precio": 630.0,
-       "enlace": "https://www.aviasales.com/search/IST2212MLE11011?t=FZ17979492001798035300001315SAWDXBMLE17996622001799715300001005MLEDXBIST_1308ec99fbbe3fa85933e5b2b85eecd5_56750&search_date=24112026&expected_price_uuid=01a20e62-c95e-8030-27ef-e6f3cd015dfd&static_fare_key=TY%7CP0%7CH1%7CL0%7CCH0%7CR0%7CTBC0&itinerary_key=zPa1Tckn6g2hSBZPzjoLHg&expected_price_source=share&expected_price_currency=eur&expected_price=630",
-       "google": "https://www.google.com/travel/flights?q=Flights%20from%20IST%20to%20MLE%20on%202026-12-22%20through%202027-01-11",
-       "segmentos": [
-        {
-         "de": "SAW",
-         "a": "MLE",
-         "salida": "2026-12-22T14:20:00+03:00",
-         "llegada": "2026-12-22T23:05:00+03:00",
-         "escalas": 1,
-         "aerolinea": "FZ",
-         "vuelo": "752"
-        },
-        {
-         "de": "MLE",
-         "a": "SAW",
-         "salida": "2027-01-11T10:10:00+05:00",
-         "llegada": "2027-01-11T20:00:00+05:00",
-         "escalas": 1,
-         "aerolinea": "FZ",
-         "vuelo": ""
-        }
-       ]
-      },
-      {
-       "descripcion": "IST → MAH (precio estimado: precio de referencia)",
-       "precio": 150.0,
-       "enlace": "",
-       "google": "https://www.google.com/travel/flights?q=Flights%20from%20IST%20to%20MAH%20on%202027-01-12%20one%20way",
-       "segmentos": [
-        {
-         "de": "IST",
-         "a": "MAH",
-         "salida": "2027-01-12",
-         "llegada": "",
-         "escalas": 0,
-         "aerolinea": "",
-         "vuelo": ""
-        }
-       ]
-      }
-     ],
-     "avisos": [
-      "Billetes separados: si un vuelo se retrasa y pierdes el siguiente, no te recolocan.",
-      "Vuelo MAH → IST: precio estimado (~150 €); búscalo para el 21/12, llegando antes de las 08:20.",
-      "Ida: probablemente toque dormir en IST la noche antes.",
-      "Vuelo IST → MAH: precio estimado (~150 €); búscalo para el 12/01, saliendo después de las 00:00.",
-      "Recoge y vuelve a facturar el equipaje en el hub."
-     ],
-     "fuente": "Aviasales",
-     "desde": "MAH"
-    },
-    {
-     "tipo": "autoconexion",
-     "destino": "MLE",
-     "total": 930.0,
-     "ida": "2026-12-22",
-     "vuelta": "2027-01-12",
-     "noches": 21,
-     "hub": "IST",
-     "billetes": [
-      {
-       "descripcion": "MAH → IST (precio estimado: precio de referencia)",
-       "precio": 150.0,
-       "enlace": "",
-       "google": "https://www.google.com/travel/flights?q=Flights%20from%20MAH%20to%20IST%20on%202026-12-22%20one%20way",
-       "segmentos": [
-        {
-         "de": "MAH",
-         "a": "IST",
-         "salida": "2026-12-22",
-         "llegada": "",
-         "escalas": 0,
-         "aerolinea": "",
-         "vuelo": ""
-        }
-       ]
-      },
-      {
-       "descripcion": "IST ⇄ MLE",
-       "precio": 630.0,
-       "enlace": "https://www.aviasales.com/search/IST2312MLE11011?t=FZ17980356001798121700001315SAWDXBMLE17996622001799719800001080MLEDXBSAW_c10594025dc874ec1ce9928c331b226b_56750&search_date=24112026&expected_price_uuid=01a20e62-cee8-8030-27de-e2b912d30edd&static_fare_key=TY%7CP0%7CH1%7CL0%7CCH0%7CR0%7CTBC0&itinerary_key=qG89Tgs8YzMNeNc3twAC0A&expected_price_source=share&expected_price_currency=eur&expected_price=630",
-       "google": "https://www.google.com/travel/flights?q=Flights%20from%20IST%20to%20MLE%20on%202026-12-23%20through%202027-01-11",
-       "segmentos": [
-        {
-         "de": "SAW",
-         "a": "MLE",
-         "salida": "2026-12-23T14:20:00+03:00",
-         "llegada": "2026-12-23T23:05:00+03:00",
-         "escalas": 1,
-         "aerolinea": "FZ",
-         "vuelo": "752"
-        },
-        {
-         "de": "MLE",
-         "a": "SAW",
-         "salida": "2027-01-11T10:10:00+05:00",
-         "llegada": "2027-01-11T19:55:00+05:00",
-         "escalas": 1,
-         "aerolinea": "FZ",
-         "vuelo": ""
-        }
-       ]
-      },
-      {
-       "descripcion": "IST → MAH (precio estimado: precio de referencia)",
-       "precio": 150.0,
-       "enlace": "",
-       "google": "https://www.google.com/travel/flights?q=Flights%20from%20IST%20to%20MAH%20on%202027-01-12%20one%20way",
-       "segmentos": [
-        {
-         "de": "IST",
-         "a": "MAH",
-         "salida": "2027-01-12",
-         "llegada": "",
-         "escalas": 0,
-         "aerolinea": "",
-         "vuelo": ""
-        }
-       ]
-      }
-     ],
-     "avisos": [
-      "Billetes separados: si un vuelo se retrasa y pierdes el siguiente, no te recolocan.",
-      "Vuelo MAH → IST: precio estimado (~150 €); búscalo para el 22/12, llegando antes de las 08:20.",
-      "Ida: probablemente toque dormir en IST la noche antes.",
-      "Vuelo IST → MAH: precio estimado (~150 €); búscalo para el 12/01.",
-      "Vuelta: probablemente toque dormir en IST antes de volver.",
-      "Recoge y vuelve a facturar el equipaje en el hub."
-     ],
-     "fuente": "Aviasales",
-     "desde": "MAH"
-    },
-    {
-     "tipo": "autoconexion",
-     "destino": "MLE",
-     "total": 930.0,
-     "ida": "2026-12-22",
-     "vuelta": "2027-01-14",
-     "noches": 23,
-     "hub": "IST",
-     "billetes": [
-      {
-       "descripcion": "MAH → IST (precio estimado: precio de referencia)",
-       "precio": 150.0,
-       "enlace": "",
-       "google": "https://www.google.com/travel/flights?q=Flights%20from%20MAH%20to%20IST%20on%202026-12-22%20one%20way",
-       "segmentos": [
-        {
-         "de": "MAH",
-         "a": "IST",
-         "salida": "2026-12-22",
-         "llegada": "",
-         "escalas": 0,
-         "aerolinea": "",
-         "vuelo": ""
-        }
-       ]
-      },
-      {
-       "descripcion": "IST ⇄ MLE",
-       "precio": 630.0,
-       "enlace": "https://www.aviasales.com/search/IST2312MLE13011?t=FZ17980356001798121700001315SAWDXBMLE17998461001799892600000895MLEDXBSAW_fa465ef79d5e847e2d8fec951882fe23_56781&search_date=20112026&expected_price_uuid=01a1f72e-37aa-8030-2bd0-92bfb0f6903f&static_fare_key=TY%7CP0%7CH1%7CL0%7CCH0%7CR0%7CTBC0&itinerary_key=0_BLF_LamAWwUdBE-pLiOQ&expected_price_source=share&expected_price_currency=eur&expected_price=630",
-       "google": "https://www.google.com/travel/flights?q=Flights%20from%20IST%20to%20MLE%20on%202026-12-23%20through%202027-01-13",
-       "segmentos": [
-        {
-         "de": "SAW",
-         "a": "MLE",
-         "salida": "2026-12-23T14:20:00+03:00",
-         "llegada": "2026-12-23T23:05:00+03:00",
-         "escalas": 1,
-         "aerolinea": "FZ",
-         "vuelo": "752"
-        },
-        {
-         "de": "MLE",
-         "a": "SAW",
-         "salida": "2027-01-13T13:15:00+05:00",
-         "llegada": "2027-01-13T23:00:00+05:00",
-         "escalas": 1,
-         "aerolinea": "FZ",
-         "vuelo": ""
-        }
-       ]
-      },
-      {
-       "descripcion": "IST → MAH (precio estimado: precio de referencia)",
-       "precio": 150.0,
-       "enlace": "",
-       "google": "https://www.google.com/travel/flights?q=Flights%20from%20IST%20to%20MAH%20on%202027-01-14%20one%20way",
-       "segmentos": [
-        {
-         "de": "IST",
-         "a": "MAH",
-         "salida": "2027-01-14",
-         "llegada": "",
-         "escalas": 0,
-         "aerolinea": "",
-         "vuelo": ""
-        }
-       ]
-      }
-     ],
-     "avisos": [
-      "Billetes separados: si un vuelo se retrasa y pierdes el siguiente, no te recolocan.",
-      "Vuelo MAH → IST: precio estimado (~150 €); búscalo para el 22/12, llegando antes de las 08:20.",
-      "Ida: probablemente toque dormir en IST la noche antes.",
-      "Vuelo IST → MAH: precio estimado (~150 €); búscalo para el 14/01, saliendo después de las 03:00.",
-      "Recoge y vuelve a facturar el equipaje en el hub."
-     ],
-     "fuente": "Aviasales",
-     "desde": "MAH"
-    },
-    {
-     "tipo": "autoconexion",
-     "destino": "MLE",
-     "total": 930.0,
-     "ida": "2026-12-23",
-     "vuelta": "2027-01-14",
-     "noches": 22,
-     "hub": "IST",
-     "billetes": [
-      {
-       "descripcion": "MAH → IST (precio estimado: precio de referencia)",
-       "precio": 150.0,
-       "enlace": "",
-       "google": "https://www.google.com/travel/flights?q=Flights%20from%20MAH%20to%20IST%20on%202026-12-23%20one%20way",
-       "segmentos": [
-        {
-         "de": "MAH",
-         "a": "IST",
-         "salida": "2026-12-23",
-         "llegada": "",
-         "escalas": 0,
-         "aerolinea": "",
-         "vuelo": ""
-        }
-       ]
-      },
-      {
-       "descripcion": "IST ⇄ MLE",
-       "precio": 630.0,
-       "enlace": "https://www.aviasales.com/search/IST2412MLE13011?t=FZ17981220001798208100001315SAWDXBMLE17998461001799892600000895MLEDXBSAW_2f8b04aa5efafe9bafadcbb66cacc684_56781&search_date=20112026&expected_price_uuid=01a1f72e-40e9-8030-6dc7-bee58d706681&static_fare_key=TY%7CP0%7CH1%7CL0%7CCH0%7CR0%7CTBC0&itinerary_key=8zb8dYSyekRBAvmIPp4ygw&expected_price_source=share&expected_price_currency=eur&expected_price=630",
-       "google": "https://www.google.com/travel/flights?q=Flights%20from%20IST%20to%20MLE%20on%202026-12-24%20through%202027-01-13",
-       "segmentos": [
-        {
-         "de": "SAW",
-         "a": "MLE",
-         "salida": "2026-12-24T14:20:00+03:00",
-         "llegada": "2026-12-24T23:05:00+03:00",
-         "escalas": 1,
-         "aerolinea": "FZ",
-         "vuelo": "752"
-        },
-        {
-         "de": "MLE",
-         "a": "SAW",
-         "salida": "2027-01-13T13:15:00+05:00",
-         "llegada": "2027-01-13T23:00:00+05:00",
-         "escalas": 1,
-         "aerolinea": "FZ",
-         "vuelo": ""
-        }
-       ]
-      },
-      {
-       "descripcion": "IST → MAH (precio estimado: precio de referencia)",
-       "precio": 150.0,
-       "enlace": "",
-       "google": "https://www.google.com/travel/flights?q=Flights%20from%20IST%20to%20MAH%20on%202027-01-14%20one%20way",
-       "segmentos": [
-        {
-         "de": "IST",
-         "a": "MAH",
-         "salida": "2027-01-14",
-         "llegada": "",
-         "escalas": 0,
-         "aerolinea": "",
-         "vuelo": ""
-        }
-       ]
-      }
-     ],
-     "avisos": [
-      "Billetes separados: si un vuelo se retrasa y pierdes el siguiente, no te recolocan.",
-      "Vuelo MAH → IST: precio estimado (~150 €); búscalo para el 23/12, llegando antes de las 08:20.",
-      "Ida: probablemente toque dormir en IST la noche antes.",
-      "Vuelo IST → MAH: precio estimado (~150 €); búscalo para el 14/01, saliendo después de las 03:00.",
-      "Recoge y vuelve a facturar el equipaje en el hub."
-     ],
-     "fuente": "Aviasales",
-     "desde": "MAH"
-    },
-    {
-     "tipo": "desde_hub",
-     "destino": "MLE",
-     "total": 883.0,
-     "ida": "2026-12-30",
-     "vuelta": "2027-01-07",
-     "noches": 8,
-     "hub": "MAD",
-     "billetes": [
-      {
-       "descripcion": "MAD ⇄ MLE",
-       "precio": 883.0,
-       "enlace": "https://www.aviasales.com/search/MAD3012MLE06011?t=BA17986185001798728600001595MADDOHMLE17992284001799319600001760MLEDOHLHRMAD_2eb339a7ce40a999d6ddce843bae55ab_78853&search_date=23112026&expected_price_uuid=01a209af-c86f-8030-2563-3182e0c43492&static_fare_key=TY%7CP1%7CH1%7CL1_1_0%7CCH0%7CR0%7CTBC1&itinerary_key=xJK897wYnGJ_-UJAvlfm-Q&expected_price_source=share&expected_price_currency=eur&expected_price=883",
-       "google": "https://www.google.com/travel/flights?q=Flights%20from%20MAD%20to%20MLE%20on%202026-12-30%20through%202027-01-06",
-       "segmentos": [
-        {
-         "de": "MAD",
-         "a": "MLE",
-         "salida": "2026-12-30T08:15:00+01:00",
-         "llegada": "2026-12-30T19:20:00+01:00",
-         "escalas": 1,
-         "aerolinea": "QR",
-         "vuelo": "148"
-        },
-        {
-         "de": "MLE",
-         "a": "MAD",
-         "salida": "2027-01-06T09:40:00+05:00",
-         "llegada": "2027-01-07T00:30:00+05:00",
-         "escalas": 2,
-         "aerolinea": "QR",
-         "vuelo": ""
-        }
-       ]
-      }
-     ],
-     "avisos": [
-      "Sale de MAD: el viaje desde Menorca hasta MAD va aparte."
-     ],
-     "fuente": "Aviasales",
-     "desde": "MAD"
-    }
-   ],
-   "chollo": false,
-   "motivo_chollo": "",
-   "historial": [
-    {
-     "fecha": "2026-11-21T23:02:12+00:00",
-     "precio": 927.0
-    },
-    {
-     "fecha": "2026-11-22T06:59:39+00:00",
-     "precio": 927.0
-    },
-    {
-     "fecha": "2026-11-22T19:47:56+00:00",
-     "precio": 927.0
-    },
-    {
-     "fecha": "2026-11-23T07:49:51+00:00",
-     "precio": 930.0
-    },
-    {
-     "fecha": "2026-11-23T23:59:29+00:00",
-     "precio": 930.0
-    },
-    {
-     "fecha": "2026-11-24T10:00:46+00:00",
-     "precio": 930.0
-    },
-    {
-     "fecha": "2026-11-24T22:32:34+00:00",
-     "precio": 905.0
+     "fecha": "2026-11-25T08:44:58+00:00",
+     "precio": 925.0
     }
    ]
   },
@@ -6331,22 +6450,22 @@
     {
      "tipo": "autoconexion",
      "destino": "DPS",
-     "total": 958.0,
-     "ida": "2026-12-21",
-     "vuelta": "2027-01-27",
-     "noches": 37,
-     "hub": "IST",
+     "total": 963.0,
+     "ida": "2026-12-09",
+     "vuelta": "2027-01-09",
+     "noches": 31,
+     "hub": "BCN",
      "billetes": [
       {
-       "descripcion": "MAH → IST (precio estimado: precio de referencia)",
-       "precio": 150.0,
+       "descripcion": "MAH → BCN (precio estimado: otros días del mes)",
+       "precio": 71.0,
        "enlace": "",
-       "google": "https://www.google.com/travel/flights?q=Flights%20from%20MAH%20to%20IST%20on%202026-12-21%20one%20way",
+       "google": "https://www.google.com/travel/flights?q=Flights%20from%20MAH%20to%20BCN%20on%202026-12-09%20one%20way",
        "segmentos": [
         {
          "de": "MAH",
-         "a": "IST",
-         "salida": "2026-12-21",
+         "a": "BCN",
+         "salida": "2026-12-09",
          "llegada": "",
          "escalas": 0,
          "aerolinea": "",
@@ -6355,25 +6474,25 @@
        ]
       },
       {
-       "descripcion": "IST ⇄ DPS",
-       "precio": 658.0,
-       "enlace": "https://www.aviasales.com/search/IST2112DPS26011?t=CZ17978622001797983700001725ISTPVGDPS18009525001801033800001655DPSCANIST_a08b7c4be6b4286b9a8706eed03cb816_58780&search_date=23112026&expected_price_uuid=01a2085d-060a-8030-ecd4-448c02cd0e05&static_fare_key=TY%7CP1%7CH0%7CL1_1_23%7CCH0%7CR0%7CTBC1&itinerary_key=mSZq4ICDUWe5t1nKZxhxMA&expected_price_source=share&expected_price_currency=eur&expected_price=658",
-       "google": "https://www.google.com/travel/flights?q=Flights%20from%20IST%20to%20DPS%20on%202026-12-21%20through%202027-01-26",
+       "descripcion": "BCN ⇄ DPS",
+       "precio": 832.0,
+       "enlace": "https://www.aviasales.com/search/BCN1012DPS08011?t=MU17968980001797033300001835BCNPVGDPS17994009001799480400001745DPSPVGBCN_6f1890cedf7f7b2b92424d9679e46e67_74929&search_date=20112026&expected_price_uuid=01a1f919-be28-8031-639e-bb4a76c273bb&static_fare_key=TY%7CP1%7CH1%7CL1_2_0%7CCH1%7CR0%7CTBC1&itinerary_key=lpdP8_3kDZfoXA1cm8J6EA&expected_price_source=share&expected_price_currency=eur&expected_price=832",
+       "google": "https://www.google.com/travel/flights?q=Flights%20from%20BCN%20to%20DPS%20on%202026-12-10%20through%202027-01-08",
        "segmentos": [
         {
-         "de": "IST",
+         "de": "BCN",
          "a": "DPS",
-         "salida": "2026-12-21T14:10:00+03:00",
-         "llegada": "2026-12-22T06:55:00+03:00",
+         "salida": "2026-12-10T10:20:00+01:00",
+         "llegada": "2026-12-11T04:55:00+01:00",
          "escalas": 1,
          "aerolinea": "MU",
-         "vuelo": "704"
+         "vuelo": "250"
         },
         {
          "de": "DPS",
-         "a": "IST",
-         "salida": "2027-01-26T08:35:00+08:00",
-         "llegada": "2027-01-27T01:20:00+08:00",
+         "a": "BCN",
+         "salida": "2027-01-08T09:35:00+08:00",
+         "llegada": "2027-01-09T05:15:00+08:00",
          "escalas": 1,
          "aerolinea": "MU",
          "vuelo": ""
@@ -6381,15 +6500,15 @@
        ]
       },
       {
-       "descripcion": "IST → MAH (precio estimado: precio de referencia)",
-       "precio": 150.0,
+       "descripcion": "BCN → MAH (precio estimado: precio de referencia)",
+       "precio": 60.0,
        "enlace": "",
-       "google": "https://www.google.com/travel/flights?q=Flights%20from%20IST%20to%20MAH%20on%202027-01-27%20one%20way",
+       "google": "https://www.google.com/travel/flights?q=Flights%20from%20BCN%20to%20MAH%20on%202027-01-09%20one%20way",
        "segmentos": [
         {
-         "de": "IST",
+         "de": "BCN",
          "a": "MAH",
-         "salida": "2027-01-27",
+         "salida": "2027-01-09",
          "llegada": "",
          "escalas": 0,
          "aerolinea": "",
@@ -6400,8 +6519,9 @@
      ],
      "avisos": [
       "Billetes separados: si un vuelo se retrasa y pierdes el siguiente, no te recolocan.",
-      "Vuelo MAH → IST: precio estimado (~150 €); búscalo para el 21/12, llegando antes de las 10:10.",
-      "Vuelo IST → MAH: precio estimado (~150 €); búscalo para el 27/01, saliendo después de las 00:20.",
+      "Vuelo MAH → BCN: precio estimado (~71 €); búscalo para el 09/12, llegando antes de las 06:20.",
+      "Ida: probablemente toque dormir en BCN la noche antes.",
+      "Vuelo BCN → MAH: precio estimado (~60 €); búscalo para el 09/01, saliendo después de las 02:15.",
       "Recoge y vuelve a facturar el equipaje en el hub."
      ],
      "fuente": "Aviasales",
@@ -6704,6 +6824,48 @@
     {
      "tipo": "desde_hub",
      "destino": "DPS",
+     "total": 791.0,
+     "ida": "2026-12-23",
+     "vuelta": "2027-01-21",
+     "noches": 29,
+     "hub": "MAD",
+     "billetes": [
+      {
+       "descripcion": "MAD ⇄ DPS",
+       "precio": 791.0,
+       "enlace": "https://www.aviasales.com/search/MAD2312DPS20011?t=3U17980239001798150200001685MADTFUDPS18004866001800603900002375DPSTFUMAD_d2858dd4efd3683c960ec680181f1412_71190&search_date=24112026&expected_price_uuid=01a20fd9-536e-8031-6973-4625f2efafe5&static_fare_key=TY%7CP1%7CH1%7CL1_1_23%7CCH0%7CR0%7CTBC1&itinerary_key=xdJk-ITTaqJ3xzJrig5EVw&expected_price_source=share&expected_price_currency=eur&expected_price=791",
+       "google": "https://www.google.com/travel/flights?q=Flights%20from%20MAD%20to%20DPS%20on%202026-12-23%20through%202027-01-20",
+       "segmentos": [
+        {
+         "de": "MAD",
+         "a": "DPS",
+         "salida": "2026-12-23T11:05:00+01:00",
+         "llegada": "2026-12-24T05:35:00+01:00",
+         "escalas": 1,
+         "aerolinea": "3U",
+         "vuelo": "3804"
+        },
+        {
+         "de": "DPS",
+         "a": "MAD",
+         "salida": "2027-01-20T23:10:00+08:00",
+         "llegada": "2027-01-21T18:35:00+08:00",
+         "escalas": 1,
+         "aerolinea": "3U",
+         "vuelo": ""
+        }
+       ]
+      }
+     ],
+     "avisos": [
+      "Sale de MAD: el viaje desde Menorca hasta MAD va aparte."
+     ],
+     "fuente": "Aviasales",
+     "desde": "MAD"
+    },
+    {
+     "tipo": "desde_hub",
+     "destino": "DPS",
      "total": 795.0,
      "ida": "2026-12-14",
      "vuelta": "2027-01-16",
@@ -6732,48 +6894,6 @@
          "llegada": "2027-01-16T05:30:00+08:00",
          "escalas": 2,
          "aerolinea": "MU",
-         "vuelo": ""
-        }
-       ]
-      }
-     ],
-     "avisos": [
-      "Sale de MAD: el viaje desde Menorca hasta MAD va aparte."
-     ],
-     "fuente": "Aviasales",
-     "desde": "MAD"
-    },
-    {
-     "tipo": "desde_hub",
-     "destino": "DPS",
-     "total": 795.0,
-     "ida": "2026-12-23",
-     "vuelta": "2027-01-21",
-     "noches": 29,
-     "hub": "MAD",
-     "billetes": [
-      {
-       "descripcion": "MAD ⇄ DPS",
-       "precio": 795.0,
-       "enlace": "https://www.aviasales.com/search/MAD2312DPS20011?t=3U17980239001798150200001685MADTFUDPS18004866001800603900002375DPSTFUMAD_d2858dd4efd3683c960ec680181f1412_71579&search_date=24112026&expected_price_uuid=01a20ebe-3646-8030-6c46-16ab55c77f40&static_fare_key=TY%7CP1%7CH1%7CL1_1_23%7CCH0%7CR0%7CTBC1&itinerary_key=xdJk-ITTaqJ3xzJrig5EVw&expected_price_source=share&expected_price_currency=eur&expected_price=795",
-       "google": "https://www.google.com/travel/flights?q=Flights%20from%20MAD%20to%20DPS%20on%202026-12-23%20through%202027-01-20",
-       "segmentos": [
-        {
-         "de": "MAD",
-         "a": "DPS",
-         "salida": "2026-12-23T11:05:00+01:00",
-         "llegada": "2026-12-24T05:35:00+01:00",
-         "escalas": 1,
-         "aerolinea": "3U",
-         "vuelo": "3804"
-        },
-        {
-         "de": "DPS",
-         "a": "MAD",
-         "salida": "2027-01-20T23:10:00+08:00",
-         "llegada": "2027-01-21T18:35:00+08:00",
-         "escalas": 1,
-         "aerolinea": "3U",
          "vuelo": ""
         }
        ]
@@ -6857,6 +6977,10 @@
     },
     {
      "fecha": "2026-11-24T22:32:34+00:00",
+     "precio": 930.0
+    },
+    {
+     "fecha": "2026-11-25T08:44:58+00:00",
      "precio": 930.0
     }
    ]
@@ -7386,6 +7510,10 @@
     {
      "fecha": "2026-11-24T22:32:34+00:00",
      "precio": 963.0
+    },
+    {
+     "fecha": "2026-11-25T08:44:58+00:00",
+     "precio": 963.0
     }
    ]
   },
@@ -7593,6 +7721,10 @@
     },
     {
      "fecha": "2026-11-24T22:32:34+00:00",
+     "precio": 963.0
+    },
+    {
+     "fecha": "2026-11-25T08:44:58+00:00",
      "precio": 963.0
     }
    ]
@@ -7849,6 +7981,48 @@
     {
      "tipo": "desde_hub",
      "destino": "CUN",
+     "total": 916.0,
+     "ida": "2026-12-18",
+     "vuelta": "2027-01-02",
+     "noches": 15,
+     "hub": "MAD",
+     "billetes": [
+      {
+       "descripcion": "MAD ⇄ CUN",
+       "precio": 916.0,
+       "enlace": "https://www.aviasales.com/search/MAD1812CUN01011?t=E917976051001797622800000655MADCUN17988396001798894200000550CUNMAD_4a26519e6ae19c9e2cb9c37835a59045_82245&search_date=25112026&expected_price_uuid=01a210d2-6cf2-8030-a6ac-b1b1faa87c28&static_fare_key=TY%7CP0%7CH1%7CL0%7CCH0%7CR0%7CTBC0&itinerary_key=J-Eh3zTCd7TS_s6ihiQlcA&expected_price_source=share&expected_price_currency=eur&expected_price=916",
+       "google": "https://www.google.com/travel/flights?q=Flights%20from%20MAD%20to%20CUN%20on%202026-12-18%20through%202027-01-01",
+       "segmentos": [
+        {
+         "de": "MAD",
+         "a": "CUN",
+         "salida": "2026-12-18T14:45:00+01:00",
+         "llegada": "2026-12-19T01:40:00+01:00",
+         "escalas": 0,
+         "aerolinea": "E9",
+         "vuelo": "813"
+        },
+        {
+         "de": "CUN",
+         "a": "MAD",
+         "salida": "2027-01-01T21:40:00-05:00",
+         "llegada": "2027-01-02T06:50:00-05:00",
+         "escalas": 0,
+         "aerolinea": "E9",
+         "vuelo": ""
+        }
+       ]
+      }
+     ],
+     "avisos": [
+      "Sale de MAD: el viaje desde Menorca hasta MAD va aparte."
+     ],
+     "fuente": "Aviasales",
+     "desde": "MAD"
+    },
+    {
+     "tipo": "desde_hub",
+     "destino": "CUN",
      "total": 933.0,
      "ida": "2026-12-30",
      "vuelta": "2027-01-12",
@@ -8010,6 +8184,48 @@
      ],
      "fuente": "Aviasales",
      "desde": "BCN"
+    },
+    {
+     "tipo": "desde_hub",
+     "destino": "PUJ",
+     "total": 874.0,
+     "ida": "2026-12-14",
+     "vuelta": "2027-01-27",
+     "noches": 44,
+     "hub": "MAD",
+     "billetes": [
+      {
+       "descripcion": "MAD ⇄ PUJ",
+       "precio": 874.0,
+       "enlace": "https://www.aviasales.com/search/MAD1412PUJ26011?t=AC17972469001797342300001890MADEWRYULPUJ18010032001801123200001700PUJYYZYULMAD_f2fbe2233369c88cca7840e1922433e4_78446&search_date=25112026&expected_price_uuid=01a211b9-b418-8030-2a69-753442edf414&static_fare_key=TY%7CP0%7CH0%7CL0%7CCH0%7CR0%7CTBC0&itinerary_key=LjSjr2AjCPo85uXlkLSbSQ&expected_price_source=share&expected_price_currency=eur&expected_price=874",
+       "google": "https://www.google.com/travel/flights?q=Flights%20from%20MAD%20to%20PUJ%20on%202026-12-14%20through%202027-01-26",
+       "segmentos": [
+        {
+         "de": "MAD",
+         "a": "PUJ",
+         "salida": "2026-12-14T11:15:00+01:00",
+         "llegada": "2026-12-15T02:24:00+01:00",
+         "escalas": 2,
+         "aerolinea": "UA",
+         "vuelo": "3921"
+        },
+        {
+         "de": "PUJ",
+         "a": "MAD",
+         "salida": "2027-01-26T22:40:00-04:00",
+         "llegada": "2027-01-27T12:05:00-04:00",
+         "escalas": 2,
+         "aerolinea": "UA",
+         "vuelo": ""
+        }
+       ]
+      }
+     ],
+     "avisos": [
+      "Sale de MAD: el viaje desde Menorca hasta MAD va aparte."
+     ],
+     "fuente": "Aviasales",
+     "desde": "MAD"
     },
     {
      "tipo": "desde_hub",
@@ -8535,50 +8751,7 @@
    "nota": "Verano porteño.",
    "apto": true,
    "mejor": null,
-   "opciones": [
-    {
-     "tipo": "desde_hub",
-     "destino": "EZE",
-     "total": 866.0,
-     "ida": "2026-12-08",
-     "vuelta": "2027-01-27",
-     "noches": 50,
-     "hub": "MAD",
-     "billetes": [
-      {
-       "descripcion": "MAD ⇄ EZE",
-       "precio": 866.0,
-       "enlace": "https://www.aviasales.com/search/MAD0812EZE26011?t=AA17967324001796812500001575MADJFKEZE18010079401801115400001551EZEMIAMAD_addb8dc14d9b63b3581654fde22c67d4_78025&search_date=18112026&expected_price_uuid=01a1ec3d-cddd-8040-690b-f2bb8ffacc30&static_fare_key=TY%7CP1%7CH1%7CL0%7CCH0%7CR0%7CTBC0&itinerary_key=C9hb5-KuPPdIVD3tcapoMw&origin_airports=1&destination_airports=0&expected_price_source=share&expected_price_currency=eur&expected_price=866",
-       "google": "https://www.google.com/travel/flights?q=Flights%20from%20MAD%20to%20BUE%20on%202026-12-08%20through%202027-01-26",
-       "segmentos": [
-        {
-         "de": "MAD",
-         "a": "EZE",
-         "salida": "2026-12-08T12:20:00+01:00",
-         "llegada": "2026-12-09T08:15:00+01:00",
-         "escalas": 1,
-         "aerolinea": "IB",
-         "vuelo": "8835"
-        },
-        {
-         "de": "EZE",
-         "a": "MAD",
-         "salida": "2027-01-26T23:59:00-03:00",
-         "llegada": "2027-01-27T17:44:00-03:00",
-         "escalas": 1,
-         "aerolinea": "IB",
-         "vuelo": ""
-        }
-       ]
-      }
-     ],
-     "avisos": [
-      "Sale de MAD: el viaje desde Menorca hasta MAD va aparte."
-     ],
-     "fuente": "Aviasales",
-     "desde": "MAD"
-    }
-   ],
+   "opciones": [],
    "chollo": false,
    "motivo_chollo": "",
    "historial": []

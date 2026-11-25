@@ -1,8 +1,8 @@
 {
  "estado": {
   "mes": "2026-11",
-  "usadas_mes": 21,
-  "siguiente": 21
+  "usadas_mes": 24,
+  "siguiente": 24
  },
  "resultados": {
   "BKK|2026-12-12|2027-01-10": {
@@ -881,6 +881,138 @@
      "typical_price_range": [
       1050,
       1950
+     ]
+    }
+   }
+  },
+  "CNX|2026-12-12|2027-01-10": {
+   "fecha": "2026-11-25T08:44:58+00:00",
+   "opcion": {
+    "tipo": "directo",
+    "fuente": "Google Flights",
+    "destino": "CNX",
+    "total": 2285.0,
+    "ida": "2026-12-12",
+    "vuelta": "2027-01-10",
+    "noches": 29,
+    "hub": null,
+    "billetes": [
+     {
+      "descripcion": "MAH ⇄ CNX (Google Flights)",
+      "precio": 2285.0,
+      "enlace": "",
+      "google": "https://www.google.com/travel/flights?hl=es&gl=es&curr=EUR&tfs=CBwQAhoeEgoyMDI2LTEyLTEyagcIARIDTUFIcgcIARIDQ05YGh4SCjIwMjctMDEtMTBqBwgBEgNDTlhyBwgBEgNNQUhAAUgBcAGYAQE&tfu=EgIIAQ",
+      "segmentos": [
+       {
+        "de": "MAH",
+        "a": "CNX",
+        "salida": "2026-12-12T08:15:00",
+        "llegada": "2026-12-13T19:00:00",
+        "escalas": 3,
+        "aerolinea": "Bangkok Airways / Qatar Airways / Vueling",
+        "vuelo": "VY 3601"
+       }
+      ]
+     }
+    ],
+    "avisos": [
+     "Escalas a la ida: BCN (6 h), DOH (2 h), BKK (5 h). Mismo billete: si pierdes una conexión te recolocan.",
+     "Precio de Google Flights para estas fechas exactas; la vuelta se elige al reservar."
+    ],
+    "insights": {
+     "lowest_price": 2285,
+     "price_level": "high",
+     "typical_price_range": [
+      1050,
+      1900
+     ]
+    }
+   }
+  },
+  "LGK|2026-12-12|2027-01-10": {
+   "fecha": "2026-11-25T08:44:58+00:00",
+   "opcion": {
+    "tipo": "directo",
+    "fuente": "Google Flights",
+    "destino": "LGK",
+    "total": 1638.0,
+    "ida": "2026-12-12",
+    "vuelta": "2027-01-10",
+    "noches": 29,
+    "hub": null,
+    "billetes": [
+     {
+      "descripcion": "MAH ⇄ LGK (Google Flights)",
+      "precio": 1638.0,
+      "enlace": "",
+      "google": "https://www.google.com/travel/flights?hl=es&gl=es&curr=EUR&tfs=CBwQAhoeEgoyMDI2LTEyLTEyagcIARIDTUFIcgcIARIDTEdLGh4SCjIwMjctMDEtMTBqBwgBEgNMR0tyBwgBEgNNQUhAAUgBcAGYAQE&tfu=EgIIAQ",
+      "segmentos": [
+       {
+        "de": "MAH",
+        "a": "LGK",
+        "salida": "2026-12-12T08:15:00",
+        "llegada": "2026-12-13T20:00:00",
+        "escalas": 3,
+        "aerolinea": "Malaysia Airlines / Qatar Airways / Vueling",
+        "vuelo": "VY 3601"
+       }
+      ]
+     }
+    ],
+    "avisos": [
+     "Escalas a la ida: BCN (6 h), DOH (1 h), KUL (4 h). Mismo billete: si pierdes una conexión te recolocan.",
+     "Precio de Google Flights para estas fechas exactas; la vuelta se elige al reservar."
+    ],
+    "insights": {
+     "lowest_price": 1638,
+     "price_level": "typical",
+     "typical_price_range": [
+      1100,
+      1750
+     ]
+    }
+   }
+  },
+  "DPS|2026-12-12|2027-01-10": {
+   "fecha": "2026-11-25T08:44:58+00:00",
+   "opcion": {
+    "tipo": "directo",
+    "fuente": "Google Flights",
+    "destino": "DPS",
+    "total": 1817.0,
+    "ida": "2026-12-12",
+    "vuelta": "2027-01-10",
+    "noches": 29,
+    "hub": null,
+    "billetes": [
+     {
+      "descripcion": "MAH ⇄ DPS (Google Flights)",
+      "precio": 1817.0,
+      "enlace": "",
+      "google": "https://www.google.com/travel/flights?hl=es&gl=es&curr=EUR&tfs=CBwQAhoeEgoyMDI2LTEyLTEyagcIARIDTUFIcgcIARIDRFBTGh4SCjIwMjctMDEtMTBqBwgBEgNEUFNyBwgBEgNNQUhAAUgBcAGYAQE&tfu=EgIIAQ",
+      "segmentos": [
+       {
+        "de": "MAH",
+        "a": "DPS",
+        "salida": "2026-12-12T21:15:00",
+        "llegada": "2026-12-14T15:20:00",
+        "escalas": 3,
+        "aerolinea": "Cathay Pacific / Iberia",
+        "vuelo": "IB 1044"
+       }
+      ]
+     }
+    ],
+    "avisos": [
+     "Escalas a la ida: MAD (8 h), MXP (2 h), HKG (3 h). Mismo billete: si pierdes una conexión te recolocan.",
+     "Precio de Google Flights para estas fechas exactas; la vuelta se elige al reservar."
+    ],
+    "insights": {
+     "lowest_price": 1817,
+     "price_level": "high",
+     "typical_price_range": [
+      1150,
+      1800
      ]
     }
    }
