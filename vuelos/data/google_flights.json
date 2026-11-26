@@ -1,8 +1,8 @@
 {
  "estado": {
   "mes": "2026-11",
-  "usadas_mes": 27,
-  "siguiente": 27
+  "usadas_mes": 30,
+  "siguiente": 30
  },
  "resultados": {
   "BKK|2026-12-12|2027-01-10": {
@@ -1140,6 +1140,138 @@
      "Precio de Google Flights para estas fechas exactas; la vuelta se elige al reservar."
     ],
     "insights": {}
+   }
+  },
+  "SMR|2026-12-12|2027-01-10": {
+   "fecha": "2026-11-26T08:31:09+00:00",
+   "opcion": {
+    "tipo": "directo",
+    "fuente": "Google Flights",
+    "destino": "SMR",
+    "total": 2097.0,
+    "ida": "2026-12-12",
+    "vuelta": "2027-01-10",
+    "noches": 29,
+    "hub": null,
+    "billetes": [
+     {
+      "descripcion": "MAH ⇄ SMR (Google Flights)",
+      "precio": 2097.0,
+      "enlace": "",
+      "google": "https://www.google.com/travel/flights?hl=es&gl=es&curr=EUR&tfs=CBwQAhoeEgoyMDI2LTEyLTEyagcIARIDTUFIcgcIARIDU01SGh4SCjIwMjctMDEtMTBqBwgBEgNTTVJyBwgBEgNNQUhAAUgBcAGYAQE&tfu=EgIIAQ",
+      "segmentos": [
+       {
+        "de": "MAH",
+        "a": "SMR",
+        "salida": "2026-12-12T21:15:00",
+        "llegada": "2026-12-13T18:45:00",
+        "escalas": 2,
+        "aerolinea": "Avianca / Iberia",
+        "vuelo": "IB 1044"
+       }
+      ]
+     }
+    ],
+    "avisos": [
+     "Escalas a la ida: MAD (2 h), BOG (11 h). Mismo billete: si pierdes una conexión te recolocan.",
+     "Precio de Google Flights para estas fechas exactas; la vuelta se elige al reservar."
+    ],
+    "insights": {
+     "lowest_price": 2097,
+     "price_level": "typical",
+     "typical_price_range": [
+      1350,
+      2400
+     ]
+    }
+   }
+  },
+  "SSA|2026-12-12|2027-01-10": {
+   "fecha": "2026-11-26T08:31:09+00:00",
+   "opcion": {
+    "tipo": "directo",
+    "fuente": "Google Flights",
+    "destino": "SSA",
+    "total": 2088.0,
+    "ida": "2026-12-12",
+    "vuelta": "2027-01-10",
+    "noches": 29,
+    "hub": null,
+    "billetes": [
+     {
+      "descripcion": "MAH ⇄ SSA (Google Flights)",
+      "precio": 2088.0,
+      "enlace": "",
+      "google": "https://www.google.com/travel/flights?hl=es&gl=es&curr=EUR&tfs=CBwQAhoeEgoyMDI2LTEyLTEyagcIARIDTUFIcgcIARIDU1NBGh4SCjIwMjctMDEtMTBqBwgBEgNTU0FyBwgBEgNNQUhAAUgBcAGYAQE&tfu=EgIIAQ",
+      "segmentos": [
+       {
+        "de": "MAH",
+        "a": "SSA",
+        "salida": "2026-12-12T11:10:00",
+        "llegada": "2026-12-13T04:20:00",
+        "escalas": 3,
+        "aerolinea": "Iberia / LATAM",
+        "vuelo": "IB 2489"
+       }
+      ]
+     }
+    ],
+    "avisos": [
+     "Escalas a la ida: PMI (1 h), MAD (1 h), FOR (5 h). Mismo billete: si pierdes una conexión te recolocan.",
+     "Precio de Google Flights para estas fechas exactas; la vuelta se elige al reservar."
+    ],
+    "insights": {
+     "lowest_price": 2088,
+     "price_level": "typical",
+     "typical_price_range": [
+      1300,
+      2250
+     ]
+    }
+   }
+  },
+  "CEB|2026-12-12|2027-01-10": {
+   "fecha": "2026-11-26T08:31:09+00:00",
+   "opcion": {
+    "tipo": "directo",
+    "fuente": "Google Flights",
+    "destino": "CEB",
+    "total": 2045.0,
+    "ida": "2026-12-12",
+    "vuelta": "2027-01-10",
+    "noches": 29,
+    "hub": null,
+    "billetes": [
+     {
+      "descripcion": "MAH ⇄ CEB (Google Flights)",
+      "precio": 2045.0,
+      "enlace": "",
+      "google": "https://www.google.com/travel/flights?hl=es&gl=es&curr=EUR&tfs=CBwQAhoeEgoyMDI2LTEyLTEyagcIARIDTUFIcgcIARIDQ0VCGh4SCjIwMjctMDEtMTBqBwgBEgNDRUJyBwgBEgNNQUhAAUgBcAGYAQE&tfu=EgIIAQ",
+      "segmentos": [
+       {
+        "de": "MAH",
+        "a": "CEB",
+        "salida": "2026-12-12T21:15:00",
+        "llegada": "2026-12-14T11:10:00",
+        "escalas": 3,
+        "aerolinea": "Cathay Pacific / Iberia",
+        "vuelo": "IB 1044"
+       }
+      ]
+     }
+    ],
+    "avisos": [
+     "Escalas a la ida: MAD (8 h), MXP (2 h), HKG (1 h). Mismo billete: si pierdes una conexión te recolocan.",
+     "Precio de Google Flights para estas fechas exactas; la vuelta se elige al reservar."
+    ],
+    "insights": {
+     "lowest_price": 2045,
+     "price_level": "typical",
+     "typical_price_range": [
+      1400,
+      2750
+     ]
+    }
    }
   }
  }
