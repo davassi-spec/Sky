@@ -1,8 +1,8 @@
 {
  "estado": {
   "mes": "2026-11",
-  "usadas_mes": 30,
-  "siguiente": 30
+  "usadas_mes": 33,
+  "siguiente": 33
  },
  "resultados": {
   "BKK|2026-12-12|2027-01-10": {
@@ -1270,6 +1270,138 @@
      "typical_price_range": [
       1400,
       2750
+     ]
+    }
+   }
+  },
+  "NAT|2026-12-12|2027-01-10": {
+   "fecha": "2026-11-26T21:40:36+00:00",
+   "opcion": {
+    "tipo": "directo",
+    "fuente": "Google Flights",
+    "destino": "NAT",
+    "total": 2089.0,
+    "ida": "2026-12-12",
+    "vuelta": "2027-01-10",
+    "noches": 29,
+    "hub": null,
+    "billetes": [
+     {
+      "descripcion": "MAH ⇄ NAT (Google Flights)",
+      "precio": 2089.0,
+      "enlace": "",
+      "google": "https://www.google.com/travel/flights?hl=es&gl=es&curr=EUR&tfs=CBwQAhoeEgoyMDI2LTEyLTEyagcIARIDTUFIcgcIARIDTkFUGh4SCjIwMjctMDEtMTBqBwgBEgNOQVRyBwgBEgNNQUhAAUgBcAGYAQE&tfu=EgIIAQ",
+      "segmentos": [
+       {
+        "de": "MAH",
+        "a": "NAT",
+        "salida": "2026-12-12T13:45:00",
+        "llegada": "2026-12-13T15:20:00",
+        "escalas": 2,
+        "aerolinea": "Iberia / LATAM",
+        "vuelo": "IB 1040"
+       }
+      ]
+     }
+    ],
+    "avisos": [
+     "Escalas a la ida: MAD (1 h), FOR (17 h). Mismo billete: si pierdes una conexión te recolocan.",
+     "Precio de Google Flights para estas fechas exactas; la vuelta se elige al reservar."
+    ],
+    "insights": {
+     "lowest_price": 2089,
+     "price_level": "typical",
+     "typical_price_range": [
+      1450,
+      2350
+     ]
+    }
+   }
+  },
+  "SAI|2026-12-12|2027-01-10": {
+   "fecha": "2026-11-26T21:40:36+00:00",
+   "opcion": {
+    "tipo": "directo",
+    "fuente": "Google Flights",
+    "destino": "SAI",
+    "total": 1987.0,
+    "ida": "2026-12-12",
+    "vuelta": "2027-01-10",
+    "noches": 29,
+    "hub": null,
+    "billetes": [
+     {
+      "descripcion": "MAH ⇄ SAI (Google Flights)",
+      "precio": 1987.0,
+      "enlace": "",
+      "google": "https://www.google.com/travel/flights?hl=es&gl=es&curr=EUR&tfs=CBwQAhoeEgoyMDI2LTEyLTEyagcIARIDTUFIcgcIARIDU0FJGh4SCjIwMjctMDEtMTBqBwgBEgNTQUlyBwgBEgNNQUhAAUgBcAGYAQE&tfu=EgIIAQ",
+      "segmentos": [
+       {
+        "de": "MAH",
+        "a": "SAI",
+        "salida": "2026-12-12T08:15:00",
+        "llegada": "2026-12-13T18:45:00",
+        "escalas": 3,
+        "aerolinea": "Bangkok Airways / Qatar Airways / Vueling",
+        "vuelo": "VY 3601"
+       }
+      ]
+     }
+    ],
+    "avisos": [
+     "Escalas a la ida: BCN (6 h), DOH (2 h), BKK (5 h). Mismo billete: si pierdes una conexión te recolocan.",
+     "Precio de Google Flights para estas fechas exactas; la vuelta se elige al reservar."
+    ],
+    "insights": {
+     "lowest_price": 1987,
+     "price_level": "typical",
+     "typical_price_range": [
+      1200,
+      2250
+     ]
+    }
+   }
+  },
+  "SJD|2026-12-12|2027-01-10": {
+   "fecha": "2026-11-26T21:40:36+00:00",
+   "opcion": {
+    "tipo": "directo",
+    "fuente": "Google Flights",
+    "destino": "SJD",
+    "total": 1874.0,
+    "ida": "2026-12-12",
+    "vuelta": "2027-01-10",
+    "noches": 29,
+    "hub": null,
+    "billetes": [
+     {
+      "descripcion": "MAH ⇄ SJD (Google Flights)",
+      "precio": 1874.0,
+      "enlace": "",
+      "google": "https://www.google.com/travel/flights?hl=es&gl=es&curr=EUR&tfs=CBwQAhoeEgoyMDI2LTEyLTEyagcIARIDTUFIcgcIARIDU0pEGh4SCjIwMjctMDEtMTBqBwgBEgNTSkRyBwgBEgNNQUhAAUgBcAGYAQE&tfu=EgIIAQ",
+      "segmentos": [
+       {
+        "de": "MAH",
+        "a": "SJD",
+        "salida": "2026-12-12T07:00:00",
+        "llegada": "2026-12-13T10:53:00",
+        "escalas": 2,
+        "aerolinea": "American / Iberia",
+        "vuelo": "IB 1042"
+       }
+      ]
+     }
+    ],
+    "avisos": [
+     "Escalas a la ida: MAD (4 h), DFW (15 h). Mismo billete: si pierdes una conexión te recolocan.",
+     "Precio de Google Flights para estas fechas exactas; la vuelta se elige al reservar."
+    ],
+    "insights": {
+     "lowest_price": 1874,
+     "price_level": "typical",
+     "typical_price_range": [
+      1400,
+      2450
      ]
     }
    }
