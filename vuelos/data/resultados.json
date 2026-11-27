@@ -1,5 +1,5 @@
 {
- "generado": "2026-11-26T21:40:36+00:00",
+ "generado": "2026-11-27T08:44:46+00:00",
  "fuente": "Travelpayouts / Aviasales (precios en caché de búsquedas recientes)",
  "config": {
   "origen": "MAH",
@@ -34,14 +34,14 @@
  ],
  "google_flights": {
   "mes": "2026-11",
-  "usadas_mes": 33
+  "usadas_mes": 36
  },
  "diagnostico": {
-  "registros_api": 2899,
-  "consultas_con_datos": 234,
+  "registros_api": 2958,
+  "consultas_con_datos": 236,
   "descartes": {
-   "hub: fechas fuera de ventana": 97,
-   "por encima del presupuesto": 2431
+   "hub: fechas fuera de ventana": 96,
+   "por encima del presupuesto": 2497
   },
   "muestras": [
    {
@@ -106,15 +106,15 @@
      "one_way": "true"
     },
     "registro": {
-     "flight_number": "1044",
-     "link": "/search/MAH0512MAD1?t=IB17965053001796511000000095MAHMAD_a31a745cd57b890f69e983e305587e4f_5316&search_date=20112026&expected_price_uuid=01a1f66c-3786-8030-2022-2636d82bee03&static_fare_key=TY%7CP0%7CH1%7CL0%7CCH1%7CR0%7CTBC0&itinerary_key=pFo_thd_biuVJ-FBUlVT6w&expected_price_source=share&expected_price_currency=eur&expected_price=59",
+     "flight_number": "1042",
+     "link": "/search/MAH1012MAD1?t=IB17968860001796891700000095MAHMAD_5584a1bd8fae593f24e6aecd2aeeaec9_5408&search_date=25112026&expected_price_uuid=01a212f7-6e37-8030-6c9f-c0bd15eff79e&static_fare_key=TY%7CP0%7CH1%7CL0%7CCH1%7CR0%7CTBC0&itinerary_key=SQDi3f5hpLGUgHDkeyrU-Q&expected_price_source=share&expected_price_currency=eur&expected_price=60",
      "origin_airport": "MAH",
      "destination_airport": "MAD",
-     "departure_at": "2026-12-05T21:15:00+01:00",
+     "departure_at": "2026-12-10T07:00:00+01:00",
      "airline": "IB",
      "destination": "MAD",
      "origin": "MAH",
-     "price": 59,
+     "price": 60,
      "gate": "Kiwi.com",
      "return_transfers": 0,
      "duration": 95,
@@ -1086,6 +1086,10 @@
     {
      "fecha": "2026-11-26T21:40:36+00:00",
      "precio": 578.0
+    },
+    {
+     "fecha": "2026-11-27T08:44:46+00:00",
+     "precio": 578.0
     }
    ]
   },
@@ -1708,6 +1712,10 @@
     },
     {
      "fecha": "2026-11-26T21:40:36+00:00",
+     "precio": 756.0
+    },
+    {
+     "fecha": "2026-11-27T08:44:46+00:00",
      "precio": 756.0
     }
    ]
@@ -2544,6 +2552,10 @@
     {
      "fecha": "2026-11-26T21:40:36+00:00",
      "precio": 809.0
+    },
+    {
+     "fecha": "2026-11-27T08:44:46+00:00",
+     "precio": 809.0
     }
    ]
   },
@@ -3170,270 +3182,10 @@
     {
      "fecha": "2026-11-26T21:40:36+00:00",
      "precio": 809.0
-    }
-   ]
-  },
-  {
-   "iata": "PTY",
-   "ciudad": "Panamá",
-   "pais": "Panamá",
-   "region": "Centroamérica",
-   "temp_max": 31,
-   "temp_min": 23,
-   "lluvia": "seca",
-   "seguridad": 4,
-   "playa": true,
-   "ref": 650,
-   "nota": "Empieza la estación seca. San Blas, Bocas del Toro.",
-   "apto": true,
-   "mejor": {
-    "tipo": "autoconexion",
-    "destino": "PTY",
-    "total": 847.0,
-    "ida": "2026-12-31",
-    "vuelta": "2027-01-22",
-    "noches": 22,
-    "hub": "BCN",
-    "billetes": [
-     {
-      "descripcion": "MAH → BCN (precio estimado: precio de referencia)",
-      "precio": 60.0,
-      "enlace": "",
-      "google": "https://www.google.com/travel/flights?q=Flights%20from%20MAH%20to%20BCN%20on%202026-12-31%20one%20way",
-      "segmentos": [
-       {
-        "de": "MAH",
-        "a": "BCN",
-        "salida": "2026-12-31",
-        "llegada": "",
-        "escalas": 0,
-        "aerolinea": "",
-        "vuelo": ""
-       }
-      ]
-     },
-     {
-      "descripcion": "BCN ⇄ PTY",
-      "precio": 727.0,
-      "enlace": "https://www.aviasales.com/search/BCN3112PTY21011?t=AV17987310001798766400000950BCNBOGPTY18005550001800624600000800PTYBOGBCN_6584b53bddbefd20f48ebcf32d7ac3c8_65400&search_date=21112026&expected_price_uuid=01a1ff33-26e3-8030-aa58-7c27c9530f4d&static_fare_key=TY%7CP0%7CH1%7CL0%7CCH0%7CR0%7CTBC0&itinerary_key=0TbsD6css-e2R6DYHF75Qw&expected_price_source=share&expected_price_currency=eur&expected_price=727",
-      "google": "https://www.google.com/travel/flights?q=Flights%20from%20BCN%20to%20PTY%20on%202026-12-31%20through%202027-01-21",
-      "segmentos": [
-       {
-        "de": "BCN",
-        "a": "PTY",
-        "salida": "2026-12-31T15:30:00+01:00",
-        "llegada": "2027-01-01T04:10:00+01:00",
-        "escalas": 1,
-        "aerolinea": "AV",
-        "vuelo": "181"
-       },
-       {
-        "de": "PTY",
-        "a": "BCN",
-        "salida": "2027-01-21T18:10:00-05:00",
-        "llegada": "2027-01-22T05:55:00-05:00",
-        "escalas": 1,
-        "aerolinea": "AV",
-        "vuelo": ""
-       }
-      ]
-     },
-     {
-      "descripcion": "BCN → MAH (precio estimado: precio de referencia)",
-      "precio": 60.0,
-      "enlace": "",
-      "google": "https://www.google.com/travel/flights?q=Flights%20from%20BCN%20to%20MAH%20on%202027-01-22%20one%20way",
-      "segmentos": [
-       {
-        "de": "BCN",
-        "a": "MAH",
-        "salida": "2027-01-22",
-        "llegada": "",
-        "escalas": 0,
-        "aerolinea": "",
-        "vuelo": ""
-       }
-      ]
-     }
-    ],
-    "avisos": [
-     "Billetes separados: si un vuelo se retrasa y pierdes el siguiente, no te recolocan.",
-     "Vuelo MAH → BCN: precio estimado (~60 €); búscalo para el 31/12, llegando antes de las 11:30.",
-     "Vuelo BCN → MAH: precio estimado (~60 €); búscalo para el 22/01, saliendo después de las 15:55.",
-     "Recoge y vuelve a facturar el equipaje en el hub."
-    ],
-    "fuente": "Aviasales",
-    "desde": "MAH"
-   },
-   "opciones": [
-    {
-     "tipo": "autoconexion",
-     "destino": "PTY",
-     "total": 847.0,
-     "ida": "2026-12-31",
-     "vuelta": "2027-01-22",
-     "noches": 22,
-     "hub": "BCN",
-     "billetes": [
-      {
-       "descripcion": "MAH → BCN (precio estimado: precio de referencia)",
-       "precio": 60.0,
-       "enlace": "",
-       "google": "https://www.google.com/travel/flights?q=Flights%20from%20MAH%20to%20BCN%20on%202026-12-31%20one%20way",
-       "segmentos": [
-        {
-         "de": "MAH",
-         "a": "BCN",
-         "salida": "2026-12-31",
-         "llegada": "",
-         "escalas": 0,
-         "aerolinea": "",
-         "vuelo": ""
-        }
-       ]
-      },
-      {
-       "descripcion": "BCN ⇄ PTY",
-       "precio": 727.0,
-       "enlace": "https://www.aviasales.com/search/BCN3112PTY21011?t=AV17987310001798766400000950BCNBOGPTY18005550001800624600000800PTYBOGBCN_6584b53bddbefd20f48ebcf32d7ac3c8_65400&search_date=21112026&expected_price_uuid=01a1ff33-26e3-8030-aa58-7c27c9530f4d&static_fare_key=TY%7CP0%7CH1%7CL0%7CCH0%7CR0%7CTBC0&itinerary_key=0TbsD6css-e2R6DYHF75Qw&expected_price_source=share&expected_price_currency=eur&expected_price=727",
-       "google": "https://www.google.com/travel/flights?q=Flights%20from%20BCN%20to%20PTY%20on%202026-12-31%20through%202027-01-21",
-       "segmentos": [
-        {
-         "de": "BCN",
-         "a": "PTY",
-         "salida": "2026-12-31T15:30:00+01:00",
-         "llegada": "2027-01-01T04:10:00+01:00",
-         "escalas": 1,
-         "aerolinea": "AV",
-         "vuelo": "181"
-        },
-        {
-         "de": "PTY",
-         "a": "BCN",
-         "salida": "2027-01-21T18:10:00-05:00",
-         "llegada": "2027-01-22T05:55:00-05:00",
-         "escalas": 1,
-         "aerolinea": "AV",
-         "vuelo": ""
-        }
-       ]
-      },
-      {
-       "descripcion": "BCN → MAH (precio estimado: precio de referencia)",
-       "precio": 60.0,
-       "enlace": "",
-       "google": "https://www.google.com/travel/flights?q=Flights%20from%20BCN%20to%20MAH%20on%202027-01-22%20one%20way",
-       "segmentos": [
-        {
-         "de": "BCN",
-         "a": "MAH",
-         "salida": "2027-01-22",
-         "llegada": "",
-         "escalas": 0,
-         "aerolinea": "",
-         "vuelo": ""
-        }
-       ]
-      }
-     ],
-     "avisos": [
-      "Billetes separados: si un vuelo se retrasa y pierdes el siguiente, no te recolocan.",
-      "Vuelo MAH → BCN: precio estimado (~60 €); búscalo para el 31/12, llegando antes de las 11:30.",
-      "Vuelo BCN → MAH: precio estimado (~60 €); búscalo para el 22/01, saliendo después de las 15:55.",
-      "Recoge y vuelve a facturar el equipaje en el hub."
-     ],
-     "fuente": "Aviasales",
-     "desde": "MAH"
     },
     {
-     "tipo": "desde_hub",
-     "destino": "PTY",
-     "total": 727.0,
-     "ida": "2026-12-31",
-     "vuelta": "2027-01-22",
-     "noches": 22,
-     "hub": "BCN",
-     "billetes": [
-      {
-       "descripcion": "BCN ⇄ PTY",
-       "precio": 727.0,
-       "enlace": "https://www.aviasales.com/search/BCN3112PTY21011?t=AV17987310001798766400000950BCNBOGPTY18005550001800624600000800PTYBOGBCN_6584b53bddbefd20f48ebcf32d7ac3c8_65400&search_date=21112026&expected_price_uuid=01a1ff33-26e3-8030-aa58-7c27c9530f4d&static_fare_key=TY%7CP0%7CH1%7CL0%7CCH0%7CR0%7CTBC0&itinerary_key=0TbsD6css-e2R6DYHF75Qw&expected_price_source=share&expected_price_currency=eur&expected_price=727",
-       "google": "https://www.google.com/travel/flights?q=Flights%20from%20BCN%20to%20PTY%20on%202026-12-31%20through%202027-01-21",
-       "segmentos": [
-        {
-         "de": "BCN",
-         "a": "PTY",
-         "salida": "2026-12-31T15:30:00+01:00",
-         "llegada": "2027-01-01T04:10:00+01:00",
-         "escalas": 1,
-         "aerolinea": "AV",
-         "vuelo": "181"
-        },
-        {
-         "de": "PTY",
-         "a": "BCN",
-         "salida": "2027-01-21T18:10:00-05:00",
-         "llegada": "2027-01-22T05:55:00-05:00",
-         "escalas": 1,
-         "aerolinea": "AV",
-         "vuelo": ""
-        }
-       ]
-      }
-     ],
-     "avisos": [
-      "Sale de BCN: el viaje desde Menorca hasta BCN va aparte."
-     ],
-     "fuente": "Aviasales",
-     "desde": "BCN"
-    }
-   ],
-   "chollo": false,
-   "motivo_chollo": "",
-   "historial": [
-    {
-     "fecha": "2026-11-21T23:02:12+00:00",
-     "precio": 858.0
-    },
-    {
-     "fecha": "2026-11-22T06:59:39+00:00",
-     "precio": 858.0
-    },
-    {
-     "fecha": "2026-11-22T19:47:56+00:00",
-     "precio": 858.0
-    },
-    {
-     "fecha": "2026-11-23T07:49:51+00:00",
-     "precio": 858.0
-    },
-    {
-     "fecha": "2026-11-23T23:59:29+00:00",
-     "precio": 858.0
-    },
-    {
-     "fecha": "2026-11-24T10:00:46+00:00",
-     "precio": 858.0
-    },
-    {
-     "fecha": "2026-11-24T22:32:34+00:00",
-     "precio": 858.0
-    },
-    {
-     "fecha": "2026-11-25T08:44:58+00:00",
-     "precio": 858.0
-    },
-    {
-     "fecha": "2026-11-25T21:47:17+00:00",
-     "precio": 858.0
-    },
-    {
-     "fecha": "2026-11-26T08:31:09+00:00",
-     "precio": 858.0
-    },
-    {
-     "fecha": "2026-11-26T21:40:36+00:00",
-     "precio": 847.0
+     "fecha": "2026-11-27T08:44:46+00:00",
+     "precio": 809.0
     }
    ]
   },
@@ -3453,7 +3205,7 @@
    "mejor": {
     "tipo": "autoconexion",
     "destino": "SGN",
-    "total": 852.0,
+    "total": 846.0,
     "ida": "2026-12-21",
     "vuelta": "2027-01-03",
     "noches": 13,
@@ -3478,15 +3230,15 @@
      },
      {
       "descripcion": "IST ⇄ SGN",
-      "precio": 552.0,
-      "enlace": "https://www.aviasales.com/search/IST2212SGN02011?t=MU17979372001798041600001500ISTXIYKMGSGN17988642001798963800001900SGNPVGIST_7bddda2db4257a8f4ea406df21bb64d1_49774&search_date=26112026&expected_price_uuid=01a218a0-172f-8031-216e-673a2c68d7d5&static_fare_key=TY%7CP1%7CH1%7CL1_2_0%7CCH1%7CR1%7CTBC1&itinerary_key=nNBDulRfq4Sy5l2blndKhw&expected_price_source=share&expected_price_currency=eur&expected_price=552",
+      "precio": 546.0,
+      "enlace": "https://www.aviasales.com/search/IST2212SGN02011?t=MU17979372001798074600002050ISTXIYPVGSGN17988642001798963800001900SGNPVGIST_afc087e1588a5a1383dd8893b219f0b6_49320&search_date=27112026&expected_price_uuid=01a21bf3-2a88-8030-619c-c3c2a2207888&static_fare_key=TY%7CP1%7CH1%7CL1_2_0%7CCH1%7CR0%7CTBC1&itinerary_key=zRP41L1nt0Sa8jqghi1-bA&expected_price_source=share&expected_price_currency=eur&expected_price=546",
       "google": "https://www.google.com/travel/flights?q=Flights%20from%20IST%20to%20SGN%20on%202026-12-22%20through%202027-01-02",
       "segmentos": [
        {
         "de": "IST",
         "a": "SGN",
         "salida": "2026-12-22T11:00:00+03:00",
-        "llegada": "2026-12-23T01:30:00+03:00",
+        "llegada": "2026-12-23T02:50:00+03:00",
         "escalas": 2,
         "aerolinea": "MU",
         "vuelo": "5026"
@@ -3535,7 +3287,7 @@
     {
      "tipo": "autoconexion",
      "destino": "SGN",
-     "total": 852.0,
+     "total": 846.0,
      "ida": "2026-12-21",
      "vuelta": "2027-01-03",
      "noches": 13,
@@ -3560,15 +3312,15 @@
       },
       {
        "descripcion": "IST ⇄ SGN",
-       "precio": 552.0,
-       "enlace": "https://www.aviasales.com/search/IST2212SGN02011?t=MU17979372001798041600001500ISTXIYKMGSGN17988642001798963800001900SGNPVGIST_7bddda2db4257a8f4ea406df21bb64d1_49774&search_date=26112026&expected_price_uuid=01a218a0-172f-8031-216e-673a2c68d7d5&static_fare_key=TY%7CP1%7CH1%7CL1_2_0%7CCH1%7CR1%7CTBC1&itinerary_key=nNBDulRfq4Sy5l2blndKhw&expected_price_source=share&expected_price_currency=eur&expected_price=552",
+       "precio": 546.0,
+       "enlace": "https://www.aviasales.com/search/IST2212SGN02011?t=MU17979372001798074600002050ISTXIYPVGSGN17988642001798963800001900SGNPVGIST_afc087e1588a5a1383dd8893b219f0b6_49320&search_date=27112026&expected_price_uuid=01a21bf3-2a88-8030-619c-c3c2a2207888&static_fare_key=TY%7CP1%7CH1%7CL1_2_0%7CCH1%7CR0%7CTBC1&itinerary_key=zRP41L1nt0Sa8jqghi1-bA&expected_price_source=share&expected_price_currency=eur&expected_price=546",
        "google": "https://www.google.com/travel/flights?q=Flights%20from%20IST%20to%20SGN%20on%202026-12-22%20through%202027-01-02",
        "segmentos": [
         {
          "de": "IST",
          "a": "SGN",
          "salida": "2026-12-22T11:00:00+03:00",
-         "llegada": "2026-12-23T01:30:00+03:00",
+         "llegada": "2026-12-23T02:50:00+03:00",
          "escalas": 2,
          "aerolinea": "MU",
          "vuelo": "5026"
@@ -4021,6 +3773,278 @@
     {
      "fecha": "2026-11-26T21:40:36+00:00",
      "precio": 852.0
+    },
+    {
+     "fecha": "2026-11-27T08:44:46+00:00",
+     "precio": 846.0
+    }
+   ]
+  },
+  {
+   "iata": "PTY",
+   "ciudad": "Panamá",
+   "pais": "Panamá",
+   "region": "Centroamérica",
+   "temp_max": 31,
+   "temp_min": 23,
+   "lluvia": "seca",
+   "seguridad": 4,
+   "playa": true,
+   "ref": 650,
+   "nota": "Empieza la estación seca. San Blas, Bocas del Toro.",
+   "apto": true,
+   "mejor": {
+    "tipo": "autoconexion",
+    "destino": "PTY",
+    "total": 847.0,
+    "ida": "2026-12-31",
+    "vuelta": "2027-01-22",
+    "noches": 22,
+    "hub": "BCN",
+    "billetes": [
+     {
+      "descripcion": "MAH → BCN (precio estimado: precio de referencia)",
+      "precio": 60.0,
+      "enlace": "",
+      "google": "https://www.google.com/travel/flights?q=Flights%20from%20MAH%20to%20BCN%20on%202026-12-31%20one%20way",
+      "segmentos": [
+       {
+        "de": "MAH",
+        "a": "BCN",
+        "salida": "2026-12-31",
+        "llegada": "",
+        "escalas": 0,
+        "aerolinea": "",
+        "vuelo": ""
+       }
+      ]
+     },
+     {
+      "descripcion": "BCN ⇄ PTY",
+      "precio": 727.0,
+      "enlace": "https://www.aviasales.com/search/BCN3112PTY21011?t=AV17987310001798766400000950BCNBOGPTY18005550001800624600000800PTYBOGBCN_6584b53bddbefd20f48ebcf32d7ac3c8_65400&search_date=21112026&expected_price_uuid=01a1ff33-26e3-8030-aa58-7c27c9530f4d&static_fare_key=TY%7CP0%7CH1%7CL0%7CCH0%7CR0%7CTBC0&itinerary_key=0TbsD6css-e2R6DYHF75Qw&expected_price_source=share&expected_price_currency=eur&expected_price=727",
+      "google": "https://www.google.com/travel/flights?q=Flights%20from%20BCN%20to%20PTY%20on%202026-12-31%20through%202027-01-21",
+      "segmentos": [
+       {
+        "de": "BCN",
+        "a": "PTY",
+        "salida": "2026-12-31T15:30:00+01:00",
+        "llegada": "2027-01-01T04:10:00+01:00",
+        "escalas": 1,
+        "aerolinea": "AV",
+        "vuelo": "181"
+       },
+       {
+        "de": "PTY",
+        "a": "BCN",
+        "salida": "2027-01-21T18:10:00-05:00",
+        "llegada": "2027-01-22T05:55:00-05:00",
+        "escalas": 1,
+        "aerolinea": "AV",
+        "vuelo": ""
+       }
+      ]
+     },
+     {
+      "descripcion": "BCN → MAH (precio estimado: precio de referencia)",
+      "precio": 60.0,
+      "enlace": "",
+      "google": "https://www.google.com/travel/flights?q=Flights%20from%20BCN%20to%20MAH%20on%202027-01-22%20one%20way",
+      "segmentos": [
+       {
+        "de": "BCN",
+        "a": "MAH",
+        "salida": "2027-01-22",
+        "llegada": "",
+        "escalas": 0,
+        "aerolinea": "",
+        "vuelo": ""
+       }
+      ]
+     }
+    ],
+    "avisos": [
+     "Billetes separados: si un vuelo se retrasa y pierdes el siguiente, no te recolocan.",
+     "Vuelo MAH → BCN: precio estimado (~60 €); búscalo para el 31/12, llegando antes de las 11:30.",
+     "Vuelo BCN → MAH: precio estimado (~60 €); búscalo para el 22/01, saliendo después de las 15:55.",
+     "Recoge y vuelve a facturar el equipaje en el hub."
+    ],
+    "fuente": "Aviasales",
+    "desde": "MAH"
+   },
+   "opciones": [
+    {
+     "tipo": "autoconexion",
+     "destino": "PTY",
+     "total": 847.0,
+     "ida": "2026-12-31",
+     "vuelta": "2027-01-22",
+     "noches": 22,
+     "hub": "BCN",
+     "billetes": [
+      {
+       "descripcion": "MAH → BCN (precio estimado: precio de referencia)",
+       "precio": 60.0,
+       "enlace": "",
+       "google": "https://www.google.com/travel/flights?q=Flights%20from%20MAH%20to%20BCN%20on%202026-12-31%20one%20way",
+       "segmentos": [
+        {
+         "de": "MAH",
+         "a": "BCN",
+         "salida": "2026-12-31",
+         "llegada": "",
+         "escalas": 0,
+         "aerolinea": "",
+         "vuelo": ""
+        }
+       ]
+      },
+      {
+       "descripcion": "BCN ⇄ PTY",
+       "precio": 727.0,
+       "enlace": "https://www.aviasales.com/search/BCN3112PTY21011?t=AV17987310001798766400000950BCNBOGPTY18005550001800624600000800PTYBOGBCN_6584b53bddbefd20f48ebcf32d7ac3c8_65400&search_date=21112026&expected_price_uuid=01a1ff33-26e3-8030-aa58-7c27c9530f4d&static_fare_key=TY%7CP0%7CH1%7CL0%7CCH0%7CR0%7CTBC0&itinerary_key=0TbsD6css-e2R6DYHF75Qw&expected_price_source=share&expected_price_currency=eur&expected_price=727",
+       "google": "https://www.google.com/travel/flights?q=Flights%20from%20BCN%20to%20PTY%20on%202026-12-31%20through%202027-01-21",
+       "segmentos": [
+        {
+         "de": "BCN",
+         "a": "PTY",
+         "salida": "2026-12-31T15:30:00+01:00",
+         "llegada": "2027-01-01T04:10:00+01:00",
+         "escalas": 1,
+         "aerolinea": "AV",
+         "vuelo": "181"
+        },
+        {
+         "de": "PTY",
+         "a": "BCN",
+         "salida": "2027-01-21T18:10:00-05:00",
+         "llegada": "2027-01-22T05:55:00-05:00",
+         "escalas": 1,
+         "aerolinea": "AV",
+         "vuelo": ""
+        }
+       ]
+      },
+      {
+       "descripcion": "BCN → MAH (precio estimado: precio de referencia)",
+       "precio": 60.0,
+       "enlace": "",
+       "google": "https://www.google.com/travel/flights?q=Flights%20from%20BCN%20to%20MAH%20on%202027-01-22%20one%20way",
+       "segmentos": [
+        {
+         "de": "BCN",
+         "a": "MAH",
+         "salida": "2027-01-22",
+         "llegada": "",
+         "escalas": 0,
+         "aerolinea": "",
+         "vuelo": ""
+        }
+       ]
+      }
+     ],
+     "avisos": [
+      "Billetes separados: si un vuelo se retrasa y pierdes el siguiente, no te recolocan.",
+      "Vuelo MAH → BCN: precio estimado (~60 €); búscalo para el 31/12, llegando antes de las 11:30.",
+      "Vuelo BCN → MAH: precio estimado (~60 €); búscalo para el 22/01, saliendo después de las 15:55.",
+      "Recoge y vuelve a facturar el equipaje en el hub."
+     ],
+     "fuente": "Aviasales",
+     "desde": "MAH"
+    },
+    {
+     "tipo": "desde_hub",
+     "destino": "PTY",
+     "total": 727.0,
+     "ida": "2026-12-31",
+     "vuelta": "2027-01-22",
+     "noches": 22,
+     "hub": "BCN",
+     "billetes": [
+      {
+       "descripcion": "BCN ⇄ PTY",
+       "precio": 727.0,
+       "enlace": "https://www.aviasales.com/search/BCN3112PTY21011?t=AV17987310001798766400000950BCNBOGPTY18005550001800624600000800PTYBOGBCN_6584b53bddbefd20f48ebcf32d7ac3c8_65400&search_date=21112026&expected_price_uuid=01a1ff33-26e3-8030-aa58-7c27c9530f4d&static_fare_key=TY%7CP0%7CH1%7CL0%7CCH0%7CR0%7CTBC0&itinerary_key=0TbsD6css-e2R6DYHF75Qw&expected_price_source=share&expected_price_currency=eur&expected_price=727",
+       "google": "https://www.google.com/travel/flights?q=Flights%20from%20BCN%20to%20PTY%20on%202026-12-31%20through%202027-01-21",
+       "segmentos": [
+        {
+         "de": "BCN",
+         "a": "PTY",
+         "salida": "2026-12-31T15:30:00+01:00",
+         "llegada": "2027-01-01T04:10:00+01:00",
+         "escalas": 1,
+         "aerolinea": "AV",
+         "vuelo": "181"
+        },
+        {
+         "de": "PTY",
+         "a": "BCN",
+         "salida": "2027-01-21T18:10:00-05:00",
+         "llegada": "2027-01-22T05:55:00-05:00",
+         "escalas": 1,
+         "aerolinea": "AV",
+         "vuelo": ""
+        }
+       ]
+      }
+     ],
+     "avisos": [
+      "Sale de BCN: el viaje desde Menorca hasta BCN va aparte."
+     ],
+     "fuente": "Aviasales",
+     "desde": "BCN"
+    }
+   ],
+   "chollo": false,
+   "motivo_chollo": "",
+   "historial": [
+    {
+     "fecha": "2026-11-21T23:02:12+00:00",
+     "precio": 858.0
+    },
+    {
+     "fecha": "2026-11-22T06:59:39+00:00",
+     "precio": 858.0
+    },
+    {
+     "fecha": "2026-11-22T19:47:56+00:00",
+     "precio": 858.0
+    },
+    {
+     "fecha": "2026-11-23T07:49:51+00:00",
+     "precio": 858.0
+    },
+    {
+     "fecha": "2026-11-23T23:59:29+00:00",
+     "precio": 858.0
+    },
+    {
+     "fecha": "2026-11-24T10:00:46+00:00",
+     "precio": 858.0
+    },
+    {
+     "fecha": "2026-11-24T22:32:34+00:00",
+     "precio": 858.0
+    },
+    {
+     "fecha": "2026-11-25T08:44:58+00:00",
+     "precio": 858.0
+    },
+    {
+     "fecha": "2026-11-25T21:47:17+00:00",
+     "precio": 858.0
+    },
+    {
+     "fecha": "2026-11-26T08:31:09+00:00",
+     "precio": 858.0
+    },
+    {
+     "fecha": "2026-11-26T21:40:36+00:00",
+     "precio": 847.0
+    },
+    {
+     "fecha": "2026-11-27T08:44:46+00:00",
+     "precio": 847.0
     }
    ]
   },
@@ -4599,6 +4623,132 @@
      ],
      "fuente": "Aviasales",
      "desde": "BCN"
+    },
+    {
+     "tipo": "desde_hub",
+     "destino": "SIN",
+     "total": 886.0,
+     "ida": "2026-12-21",
+     "vuelta": "2027-01-02",
+     "noches": 12,
+     "hub": "MAD",
+     "billetes": [
+      {
+       "descripcion": "MAD ⇄ SIN",
+       "precio": 886.0,
+       "enlace": "https://www.aviasales.com/search/MAD2112SIN02011?t=SV17978325001798039800003035MADFCOSSHJEDSIN17988570001798893600001030SINDXBMAD_f73d031408f41ce0697d1364d7f6d65c_79805&search_date=27112026&expected_price_uuid=01a21a64-a000-8031-2521-8f7ccc37de59&static_fare_key=TY%7CP1%7CH0%7CL0%7CCH0%7CR0%7CTBC0&itinerary_key=s_cDuchsGp90MD_WmMNcsg&expected_price_source=share&expected_price_currency=eur&expected_price=886",
+       "google": "https://www.google.com/travel/flights?q=Flights%20from%20MAD%20to%20SIN%20on%202026-12-21%20through%202027-01-02",
+       "segmentos": [
+        {
+         "de": "MAD",
+         "a": "SIN",
+         "salida": "2026-12-21T05:55:00+01:00",
+         "llegada": "2026-12-21T22:50:00+01:00",
+         "escalas": 3,
+         "aerolinea": "W4",
+         "vuelo": "6208"
+        },
+        {
+         "de": "SIN",
+         "a": "MAD",
+         "salida": "2027-01-02T02:30:00+08:00",
+         "llegada": "2027-01-02T18:15:00+08:00",
+         "escalas": 1,
+         "aerolinea": "W4",
+         "vuelo": ""
+        }
+       ]
+      }
+     ],
+     "avisos": [
+      "Sale de MAD: el viaje desde Menorca hasta MAD va aparte."
+     ],
+     "fuente": "Aviasales",
+     "desde": "MAD"
+    },
+    {
+     "tipo": "desde_hub",
+     "destino": "SIN",
+     "total": 889.0,
+     "ida": "2026-12-30",
+     "vuelta": "2027-01-07",
+     "noches": 8,
+     "hub": "MAD",
+     "billetes": [
+      {
+       "descripcion": "MAD ⇄ SIN",
+       "precio": 889.0,
+       "enlace": "https://www.aviasales.com/search/MAD3012SIN07011?t=HU17986275001798775100002040MADCKGSIN17992818001799325600001150SINDXBMAD_f0aff0bb0cd4ff0f4d4010af157c79b2_80149&search_date=27112026&expected_price_uuid=01a21a64-9eba-8030-e8a8-1a4e65aef35a&static_fare_key=TY%7CP0%7CH1%7CL1_1_23%7CCH0%7CR0%7CTBC1&itinerary_key=SVKPcIVbVmc5tmvliXwT4A&expected_price_source=share&expected_price_currency=eur&expected_price=889",
+       "google": "https://www.google.com/travel/flights?q=Flights%20from%20MAD%20to%20SIN%20on%202026-12-30%20through%202027-01-07",
+       "segmentos": [
+        {
+         "de": "MAD",
+         "a": "SIN",
+         "salida": "2026-12-30T10:45:00+01:00",
+         "llegada": "2026-12-31T02:55:00+01:00",
+         "escalas": 1,
+         "aerolinea": "HU",
+         "vuelo": "728"
+        },
+        {
+         "de": "SIN",
+         "a": "MAD",
+         "salida": "2027-01-07T00:30:00+08:00",
+         "llegada": "2027-01-07T16:25:00+08:00",
+         "escalas": 1,
+         "aerolinea": "HU",
+         "vuelo": ""
+        }
+       ]
+      }
+     ],
+     "avisos": [
+      "Sale de MAD: el viaje desde Menorca hasta MAD va aparte."
+     ],
+     "fuente": "Aviasales",
+     "desde": "MAD"
+    },
+    {
+     "tipo": "desde_hub",
+     "destino": "SIN",
+     "total": 967.0,
+     "ida": "2026-12-23",
+     "vuelta": "2027-01-02",
+     "noches": 10,
+     "hub": "MAD",
+     "billetes": [
+      {
+       "descripcion": "MAD ⇄ SIN",
+       "precio": 967.0,
+       "enlace": "https://www.aviasales.com/search/MAD2312SIN02011?t=3U17980239001798126500001290MADTFUSIN17988498001798893600001150SINDXBMAD_5db0ac80c48cf67827319388d7ba8710_87150&search_date=27112026&expected_price_uuid=01a21a64-aded-8030-a9bb-2566bdd613b8&static_fare_key=TY%7CP0%7CH1%7CL1_1_20%7CCH0%7CR0%7CTBC1&itinerary_key=h6YgkYxQ3ETtsWBly07Klw&expected_price_source=share&expected_price_currency=eur&expected_price=967",
+       "google": "https://www.google.com/travel/flights?q=Flights%20from%20MAD%20to%20SIN%20on%202026-12-23%20through%202027-01-02",
+       "segmentos": [
+        {
+         "de": "MAD",
+         "a": "SIN",
+         "salida": "2026-12-23T11:05:00+01:00",
+         "llegada": "2026-12-24T04:05:00+01:00",
+         "escalas": 1,
+         "aerolinea": "3U",
+         "vuelo": "3804"
+        },
+        {
+         "de": "SIN",
+         "a": "MAD",
+         "salida": "2027-01-02T00:30:00+08:00",
+         "llegada": "2027-01-02T16:25:00+08:00",
+         "escalas": 1,
+         "aerolinea": "3U",
+         "vuelo": ""
+        }
+       ]
+      }
+     ],
+     "avisos": [
+      "Sale de MAD: el viaje desde Menorca hasta MAD va aparte."
+     ],
+     "fuente": "Aviasales",
+     "desde": "MAD"
     }
    ],
    "chollo": false,
@@ -4646,6 +4796,10 @@
     },
     {
      "fecha": "2026-11-26T21:40:36+00:00",
+     "precio": 864.0
+    },
+    {
+     "fecha": "2026-11-27T08:44:46+00:00",
      "precio": 864.0
     }
    ]
@@ -5267,6 +5421,48 @@
     {
      "tipo": "desde_hub",
      "destino": "CMB",
+     "total": 848.0,
+     "ida": "2026-12-28",
+     "vuelta": "2027-01-06",
+     "noches": 9,
+     "hub": "MAD",
+     "billetes": [
+      {
+       "descripcion": "MAD ⇄ CMB",
+       "precio": 848.0,
+       "enlace": "https://www.aviasales.com/search/MAD2812CMB05011?t=UL17984616001798611300002225MADSAWKWICMB17991861001799322000002535CMBAUHKWISAWMAD_7d14b9d842b22e21c1084f4cef729ac0_76458&search_date=27112026&expected_price_uuid=01a21a68-340d-8030-e80f-7662e48d397f&static_fare_key=TY%7CP1%7CH0%7CL0%7CCH0%7CR0%7CTBC0&itinerary_key=78DHY7B7b1UoYIs17qoPBg&expected_price_source=share&expected_price_currency=eur&expected_price=848",
+       "google": "https://www.google.com/travel/flights?q=Flights%20from%20MAD%20to%20CMB%20on%202026-12-28%20through%202027-01-05",
+       "segmentos": [
+        {
+         "de": "MAD",
+         "a": "CMB",
+         "salida": "2026-12-28T12:40:00+01:00",
+         "llegada": "2026-12-29T01:30:00+01:00",
+         "escalas": 2,
+         "aerolinea": "PC",
+         "vuelo": "7900"
+        },
+        {
+         "de": "CMB",
+         "a": "MAD",
+         "salida": "2027-01-05T21:55:00+05:30",
+         "llegada": "2027-01-06T12:55:00+05:30",
+         "escalas": 3,
+         "aerolinea": "PC",
+         "vuelo": ""
+        }
+       ]
+      }
+     ],
+     "avisos": [
+      "Sale de MAD: el viaje desde Menorca hasta MAD va aparte."
+     ],
+     "fuente": "Aviasales",
+     "desde": "MAD"
+    },
+    {
+     "tipo": "desde_hub",
+     "destino": "CMB",
      "total": 870.0,
      "ida": "2026-12-24",
      "vuelta": "2027-01-10",
@@ -5294,6 +5490,48 @@
          "salida": "2027-01-09T21:25:00+05:30",
          "llegada": "2027-01-10T11:35:00+05:30",
          "escalas": 2,
+         "aerolinea": "EY",
+         "vuelo": ""
+        }
+       ]
+      }
+     ],
+     "avisos": [
+      "Sale de MAD: el viaje desde Menorca hasta MAD va aparte."
+     ],
+     "fuente": "Aviasales",
+     "desde": "MAD"
+    },
+    {
+     "tipo": "desde_hub",
+     "destino": "CMB",
+     "total": 885.0,
+     "ida": "2026-12-24",
+     "vuelta": "2027-01-04",
+     "noches": 11,
+     "hub": "MAD",
+     "billetes": [
+      {
+       "descripcion": "MAD ⇄ CMB",
+       "precio": 885.0,
+       "enlace": "https://www.aviasales.com/search/MAD2412CMB03011?t=EY17981466001798272600001830MADAUHCMB17990115001799149200002565CMBAUHEVNSAWMAD_ba0869ab1c0a1fee77c738fe00e9c68e_79773&search_date=27112026&expected_price_uuid=01a21a68-33b1-8030-2dbe-bc7510713052&static_fare_key=TY%7CP1%7CH0%7CL0%7CCH0%7CR0%7CTBC0&itinerary_key=yhizAx-laDzCc-P9jGVx5A&expected_price_source=share&expected_price_currency=eur&expected_price=885",
+       "google": "https://www.google.com/travel/flights?q=Flights%20from%20MAD%20to%20CMB%20on%202026-12-24%20through%202027-01-03",
+       "segmentos": [
+        {
+         "de": "MAD",
+         "a": "CMB",
+         "salida": "2026-12-24T21:10:00+01:00",
+         "llegada": "2026-12-25T08:20:00+01:00",
+         "escalas": 1,
+         "aerolinea": "EY",
+         "vuelo": "104"
+        },
+        {
+         "de": "CMB",
+         "a": "MAD",
+         "salida": "2027-01-03T21:25:00+05:30",
+         "llegada": "2027-01-04T12:55:00+05:30",
+         "escalas": 3,
          "aerolinea": "EY",
          "vuelo": ""
         }
@@ -5351,34 +5589,34 @@
     {
      "tipo": "desde_hub",
      "destino": "CMB",
-     "total": 992.0,
-     "ida": "2026-12-21",
-     "vuelta": "2027-01-20",
-     "noches": 30,
+     "total": 976.0,
+     "ida": "2026-12-22",
+     "vuelta": "2027-01-01",
+     "noches": 10,
      "hub": "MAD",
      "billetes": [
       {
        "descripcion": "MAD ⇄ CMB",
-       "precio": 992.0,
-       "enlace": "https://www.aviasales.com/search/MAD2112CMB20011?t=G917978628001797990600001860MADATHSHJCMB18004128001800469500001215CMBSHJWAWMAD_2f49048b3c1556f596f2acec156d7720_89256&search_date=20112026&expected_price_uuid=01a1f84e-4aef-8031-6301-926a6789aa36&static_fare_key=TY%7CP1%7CH0%7CL0%7CCH0%7CR0%7CTBC0&itinerary_key=dwVzBseTjJN-gaVyImykYQ&expected_price_source=share&expected_price_currency=eur&expected_price=992",
-       "google": "https://www.google.com/travel/flights?q=Flights%20from%20MAD%20to%20CMB%20on%202026-12-21%20through%202027-01-20",
+       "precio": 976.0,
+       "enlace": "https://www.aviasales.com/search/MAD2212CMB01011?t=G917979432001798092900002225MADSAWKWICMB17987712001798827900001215CMBSHJWAWMAD_3928cd4f8d8e40b0c41227cbabf0d246_87951&search_date=27112026&expected_price_uuid=01a21a68-231c-8031-2434-e90efec48c3d&static_fare_key=TY%7CP1%7CH0%7CL0%7CCH0%7CR0%7CTBC0&itinerary_key=KB6h_fUDvSzI2o_Jf0EvfQ&expected_price_source=share&expected_price_currency=eur&expected_price=976",
+       "google": "https://www.google.com/travel/flights?q=Flights%20from%20MAD%20to%20CMB%20on%202026-12-22%20through%202027-01-01",
        "segmentos": [
         {
          "de": "MAD",
          "a": "CMB",
-         "salida": "2026-12-21T14:20:00+01:00",
-         "llegada": "2026-12-22T02:40:00+01:00",
+         "salida": "2026-12-22T12:40:00+01:00",
+         "llegada": "2026-12-23T01:30:00+01:00",
          "escalas": 2,
-         "aerolinea": "GQ",
-         "vuelo": "921"
+         "aerolinea": "PC",
+         "vuelo": "1100"
         },
         {
          "de": "CMB",
          "a": "MAD",
-         "salida": "2027-01-20T02:40:00+05:30",
-         "llegada": "2027-01-20T17:40:00+05:30",
+         "salida": "2027-01-01T02:40:00+05:30",
+         "llegada": "2027-01-01T17:40:00+05:30",
          "escalas": 2,
-         "aerolinea": "GQ",
+         "aerolinea": "PC",
          "vuelo": ""
         }
        ]
@@ -5436,6 +5674,10 @@
     },
     {
      "fecha": "2026-11-26T21:40:36+00:00",
+     "precio": 866.0
+    },
+    {
+     "fecha": "2026-11-27T08:44:46+00:00",
      "precio": 866.0
     }
    ]
@@ -5701,6 +5943,10 @@
     },
     {
      "fecha": "2026-11-26T21:40:36+00:00",
+     "precio": 891.0
+    },
+    {
+     "fecha": "2026-11-27T08:44:46+00:00",
      "precio": 891.0
     }
    ]
@@ -6244,7 +6490,7 @@
     {
      "tipo": "desde_hub",
      "destino": "MLE",
-     "total": 999.0,
+     "total": 1000.0,
      "ida": "2026-12-23",
      "vuelta": "2027-01-03",
      "noches": 11,
@@ -6252,7 +6498,7 @@
      "billetes": [
       {
        "descripcion": "MAD ⇄ MLE",
-       "precio": 999.0,
+       "precio": 1000.0,
        "enlace": "https://www.aviasales.com/search/MAD2312MLE03011?t=EY17980191001798097100001060MADAUHMLE17989689001799011200000945MLEAUHBCNMAD_b16e00f38e4bfa75ffddba6102ad846e_90079&search_date=26112026&expected_price_uuid=01a218d1-6482-8030-68ba-3f7d99c231a2&static_fare_key=TY%7CP0%7CH1%7CL0%7CCH0%7CR0%7CTBC0&itinerary_key=J4tGQWC5Yuk1NClfGz9wCg&expected_price_source=share&expected_price_currency=eur&expected_price=999",
        "google": "https://www.google.com/travel/flights?q=Flights%20from%20MAD%20to%20MLE%20on%202026-12-23%20through%202027-01-03",
        "segmentos": [
@@ -6329,6 +6575,10 @@
     },
     {
      "fecha": "2026-11-26T21:40:36+00:00",
+     "precio": 905.0
+    },
+    {
+     "fecha": "2026-11-27T08:44:46+00:00",
      "precio": 905.0
     }
    ]
@@ -6553,6 +6803,10 @@
     },
     {
      "fecha": "2026-11-26T21:40:36+00:00",
+     "precio": 927.0
+    },
+    {
+     "fecha": "2026-11-27T08:44:46+00:00",
      "precio": 927.0
     }
    ]
@@ -7515,6 +7769,10 @@
     {
      "fecha": "2026-11-26T21:40:36+00:00",
      "precio": 930.0
+    },
+    {
+     "fecha": "2026-11-27T08:44:46+00:00",
+     "precio": 930.0
     }
    ]
   },
@@ -8059,6 +8317,10 @@
     {
      "fecha": "2026-11-26T21:40:36+00:00",
      "precio": 963.0
+    },
+    {
+     "fecha": "2026-11-27T08:44:46+00:00",
+     "precio": 963.0
     }
    ]
   },
@@ -8436,6 +8698,10 @@
     },
     {
      "fecha": "2026-11-26T21:40:36+00:00",
+     "precio": 995.0
+    },
+    {
+     "fecha": "2026-11-27T08:44:46+00:00",
      "precio": 995.0
     }
    ]

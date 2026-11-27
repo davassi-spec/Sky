@@ -1,8 +1,8 @@
 {
  "estado": {
   "mes": "2026-11",
-  "usadas_mes": 33,
-  "siguiente": 33
+  "usadas_mes": 36,
+  "siguiente": 36
  },
  "resultados": {
   "BKK|2026-12-12|2027-01-10": {
@@ -1402,6 +1402,388 @@
      "typical_price_range": [
       1400,
       2450
+     ]
+    }
+   }
+  },
+  "CUR|2026-12-12|2027-01-10": {
+   "fecha": "2026-11-27T08:44:46+00:00",
+   "opcion": {
+    "tipo": "directo",
+    "fuente": "Google Flights",
+    "destino": "CUR",
+    "total": 1695.0,
+    "ida": "2026-12-12",
+    "vuelta": "2027-01-10",
+    "noches": 29,
+    "hub": null,
+    "billetes": [
+     {
+      "descripcion": "MAH ⇄ CUR (Google Flights)",
+      "precio": 1695.0,
+      "enlace": "",
+      "google": "https://www.google.com/travel/flights?hl=es&gl=es&curr=EUR&tfs=CBwQAhoeEgoyMDI2LTEyLTEyagcIARIDTUFIcgcIARIDQ1VSGh4SCjIwMjctMDEtMTBqBwgBEgNDVVJyBwgBEgNNQUhAAUgBcAGYAQE&tfu=EgIIAQ",
+      "segmentos": [
+       {
+        "de": "MAH",
+        "a": "CUR",
+        "salida": "2026-12-12T07:00:00",
+        "llegada": "2026-12-13T14:39:00",
+        "escalas": 2,
+        "aerolinea": "American / Iberia",
+        "vuelo": "IB 1042"
+       }
+      ]
+     }
+    ],
+    "avisos": [
+     "Escalas a la ida: MAD (4 h), MIA (17 h). Mismo billete: si pierdes una conexión te recolocan.",
+     "Precio de Google Flights para estas fechas exactas; la vuelta se elige al reservar."
+    ],
+    "insights": {
+     "lowest_price": 1695,
+     "price_level": "typical",
+     "typical_price_range": [
+      1600,
+      3150
+     ]
+    }
+   }
+  },
+  "EZE|2026-12-12|2027-01-10": {
+   "fecha": "2026-11-27T08:44:46+00:00",
+   "opcion": {
+    "tipo": "directo",
+    "fuente": "Google Flights",
+    "destino": "EZE",
+    "total": 2516.0,
+    "ida": "2026-12-12",
+    "vuelta": "2027-01-10",
+    "noches": 29,
+    "hub": null,
+    "billetes": [
+     {
+      "descripcion": "MAH ⇄ EZE (Google Flights)",
+      "precio": 2516.0,
+      "enlace": "",
+      "google": "https://www.google.com/travel/flights?hl=es&gl=es&curr=EUR&tfs=CBwQAhoeEgoyMDI2LTEyLTEyagcIARIDTUFIcgcIARIDRVpFGh4SCjIwMjctMDEtMTBqBwgBEgNFWkVyBwgBEgNNQUhAAUgBcAGYAQE&tfu=EgIIAQ",
+      "segmentos": [
+       {
+        "de": "MAH",
+        "a": "EZE",
+        "salida": "2026-12-12T08:15:00",
+        "llegada": "2026-12-13T16:00:00",
+        "escalas": 2,
+        "aerolinea": "LATAM / Vueling",
+        "vuelo": "VY 3601"
+       }
+      ]
+     }
+    ],
+    "avisos": [
+     "Escalas a la ida: BCN (2 h), GRU (17 h). Mismo billete: si pierdes una conexión te recolocan.",
+     "Precio de Google Flights para estas fechas exactas; la vuelta se elige al reservar."
+    ],
+    "insights": {
+     "lowest_price": 2516,
+     "price_level": "typical",
+     "typical_price_range": [
+      1650,
+      2750
+     ],
+     "price_history": [
+      [
+       1790460000,
+       2068
+      ],
+      [
+       1790546400,
+       1928
+      ],
+      [
+       1790632800,
+       2093
+      ],
+      [
+       1790719200,
+       1993
+      ],
+      [
+       1790805600,
+       1993
+      ],
+      [
+       1790892000,
+       1993
+      ],
+      [
+       1790978400,
+       1993
+      ],
+      [
+       1791064800,
+       1994
+      ],
+      [
+       1791151200,
+       1994
+      ],
+      [
+       1791237600,
+       1994
+      ],
+      [
+       1791324000,
+       2294
+      ],
+      [
+       1791410400,
+       2292
+      ],
+      [
+       1791496800,
+       2292
+      ],
+      [
+       1791583200,
+       2292
+      ],
+      [
+       1791669600,
+       2432
+      ],
+      [
+       1791756000,
+       2432
+      ],
+      [
+       1791842400,
+       2432
+      ],
+      [
+       1791928800,
+       2432
+      ],
+      [
+       1792015200,
+       2432
+      ],
+      [
+       1792101600,
+       2432
+      ],
+      [
+       1792188000,
+       2432
+      ],
+      [
+       1792274400,
+       2067
+      ],
+      [
+       1792360800,
+       2067
+      ],
+      [
+       1792447200,
+       2602
+      ],
+      [
+       1792533600,
+       2842
+      ],
+      [
+       1792620000,
+       2842
+      ],
+      [
+       1792706400,
+       2862
+      ],
+      [
+       1792792800,
+       2862
+      ],
+      [
+       1792879200,
+       2862
+      ],
+      [
+       1792969200,
+       2692
+      ],
+      [
+       1793055600,
+       2552
+      ],
+      [
+       1793142000,
+       2552
+      ],
+      [
+       1793228400,
+       2552
+      ],
+      [
+       1793314800,
+       2552
+      ],
+      [
+       1793401200,
+       2552
+      ],
+      [
+       1793487600,
+       2552
+      ],
+      [
+       1793574000,
+       2552
+      ],
+      [
+       1793660400,
+       2312
+      ],
+      [
+       1793746800,
+       2312
+      ],
+      [
+       1793833200,
+       2312
+      ],
+      [
+       1793919600,
+       2312
+      ],
+      [
+       1794006000,
+       2452
+      ],
+      [
+       1794092400,
+       2452
+      ],
+      [
+       1794178800,
+       2454
+      ],
+      [
+       1794265200,
+       2454
+      ],
+      [
+       1794351600,
+       2254
+      ],
+      [
+       1794438000,
+       2114
+      ],
+      [
+       1794524400,
+       2114
+      ],
+      [
+       1794610800,
+       2213
+      ],
+      [
+       1794697200,
+       2213
+      ],
+      [
+       1794783600,
+       2213
+      ],
+      [
+       1794870000,
+       2313
+      ],
+      [
+       1794956400,
+       2313
+      ],
+      [
+       1795042800,
+       2623
+      ],
+      [
+       1795129200,
+       2863
+      ],
+      [
+       1795215600,
+       2864
+      ],
+      [
+       1795302000,
+       2864
+      ],
+      [
+       1795388400,
+       2866
+      ],
+      [
+       1795474800,
+       2866
+      ],
+      [
+       1795561200,
+       2866
+      ],
+      [
+       1795647600,
+       2866
+      ],
+      [
+       1795734000,
+       2516
+      ]
+     ]
+    }
+   }
+  },
+  "ZNZ|2026-12-12|2027-01-10": {
+   "fecha": "2026-11-27T08:44:46+00:00",
+   "opcion": {
+    "tipo": "directo",
+    "fuente": "Google Flights",
+    "destino": "ZNZ",
+    "total": 2631.0,
+    "ida": "2026-12-12",
+    "vuelta": "2027-01-10",
+    "noches": 29,
+    "hub": null,
+    "billetes": [
+     {
+      "descripcion": "MAH ⇄ ZNZ (Google Flights)",
+      "precio": 2631.0,
+      "enlace": "",
+      "google": "https://www.google.com/travel/flights?hl=es&gl=es&curr=EUR&tfs=CBwQAhoeEgoyMDI2LTEyLTEyagcIARIDTUFIcgcIARIDWk5aGh4SCjIwMjctMDEtMTBqBwgBEgNaTlpyBwgBEgNNQUhAAUgBcAGYAQE&tfu=EgIIAQ",
+      "segmentos": [
+       {
+        "de": "MAH",
+        "a": "ZNZ",
+        "salida": "2026-12-12T08:15:00",
+        "llegada": "2026-12-13T07:30:00",
+        "escalas": 2,
+        "aerolinea": "Qatar Airways / Vueling",
+        "vuelo": "VY 3601"
+       }
+      ]
+     }
+    ],
+    "avisos": [
+     "Escalas a la ida: BCN (6 h), DOH (2 h). Mismo billete: si pierdes una conexión te recolocan.",
+     "Precio de Google Flights para estas fechas exactas; la vuelta se elige al reservar."
+    ],
+    "insights": {
+     "lowest_price": 2631,
+     "price_level": "high",
+     "typical_price_range": [
+      1250,
+      2600
      ]
     }
    }
